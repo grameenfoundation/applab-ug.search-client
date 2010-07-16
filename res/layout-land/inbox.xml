@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout 
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/rl" android:layout_width="fill_parent"
+	android:layout_height="fill_parent" android:orientation="vertical"
+	android:background="@drawable/white">
+
+	<TextView android:id="@+id/Date_time"
+		android:gravity="center" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:paddingTop="3px"
+		android:paddingBottom="1px" android:textSize="12px" android:textStyle="bold"
+		 />
+
+	<TextView android:gravity="left" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:paddingTop="1px"
+		android:paddingLeft="6px" android:paddingBottom="2px"
+		android:textSize="12px" android:textColor="@drawable/black"
+		android:textStyle="bold" android:text="@string/Keyword" />
+
+	<TextView android:layout_width="fill_parent" android:id="@+id/search"
+		android:layout_height="wrap_content" android:textSize="6pt" 
+		android:textColor="@drawable/black" />
+
+	<TextView android:gravity="left" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:paddingTop="1px"
+		android:paddingLeft="6px" android:paddingBottom="6px"
+		android:textStyle="bold" android:textColor="@drawable/black"
+		android:textSize="12px" android:text="@string/Content" />
+
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:id="@+id/r2" android:layout_width="fill_parent"
+		android:layout_height="132dp">
+		<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:orientation="vertical"  
+    android:layout_height="fill_parent" > 
+    	<TextView 
+    	android:id="@+id/content_view"
+    	android:layout_width="fill_parent"
+		android:layout_height="fill_parent" 
+		android:textColor="@drawable/black"
+		android:textSize="10pt" />
+    </ScrollView>
+	</LinearLayout>
+
+	<TextView android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:textSize="1pt" />
+		
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:id="@+id/r2" android:orientation="horizontal" android:background="@drawable/gray"
+
+		android:layout_width="fill_parent" android:layout_height="wrap_content">
+		<Button android:id="@+id/delete_button" android:textColor="@drawable/black"
+			android:textSize="21px" android:layout_width="160dp"
+			android:layout_height="wrap_content" android:text="@string/delete_button"/>
+			
+			<Button android:id="@+id/send_button" android:textColor="@drawable/black"
+			android:textSize="21px" android:layout_width="160dp"
+			android:layout_height="wrap_content" android:text="@string/send_button"/>
+
+		<Button android:id="@+id/back_button" android:textColor="@drawable/black"
+			android:textSize="21px" android:layout_width="160dp"
+			android:layout_height="wrap_content" />
+	</LinearLayout>
+
+</LinearLayout>

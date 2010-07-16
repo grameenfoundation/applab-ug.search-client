@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent"
+  android:background="@drawable/white"
+  android:orientation="vertical">
+  
+  <TextView
+  	android:id="@+id/name_version"
+    android:gravity="center"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="25px"        
+    android:textSize="18px"
+    android:textStyle="bold"  
+    android:typeface="sans"  
+    android:textColor="@drawable/black" />
+    <TextView
+  	android:id="@+id/release"
+    android:gravity="center"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="5px"
+    android:layout_marginLeft="6px"
+    android:paddingBottom="15px"
+    android:textSize="12px"    
+    android:typeface="sans"  
+    android:textColor="@drawable/black" />
+    <TextView
+  	android:id="@+id/phone_id"
+    android:gravity="center"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"     
+    android:paddingBottom="5px"
+    android:textSize="18px"
+    android:textStyle="bold"  
+    android:typeface="sans"  
+    android:textColor="@drawable/black" />
+    <TextView
+  	android:id="@+id/info"
+    android:gravity="center"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="15px"    
+    android:paddingBottom="10px"
+    android:textSize="12px"     
+    android:typeface="sans"  
+    android:textColor="@drawable/black" />
+        
+          <Button
+          android:id="@+id/close"
+          android:text="@string/close_button"
+          android:textColor="@drawable/black"
+          android:textSize="20px"
+          android:layout_marginLeft="120px"
+          android:layout_width="250px"
+          android:layout_height="wrap_content" 
+          android:padding="5px"/>
+  	
+ 
+</LinearLayout>
