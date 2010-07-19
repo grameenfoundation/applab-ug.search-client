@@ -67,7 +67,7 @@ public class KeywordParser implements Runnable {
 			Handler activityHandler) {
 		this.applicationContext = appCntxt;
 		this.progressHandler = progressHandler;
-		this.responseHandler = responseHandler;
+		this.responseHandler = activityHandler;
 	}
 
 	@Override

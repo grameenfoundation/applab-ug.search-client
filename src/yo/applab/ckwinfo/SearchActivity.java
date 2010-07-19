@@ -142,7 +142,7 @@ public class SearchActivity extends Activity {
 		nextButtonSmall = (Button) findViewById(R.id.next_button);
 		nextButtonLarge = (Button) findViewById(R.id.next);
 		backButton = (Button) findViewById(R.id.back_button);
-		searchPath = (TextView) findViewById(R.id.query);
+		searchPath = (TextView) findViewById(R.id.search);
 		startLayout = (LinearLayout) findViewById(R.id.startLayout);
 		nextButtonSmall.setText(getString(R.string.next_button));
 		layout = (LinearLayout) findViewById(R.id.layout);

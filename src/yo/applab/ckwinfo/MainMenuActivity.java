@@ -43,7 +43,7 @@ public class MainMenuActivity extends Activity {
 
 	private Button inboxButton;
 	private Button nextButton;
-	private EditText editText;
+	private EditText intervieweeNameEditBox ;
 
 	/** database holding search keywords */
 	public Storage searchDatabase;
@@ -88,19 +88,11 @@ public class MainMenuActivity extends Activity {
 			}
 			setTitle(activity_title);
 		}
-		/*
-		 * //Reclaim activity parsing state in case it failed to resume
-		 * if(savedInstanceState != null){ dismissDialog(PARSE_DIALOG); String
-		 * deleteTable = savedInstanceState.getString("temp_table");
-		 * searchDatabase.open(); searchDatabase.deleteAll(deleteTable);
-		 * showDialog(PARSE_DIALOG); parsing = true; Thread keywordParser = new
-		 * Thread(keywordParser); keywordParser.start(); }
-		 */
-
+	
 		nextButton = (Button) findViewById(R.id.next_button);
 		inboxButton = (Button) findViewById(R.id.inbox_button);
 		inboxButton.setText(getString(R.string.inbox_button));
-		editText = (EditText) findViewById(R.id.EditText01);
+		intervieweeNameEditBox  = (EditText) findViewById(R.id.EditText01);
 
 		// Filter out special characters from the input text
 		InputFilter filter = new InputFilter() {
@@ -119,16 +111,16 @@ public class MainMenuActivity extends Activity {
 			}
 		};
 
-		editText.setFilters(new InputFilter[] { filter });
+		intervieweeNameEditBox .setFilters(new InputFilter[] { filter });
 		if (!savedList) {
 			inboxButton.setEnabled(false);
 			nextButton.setEnabled(false);
 		}
 		inboxButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				String myEdit = editText.getText().toString().trim();
+				String myEdit = intervieweeNameEditBox .getText().toString().trim();
 				if (myEdit.length() > 0) {
-					Global.intervieweeName = editText.getText().toString();
+					Global.intervieweeName = intervieweeNameEditBox .getText().toString();
 					Intent i = new Intent(getApplicationContext(),
 							InboxListActivity.class);
 					i.putExtra("block", false);
@@ -147,11 +139,11 @@ public class MainMenuActivity extends Activity {
 		nextButton.setText(getString(R.string.next_button));
 		nextButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				String myEdit = editText.getText().toString().trim();
+				String myEdit = intervieweeNameEditBox .getText().toString().trim();
 				if (myEdit.length() > 0) {
 
 					if (savedList) {
-						Global.intervieweeName = editText.getText().toString();
+						Global.intervieweeName = intervieweeNameEditBox .getText().toString();
 						Intent i = new Intent(getApplicationContext(),
 								SearchActivity.class);
 						startActivity(i);

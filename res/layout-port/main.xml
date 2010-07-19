@@ -33,13 +33,13 @@
      </LinearLayout> 
     
      <TextView
-     	  android:id="@+id/query"
+     	  android:id="@+id/search"
           android:layout_width="fill_parent"
           android:layout_height="wrap_content"
           android:textSize="8pt" />
           <LinearLayout
   xmlns:android="http://schemas.android.com/apk/res/android"
-  android:id="@+id/layout0"
+  android:id="@+id/startLayout"
   android:orientation="vertical"
   android:layout_width="fill_parent"
   android:layout_height="wrap_content">
@@ -55,7 +55,7 @@
   </LinearLayout>
 <LinearLayout
   xmlns:android="http://schemas.android.com/apk/res/android"
-  android:id="@+id/layout1"
+  android:id="@+id/layout"
   android:orientation="horizontal"
   android:layout_width="fill_parent"
   android:layout_height="wrap_content">
