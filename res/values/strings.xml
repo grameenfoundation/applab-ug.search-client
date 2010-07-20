@@ -7,7 +7,7 @@
 <string name="info">Grameen Foundation, Applab Uganda\nckw@applab.org</string>
 <string name="inbox_title">Inbox</string>
 <string name="server_url">Server URL</string>
-<string name="new_upload_server">Change upload server</string>
+<string name="new_upload_server">Change server URL</string>
 <string name="new_download_server">Change download Server</string>
 <string name="about_activity">About</string>
 <string name="settings_activity">Preferences</string>

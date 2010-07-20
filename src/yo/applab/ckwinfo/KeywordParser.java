@@ -32,6 +32,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 /**
  * A custom XML parser that also sorts and adds content to search sequence
@@ -40,7 +41,7 @@ import android.os.Message;
 
 public class KeywordParser implements Runnable {
 	/** for debugging purposes in adb logcat */
-	private static final String TAG = "Parse";
+	private static final String LOG_TAG = "KeywordParser";
 	private Context applicationContext;
 	private Storage storage;
 	private SearchActivity searchActivity;
@@ -79,7 +80,7 @@ public class KeywordParser implements Runnable {
 			storage = new Storage(applicationContext);
 			storage.open();
 			dbTable = selectTable();
-			android.util.Log.d(TAG, "Using TABLE: " + dbTable);
+			Log.d(LOG_TAG, "Using TABLE: " + dbTable);
 			insertValues = new ContentValues();
 
 			try {
@@ -91,7 +92,7 @@ public class KeywordParser implements Runnable {
 				Document doc = db.parse(is);
 				NodeList nodes = doc.getElementsByTagName("Keyword");
 				int nodeCount = nodes.getLength();
-				android.util.Log.d(TAG, "Total nodes: " + nodeCount);
+				Log.d(LOG_TAG, "Total nodes: " + nodeCount);
 				total = (double) nodeCount;
 				Bundle b = new Bundle();
 
@@ -114,22 +115,22 @@ public class KeywordParser implements Runnable {
 			} catch (IOException e) {
 				responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_ERROR);
 				error = true;
-				android.util.Log.d(TAG, "IOException: " + e);
+				Log.d(LOG_TAG, "IOException: " + e);
 			} catch (IllegalStateException e) {
 				responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_ERROR);
 				error = true;
-				android.util.Log.d(TAG, "IllegalStateException: " + e);
+				Log.d(LOG_TAG, "IllegalStateException: " + e);
 			} catch (SAXException e) {
 				responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_ERROR);
 				error = true;
-				android.util.Log.d(TAG, "SAXException: " + e);
+				Log.d(LOG_TAG, "SAXException: " + e);
 			} catch (ParserConfigurationException e) {
 				responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_ERROR);
 				error = true;
-				android.util.Log.d(TAG, "ParserConfigurationException: " + e);
+				Log.d(LOG_TAG, "ParserConfigurationException: " + e);
 			}
 			if (error) {
-				android.util.Log.d(TAG, "ROLL BACK");
+				Log.d(LOG_TAG, "ROLL BACK");
 				storage.deleteAll(dbTable);
 				;
 			} else {
@@ -140,13 +141,13 @@ public class KeywordParser implements Runnable {
 						storage.deleteAll(Global.DATABASE_TABLE2);
 						// Notify handler: database initialization complete
 						responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_SUCCESS);
-						android.util.Log.d(TAG, "DELETED TABLE: "
+						Log.d(LOG_TAG, "DELETED TABLE: "
 								+ Global.DATABASE_TABLE2);
 					} else {
 						// discard data in the other table
 						storage.deleteAll(Global.DATABASE_TABLE);
 						responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_SUCCESS);
-						android.util.Log.d(TAG, "DELETED TABLE: "
+						Log.d(LOG_TAG, "DELETED TABLE: "
 								+ Global.DATABASE_TABLE);
 					}
 

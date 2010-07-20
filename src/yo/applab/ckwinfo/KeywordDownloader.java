@@ -34,13 +34,14 @@ public class KeywordDownloader implements Runnable {
 
 	private HttpURLConnection httpConnection;
 
-	private boolean canceled;
 	private int responseContentLength;
-	private int bufferedSize;
+
+	public KeywordDownloader() {
+
+	}
 
 	public KeywordDownloader(Handler handler) {
 		this.applicationHandler = handler;
-		canceled = false;
 	}
 
 	@Override
@@ -54,57 +55,36 @@ public class KeywordDownloader implements Runnable {
 				inputStream = openHttpConnection(Global.URL);
 				int byteIntegerValue = 0;
 
-				if (inputStream != null && !canceled) {
+				if (inputStream != null) {
 					Log.d(DEBUG_TAG, "Reading socket...");
 					while ((byteIntegerValue = inputStream.read()) != -1) {
 						stringBuffer.append((char) byteIntegerValue);
-
-						if (canceled) {
-							httpConnection.disconnect();
-							break;
-						}
 					}
-					bufferedSize = stringBuffer.length();
-					Log.d(DEBUG_TAG, "BUFFERED: " + bufferedSize);
+
 					Global.data = stringBuffer.toString();
 					inputStream.close();
 				}
 
 			} catch (IOException e) {
-				Global.cancelConnection = false;
 				Log.d(DEBUG_TAG, "Exception2: " + e.toString());
 				error = true;
-				if (!canceled) {
-					// Notify handler: connection failure
-					applicationHandler.sendEmptyMessage(Global.CONNECTION_ERROR);
-				}
 			}
 			Global.cancelConnection = false;
-			if (!error && !canceled) {
-				// Notify handler: connection success
-				applicationHandler.sendEmptyMessage(Global.CONNECTION_SUCCESS);
-				Log.d(DEBUG_TAG, "Download complete...");
+			int connectionResult = Global.CONNECTION_SUCCESS;
+			if (error) {
+				connectionResult = Global.CONNECTION_ERROR;
+			}
+
+			if (applicationHandler != null) {
+				applicationHandler.sendEmptyMessage(connectionResult);
 			}
 		} finally {
 			httpConnection.disconnect();
 		}
 	}
 
-	public int tryCancel() {
-		// TODO OKP-1#CFR-29, An alternative would be to have an enum return, or
-		// a boolean return
-		if (Global.cancelConnection) {
-			httpConnection.disconnect();
-			canceled = true;
-			return 0;
-		} else {
-			return -1;
-		}
-	}
-
 	private InputStream openHttpConnection(String urlString) throws IOException {
 		InputStream inputStream = null;
-		Global.cancelConnection = false;
 		int response = -1;
 		URL url = new URL(urlString);
 		URLConnection conn = url.openConnection();
@@ -123,15 +103,13 @@ public class KeywordDownloader implements Runnable {
 			httpConnection.connect();
 			response = httpConnection.getResponseCode();
 			responseContentLength = httpConnection.getContentLength();
-			Log.d(DEBUG_TAG, "SIZE: " + responseContentLength);
+			Log.i(DEBUG_TAG, "SIZE: " + responseContentLength);
 			Global.cancelConnection = true;
-			Log.d(DEBUG_TAG, "RESPONSE CODE: " + Integer.toString(response));
+			Log.i(DEBUG_TAG, "RESPONSE CODE: " + Integer.toString(response));
 			if (response == HttpURLConnection.HTTP_OK) {
 				inputStream = httpConnection.getInputStream();
 			}
-			if (canceled) {
-				httpConnection.disconnect();
-			}
+
 		} catch (Exception ex) {
 			Log.d(DEBUG_TAG, "Exception: " + ex.toString());
 			throw new IOException(ex.toString());

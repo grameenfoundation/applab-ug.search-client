@@ -16,6 +16,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -23,6 +24,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.telephony.TelephonyManager;
 import android.text.InputFilter;
 import android.text.Spanned;
 import android.view.Menu;
@@ -77,6 +79,16 @@ public class MainMenuActivity extends Activity {
 		// Display the current user in the activity title if available
 		if (Global.intervieweeName == null) {
 			setTitle(getString(R.string.app_name));
+			//Make the IMEI available to other threads
+			if(Global.IMEI == null){
+				TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+				String imei = telephonyManager.getDeviceId();
+				Global.IMEI = imei;
+			}
+			SynchronizeTask synchronizeTask = new SynchronizeTask(this.connectHandle, this.getApplicationContext());
+			//Schedule recurring background tasks
+			synchronizeTask.scheduleRecurringTimer ();
+			//TODO OKP-98, at launch synchronization
 		} else {
 			String activity_title = getString(R.string.app_name) + " | ";
 			if (Global.intervieweeName.length() > 30) {
@@ -219,6 +231,10 @@ public class MainMenuActivity extends Activity {
 						dismissDialog(SETUP_DIALOG);
 					}
 					showDialog(PARSE_DIALOG);
+					if(keywordParser == null){
+						keywordParser = new KeywordParser(getApplicationContext(), progressHandler,
+								connectHandle);
+					}
 					Thread parser = new Thread(keywordParser);
 					parser.start();
 				} else {
@@ -369,27 +385,13 @@ public class MainMenuActivity extends Activity {
 		switch (item.getItemId()) {
 
 		case Global.REFRESH_ID:
-
-			SharedPreferences settings = PreferenceManager
-					.getDefaultSharedPreferences(getBaseContext());
-			String url = settings.getString(Settings.KEY_SERVER,
-					getString(R.string.server));
-			if (url.endsWith("/")) {
-				url = url.concat(getString(R.string.update_path));
-			} else {
-				url = url.concat("/" + getString(R.string.update_path));
-			}
-			Global.URL = url;
-			keywordParser = new KeywordParser(this.getApplicationContext(), progressHandler,
-					connectHandle);
-			keywordDownloader = new KeywordDownloader(this.connectHandle);
-			network = new Thread(keywordDownloader);
+			SynchronizeTask synchronizeTask = new SynchronizeTask(this.connectHandle, this.getApplicationContext());
+			synchronizeTask.updateKeywords();
 			if (savedList) {
 				showDialog(CONNECT_DIALOG);
 			} else {
 				showDialog(SETUP_DIALOG);
-			}
-			network.start();
+			}			
 			return true;
 		case Global.ABOUT_ID:
 			Intent k = new Intent(getApplicationContext(), AboutActivity.class);

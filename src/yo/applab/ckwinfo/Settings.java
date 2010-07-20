@@ -21,6 +21,7 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.PreferenceActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -38,20 +39,22 @@ OnSharedPreferenceChangeListener{
     }
     
     private void updateServer() {
-        EditTextPreference etp =
-                (EditTextPreference) this.getPreferenceScreen().findPreference(KEY_SERVER);
-        String s = etp.getText();
-        s = s.trim();
-        if (isValidUrl(s)) {        	
-            etp.setText(s);
-            etp.setSummary(s);
-        } else {
-            etp.setText((String) etp.getSummary());
-            Toast.makeText(getApplicationContext(),
-                    "Sorry, invalid URL!",
-                    Toast.LENGTH_SHORT).show();
-        }
-    }
+		EditTextPreference editTextPreferences = (EditTextPreference) this
+				.getPreferenceScreen().findPreference(KEY_SERVER);
+		String urlString = editTextPreferences.getText();
+		urlString = urlString.trim();
+		if (!urlString.endsWith("/")) {
+			urlString = urlString.concat("/");
+		}
+		if (isValidUrl(urlString)) {
+			editTextPreferences.setText(urlString);
+			editTextPreferences.setSummary(urlString);
+		} else {
+			editTextPreferences.setText((String) editTextPreferences.getSummary());
+			Toast.makeText(getApplicationContext(), "Sorry, invalid URL!",
+					Toast.LENGTH_SHORT).show();
+		}
+	}
       
 	 public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 	     updateServer();

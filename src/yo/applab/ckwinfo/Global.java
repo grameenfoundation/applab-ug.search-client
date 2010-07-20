@@ -18,7 +18,10 @@ public class Global {
 	public static final int KEYWORD_PARSE_SUCCESS = 2;
 	public static final int KEYWORD_PARSE_ERROR = 3;
 	/**connect and read timeout*/
-	public static final int TIMEOUT = 30000;	
+	public static final int TIMEOUT = 30000;
+	
+	/**background synchronize time interval in miliseconds*/
+	public static final int SYNCHRONIZATION_INTERVAL = 360000;	
 	
 	/**keywords table 1*/
 	public static final String DATABASE_TABLE = "keywords";

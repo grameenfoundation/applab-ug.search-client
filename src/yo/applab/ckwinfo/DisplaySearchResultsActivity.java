@@ -212,13 +212,12 @@ public class DisplaySearchResultsActivity extends Activity {
 		}
 
 		if (incomplete) {
-
 			sendButton.setEnabled(true);
 		} else {
 			sendButton.setEnabled(false);
 			if (isCachedSearch) {
 				insertLogEntry();
-				submitLogs();
+				//We will submit the log at the next scheduled synchronization
 			}
 
 		}
@@ -486,19 +485,6 @@ public class DisplaySearchResultsActivity extends Activity {
 		log.put(InboxAdapter.KEY_NAME, Global.intervieweeName);
 		return inboxDatabase.insertLog(InboxAdapter.ACCESS_LOG_DATABASE_TABLE,
 				log);
-	}
-
-	/**
-	 * attempts to submit pending inbox access logs
-	 */
-	private void submitLogs() {
-		TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-		Global.IMEI = telephonyManager.getDeviceId();
-		String url = getURL();
-		submitInboxLog = new SubmitLocalSearchUsage(this
-				.getApplicationContext(), url);
-		Thread submit = new Thread(submitInboxLog);
-		submit.start();
 	}
 
 	@Override

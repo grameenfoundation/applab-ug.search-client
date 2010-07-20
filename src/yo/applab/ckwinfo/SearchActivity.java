@@ -33,6 +33,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -55,7 +56,7 @@ import android.widget.Toast;
 
 public class SearchActivity extends Activity {
 	/** for debugging purposes in adb logcat */
-	private static final String DEBUG_TAG = "Radio";
+	private static final String LOG_TAG = "Radio";
 
 	/** dialog shown between search sequences */
 	private static final int LOAD_DIALOG = 1;
@@ -118,7 +119,7 @@ public class SearchActivity extends Activity {
 
 	private KeywordParser keywordParser;
 	private KeywordDownloader keywordDownloader;
-
+	private SynchronizeTask synchronizeTask;
 	/** holds search state */
 	private ActivityState searchStateData;
 
@@ -147,7 +148,7 @@ public class SearchActivity extends Activity {
 		nextButtonSmall.setText(getString(R.string.next_button));
 		layout = (LinearLayout) findViewById(R.id.layout);
 		backButton.setText(getString(R.string.back_button));
-
+		this.synchronizeTask = new SynchronizeTask(this.connectHandle, this.getApplicationContext());
 		final ActivityState data = (ActivityState) getLastNonConfigurationInstance();
 		if (data == null) {
 			layout.setVisibility(View.GONE);
@@ -232,17 +233,16 @@ public class SearchActivity extends Activity {
 								Toast.LENGTH_SHORT).show();
 				}
 
-				if (canSubmitQuery) {
-					try {
-						Global.URL = getURL();
-					} catch (UnsupportedEncodingException e) {
-
-					}
-					if (searchDatabase != null)
+				if (canSubmitQuery) {					
+					if (searchDatabase != null){
 						searchDatabase.close();
-					network = new Thread(keywordDownloader);
-					showDialog(CONNECT_DIALOG);
-					network.start();
+					}
+					try {
+						synchronizeTask.getSearchResults(getURL());
+						showDialog(CONNECT_DIALOG);
+					} catch (UnsupportedEncodingException e) {						
+						Log.e(LOG_TAG, "UnsupportedEncodingException: " + e.toString());
+					}					
 					canSubmitQuery = false;
 				}
 				if (endOfKeywordSequence)
@@ -288,17 +288,10 @@ public class SearchActivity extends Activity {
 	 * @throws UnsupportedEncodingException
 	 */
 	private String getURL() throws UnsupportedEncodingException {
-		String url, query = "", name = Global.intervieweeName;
-		location = Global.location;
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(getBaseContext());
-		url = settings.getString(Settings.KEY_SERVER,
-				getString(R.string.server));
-		if (url.endsWith("/")) {
-			url = url.concat(getString(R.string.search_path));
-		} else {
-			url = url.concat("/" + getString(R.string.search_path));
-		}
+		String url = "";
+		String query = "";
+		String name = Global.intervieweeName;
+		location = Global.location;	
 		url = url.concat("?keyword=");
 
 		for (int i = 1; i < selectedKeywords.size(); i++) {

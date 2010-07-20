@@ -18,6 +18,7 @@ import java.net.URLEncoder;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 /**
@@ -35,11 +36,12 @@ public class SubmitLocalSearchUsage implements Runnable {
 	/** server base URL **/
 	private String serverBaseUrl;
 
-	private Context mContext;
+	private Context applicationContext;
+	
 	private InboxAdapter inboxAdapter;
 
 	SubmitLocalSearchUsage(Context appContext, String url) {
-		this.mContext = appContext;
+		this.applicationContext = appContext;
 		this.serverBaseUrl = url;
 	}
 
@@ -53,8 +55,8 @@ public class SubmitLocalSearchUsage implements Runnable {
 	 * submited.
 	 */
 	private void sendLogs() {
-		URL url;
-		inboxAdapter = new InboxAdapter(mContext);
+		URL url;		
+		inboxAdapter = new InboxAdapter(applicationContext);
 		inboxAdapter.open();
 		HttpURLConnection connection = null;
 		String urlParameters = createUrlParams();

@@ -440,7 +440,8 @@ public class InboxListActivity extends ListActivity {
 
 	/** Object for list view index - database row ID pairs */
 	private class Index {
-		public long id, rowId;
+		public long id;
+		public long rowId;
 	}
 
 	@Override
