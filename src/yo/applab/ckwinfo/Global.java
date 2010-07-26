@@ -12,35 +12,35 @@ public class Global {
 	public static final int EXIT_ID = Menu.FIRST + 6;
 	public static final int ABOUT_ID = Menu.FIRST + 7;
 	public static final int BACK_ID = Menu.FIRST;
-	
+
 	public static final int CONNECTION_ERROR = 0;
 	public static final int CONNECTION_SUCCESS = 1;
 	public static final int KEYWORD_PARSE_SUCCESS = 2;
 	public static final int KEYWORD_PARSE_ERROR = 3;
-	/**connect and read timeout*/
+	public static final int DISMISS_WAIT_DIALOG = 4;
+
+	/** connect and read timeout */
 	public static final int TIMEOUT = 30000;
-	
-	/**background synchronize time interval in miliseconds*/
-	public static final int SYNCHRONIZATION_INTERVAL = 360000;	
-	
-	/**keywords table 1*/
+
+	/** background synchronize time interval in miliseconds */
+	public static final int SYNCHRONIZATION_INTERVAL = 3600000;
+
+	/** keywords table 1 */
 	public static final String DATABASE_TABLE = "keywords";
-	
-	/**keywords table 2*/
+
+	/** keywords table 2 */
 	public static final String DATABASE_TABLE2 = "keywords2";
-	
-	/**current user name or id*/
+
+	/** current user name or id */
 	public static String intervieweeName;
-	
-	/**current or last known location*/
+
+	/** current or last known location */
 	public static String location = "Unknown";
-	
-	/**holds connection response body*/
+
+	/** holds connection response body */
 	public static String data;
-	
-	
+
 	public static String URL;
-	public static String IMEI;	
-	public static boolean cancelConnection;	
-	
+	public static String IMEI;
+
 }

@@ -66,10 +66,10 @@ public class KeywordDownloader implements Runnable {
 				}
 
 			} catch (IOException e) {
-				Log.d(DEBUG_TAG, "Exception2: " + e.toString());
+				Log.d(DEBUG_TAG, "Exception: " + e.toString());
 				error = true;
 			}
-			Global.cancelConnection = false;
+
 			int connectionResult = Global.CONNECTION_SUCCESS;
 			if (error) {
 				connectionResult = Global.CONNECTION_ERROR;
@@ -104,7 +104,7 @@ public class KeywordDownloader implements Runnable {
 			response = httpConnection.getResponseCode();
 			responseContentLength = httpConnection.getContentLength();
 			Log.i(DEBUG_TAG, "SIZE: " + responseContentLength);
-			Global.cancelConnection = true;
+
 			Log.i(DEBUG_TAG, "RESPONSE CODE: " + Integer.toString(response));
 			if (response == HttpURLConnection.HTTP_OK) {
 				inputStream = httpConnection.getInputStream();

@@ -26,14 +26,13 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -48,10 +47,8 @@ import android.widget.Toast;
  */
 public class DisplaySearchResultsActivity extends Activity {
 	/** for debugging purposes in adb logcat */
-	private final String DEBUG_TAG = "Display";
+	private final String LOG_TAG = "DisplaySearchResultActivity";
 
-	private SubmitLocalSearchUsage submitInboxLog;
-	private KeywordDownloader keywordDownloader;
 	private KeywordParser keywordParser;
 
 	/** keywords database */
@@ -86,7 +83,7 @@ public class DisplaySearchResultsActivity extends Activity {
 	private boolean showBackButton = false;
 
 	/** set true for incomplete searches */
-	private boolean incomplete = false;
+	private boolean isIncompleteSearch = false;
 
 	/** set true when updating keywords */
 	private boolean isUpdatingKeywords = false;
@@ -97,15 +94,13 @@ public class DisplaySearchResultsActivity extends Activity {
 	/** inbox database */
 	public InboxAdapter inboxDatabase;
 
-	private Thread network;
-
 	/** view for inbox search results */
 	private TextView searchResultsTextView;
 
 	/** dialog shown during database initialization */
 	private static final int PARSE_DIALOG = 1;
 
-	/** dialog shown when accessing network resources */
+	/** dialog shown when accessing networkThread resources */
 	private static final int CONNECT_DIALOG = 2;
 
 	private ProgressDialog progressDialog;
@@ -122,54 +117,54 @@ public class DisplaySearchResultsActivity extends Activity {
 			activityTitle = activityTitle.concat(Global.intervieweeName);
 		}
 		setTitle(activityTitle);
-		searchDatabase = new Storage(this);
-		keywordDownloader = new KeywordDownloader(this.connectHandle);
-		keywordParser = new KeywordParser(this.getApplicationContext(),
+		this.searchDatabase = new Storage(this);
+
+		this.keywordParser = new KeywordParser(this.getApplicationContext(),
 				progressHandler, connectHandle);
 		Bundle extras = this.getIntent().getExtras();
 		if (extras != null) {
-			searchResult = extras.getString("content");
-			search = extras.getString("search");
-			name = extras.getString("name");
-			rowId = extras.getLong("rowId");
+			this.searchResult = extras.getString("content");
+			this.search = extras.getString("search");
+			this.name = extras.getString("name");
+			this.rowId = extras.getLong("rowId");
 			// From SearchActivity
-			incomplete = extras.getBoolean("send", false);
-			request = extras.getString("request");
-			location = extras.getString("location");
+			this.isIncompleteSearch = extras.getBoolean("send", false);
+			this.request = extras.getString("request");
+			this.location = extras.getString("location");
 		}
-		searchResultsTextView = (TextView) findViewById(R.id.content_view);
+		this.searchResultsTextView = (TextView) findViewById(R.id.content_view);
 		TextView mSearch = (TextView) findViewById(R.id.search);
 		TextView mDate = (TextView) findViewById(R.id.Date_time);
-		backButton = (Button) findViewById(R.id.back_button);
-		deleteButton = (Button) findViewById(R.id.delete_button);
-		sendButton = (Button) findViewById(R.id.send_button);
+		this.backButton = (Button) findViewById(R.id.back_button);
+		this.deleteButton = (Button) findViewById(R.id.delete_button);
+		this.sendButton = (Button) findViewById(R.id.send_button);
 
 		try {
-			inboxDatabase = new InboxAdapter(this);
-			inboxDatabase.open();
+			this.inboxDatabase = new InboxAdapter(this);
+			this.inboxDatabase.open();
 			if (searchResult != null) {
-				rowId = inboxDatabase.insertRecord(search, searchResult, name,
-						"", "Complete", "");
+				this.rowId = inboxDatabase.insertRecord(search, searchResult,
+						name, "", "Complete", "");
 				// Newly completed search. Do not log for submission.
 				isCachedSearch = false;
-			} else if (incomplete) {
+			} else if (isIncompleteSearch) {
 				// Save as incomplete search
-				rowId = inboxDatabase.insertRecord(search, getString(
+				this.rowId = inboxDatabase.insertRecord(search, getString(
 						R.string.search_failure, search), name, location,
 						"Incomplete", request);
 			} else {
 				// From the list view, so return to it when done
-				showBackButton = true;
-				backButton.setText(getString(R.string.back_button));
+				this.showBackButton = true;
+				this.backButton.setText(getString(R.string.back_button));
 			}
-			if (!showBackButton) {
-				backButton.setText(getString(R.string.new_button));
-				backButton.setTextSize(15);
+			if (!this.showBackButton) {
+				this.backButton.setText(getString(R.string.new_button));
+				this.backButton.setTextSize(15);
 			}
 			/**
 			 * rowId is either supplied through a bundle or at database insert
 			 */
-			Cursor inboxCursor = inboxDatabase.readRecord(rowId);
+			Cursor inboxCursor = this.inboxDatabase.readRecord(rowId);
 			int titleColumn = inboxCursor
 					.getColumnIndexOrThrow(InboxAdapter.KEY_TITLE);
 			int bodyColumn = inboxCursor
@@ -186,13 +181,13 @@ public class DisplaySearchResultsActivity extends Activity {
 					.getColumnIndexOrThrow(InboxAdapter.KEY_LOCATION);
 			if ((inboxCursor.getString(statusColumn))
 					.contentEquals("Incomplete")) {
-				incomplete = true;
+				this.isIncompleteSearch = true;
 			}
-			if (request == null || (request.length() == 0)) {
-				request = inboxCursor.getString(requestColumn);
+			if (this.request == null || (this.request.length() == 0)) {
+				this.request = inboxCursor.getString(requestColumn);
 			}
-			if (location == null || (location.length() == 0)) {
-				location = inboxCursor.getString(locationColumn);
+			if (this.location == null || (this.location.length() == 0)) {
+				this.location = inboxCursor.getString(locationColumn);
 			}
 			if (name == null || (name.length() == 0)) {
 				name = inboxCursor.getString(nameColumn);
@@ -211,17 +206,17 @@ public class DisplaySearchResultsActivity extends Activity {
 			searchResultsTextView.setText(e.toString());
 		}
 
-		if (incomplete) {
+		if (isIncompleteSearch) {
 			sendButton.setEnabled(true);
 		} else {
 			sendButton.setEnabled(false);
 			if (isCachedSearch) {
 				insertLogEntry();
-				//We will submit the log at the next scheduled synchronization
+				// We will submit the log at the next scheduled synchronization
 			}
 
 		}
-		if (incomplete) {
+		if (isIncompleteSearch) {
 			backButton.setOnClickListener(new OnClickListener() {
 				public void onClick(View v) {
 					if (showBackButton) {
@@ -300,24 +295,12 @@ public class DisplaySearchResultsActivity extends Activity {
 		sendButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				isUpdatingKeywords = false;
-				String url = getURL();
-				url = url.concat("?keyword=");
-				url = url.concat(request.replace(" ", "%20"));
-				TelephonyManager mTelephonyMngr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-				String imei = mTelephonyMngr.getDeviceId();
-				try {
-					submissionTime = URLEncoder.encode(submissionTime, "UTF-8");
-				} catch (UnsupportedEncodingException e) {
-
-				}
-				url = url.concat("&interviewee_id=" + name.replace(" ", "%20")
-						+ "&handset_id=" + imei + "&location=" + location
-						+ "&handset_submit_time=" + submissionTime);
-				Global.URL = url;
-				network = new Thread(keywordDownloader);
+				String requestString = getRequestString();
 				showDialog(CONNECT_DIALOG);
-				network.start();
-				incomplete = false;
+				SynchronizeTask synchronizeTask = new SynchronizeTask(
+						connectHandle, getApplicationContext());
+				synchronizeTask.getSearchResults(requestString);
+				isIncompleteSearch = false;
 			}
 		});
 		inboxDatabase.close();
@@ -328,18 +311,22 @@ public class DisplaySearchResultsActivity extends Activity {
 	 * 
 	 * @return url string
 	 */
-	private String getURL() {
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(getBaseContext());
-		String url = settings.getString(Settings.KEY_SERVER,
-				getString(R.string.server));
-		if (url.endsWith("/")) {
-			url = url.concat(getString(R.string.search_path));
-		} else {
-			url = url.concat("/" + getString(R.string.search_path));
-		}
+	private String getRequestString() {
+		String request = "";
+		request = request.concat("?keyword=");
+		request = request.concat(request.replace(" ", "%20"));
+		TelephonyManager mTelephonyMngr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+		String imei = mTelephonyMngr.getDeviceId();
+		try {
+			submissionTime = URLEncoder.encode(submissionTime, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
 
-		return url;
+		}
+		request = request.concat("&interviewee_id=" + name.replace(" ", "%20")
+				+ "&handset_id=" + imei + "&location=" + location
+				+ "&handset_submit_time=" + submissionTime);
+
+		return request;
 	}
 
 	@Override
@@ -372,7 +359,7 @@ public class DisplaySearchResultsActivity extends Activity {
 	};
 
 	/**
-	 * handles responses from network layer
+	 * handles responses from networkThread layer
 	 */
 	public Handler connectHandle = new Handler() {
 		@Override
@@ -415,6 +402,8 @@ public class DisplaySearchResultsActivity extends Activity {
 				}
 				break;
 			case Global.KEYWORD_PARSE_SUCCESS:
+				// Release synchronization lock
+				KeywordSynchronizer.completeSynchronization();
 				dismissDialog(PARSE_DIALOG);
 				Toast.makeText(getApplicationContext(),
 						getString(R.string.refreshed), Toast.LENGTH_LONG)
@@ -439,15 +428,23 @@ public class DisplaySearchResultsActivity extends Activity {
 				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
 						dialog.cancel();
+						// Release synchronization lock
+						KeywordSynchronizer.completeSynchronization();
 						isUpdatingKeywords = false;
 					}
 				}).setNegativeButton("Retry",
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
 								dialog.cancel();
-								network = new Thread(keywordDownloader);
 								showDialog(CONNECT_DIALOG);
-								network.start();
+								SynchronizeTask synchronizeTask = new SynchronizeTask(
+										connectHandle, getApplicationContext());
+								if (isUpdatingKeywords) {
+									synchronizeTask.updateKeywords();
+								} else {
+									synchronizeTask
+											.getSearchResults(getRequestString());
+								}
 							}
 						});
 		AlertDialog alert = builder.create();
@@ -497,28 +494,30 @@ public class DisplaySearchResultsActivity extends Activity {
 				.setIcon(R.drawable.search);
 		menu.add(0, Global.INBOX_ID, 0, getString(R.string.menu_inbox))
 				.setIcon(R.drawable.folder);
-		menu.add(0, Global.REFRESH_ID, 0, getString(R.string.menu_refresh))
+		menu.add(1, Global.REFRESH_ID, 0, getString(R.string.menu_refresh))
 				.setIcon(R.drawable.refresh);
 		menu.add(0, Global.ABOUT_ID, 0, getString(R.string.menu_about))
 				.setIcon(R.drawable.about);
 		menu.add(0, Global.EXIT_ID, 0, getString(R.string.menu_exit)).setIcon(
 				R.drawable.exit);
-
-		if (Global.intervieweeName == null) {
-			menu.setGroupEnabled(1, false);
-		}
 		return result;
-
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-
 		switch (item.getItemId()) {
 		case Global.RESET_ID:
-			Intent i = new Intent(getApplicationContext(), SearchActivity.class);
-			startActivity(i);
-			finish();
+			if (!KeywordSynchronizer.isSynchronizing()) {
+				// Get synchronization lock
+				if (KeywordSynchronizer.tryStartSynchronization()) {
+					Intent i = new Intent(getApplicationContext(),
+							SearchActivity.class);
+					startActivity(i);
+					finish();
+				} else {
+					Log.i(LOG_TAG, "Failed to get synchronization lock");
+				}
+			}
 			return true;
 		case Global.INBOX_ID:
 			Intent j = new Intent(getApplicationContext(),
@@ -527,21 +526,18 @@ public class DisplaySearchResultsActivity extends Activity {
 			finish();
 			return true;
 		case Global.REFRESH_ID:
-			isUpdatingKeywords = true;
-			searchDatabase.open();
-			SharedPreferences settings = PreferenceManager
-					.getDefaultSharedPreferences(getBaseContext());
-			String url = settings.getString(Settings.KEY_SERVER,
-					getString(R.string.server));
-			if (url.endsWith("/")) {
-				url = url.concat(getString(R.string.update_path));
-			} else {
-				url = url.concat("/" + getString(R.string.update_path));
+			if (!KeywordSynchronizer.isSynchronizing()) {
+				isUpdatingKeywords = true;
+				// Acquire synchronization lock
+				if (KeywordSynchronizer.tryStartSynchronization()) {
+					SynchronizeTask synchronizeTask = new SynchronizeTask(
+							this.connectHandle, this.getApplicationContext());
+					showDialog(CONNECT_DIALOG);
+					synchronizeTask.updateKeywords();
+				} else {
+					Log.i(LOG_TAG, "Failed to get synchronization lock");
+				}
 			}
-			Global.URL = url;
-			network = new Thread(keywordDownloader);
-			showDialog(CONNECT_DIALOG);
-			network.start();
 			return true;
 		case Global.HOME_ID:
 			Intent l = new Intent(getApplicationContext(),
@@ -562,6 +558,17 @@ public class DisplaySearchResultsActivity extends Activity {
 	}
 
 	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		boolean result = super.onPrepareOptionsMenu(menu);
+		// Disable keyword update if background update is running
+		if (KeywordSynchronizer.isSynchronizing()) {
+			// Disable keyword updates and new searches
+			menu.setGroupEnabled(1, false);
+		}
+		return result;
+	}
+
+	@Override
 	protected void onPause() {
 		super.onPause();
 	}
@@ -569,6 +576,15 @@ public class DisplaySearchResultsActivity extends Activity {
 	@Override
 	protected void onStop() {
 		super.onStop();
+	}
+
+	@Override
+	public void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		android.util.Log.e(LOG_TAG, "-> onRestoreInstanceState()");
+		if (progressDialog != null) {
+			progressDialog.dismiss();
+		}
 	}
 
 }

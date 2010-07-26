@@ -21,14 +21,13 @@ import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
 import android.text.InputFilter;
 import android.text.Spanned;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -44,12 +43,11 @@ import android.widget.AdapterView.OnItemClickListener;
  * 
  */
 public class InboxListActivity extends ListActivity {
+	private final String LOG_TAG = "InboxListActivity";
 	private InboxAdapter inbox;
 	private KeywordDownloader keywordDownloader;
 	private KeywordParser keywordParser;
 	public Storage searchDatabase;
-
-	private Cursor cursor;
 	private AlertDialog alertDialog;
 	private ListView listView;
 	private String activityTitle;
@@ -69,20 +67,26 @@ public class InboxListActivity extends ListActivity {
 	/** set true when the inbox is empty */
 	private boolean empty = false;
 
+	SynchronizeTask synchronizeTask;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		Cursor cursor;
 		super.onCreate(savedInstanceState);
 		Bundle extras = this.getIntent().getExtras();
 		boolean block = true;
 		if (extras != null) {
 			block = extras.getBoolean("block", true);
 		}
-		inbox = new InboxAdapter(this);
+		this.synchronizeTask = new SynchronizeTask(this.connectHandle, this
+				.getApplicationContext());
+		this.inbox = new InboxAdapter(this);
 		ArrayList<String> results = new ArrayList<String>();
-		inbox.open();
-		cursor = inbox.fetchAllRecords();
+		this.inbox.open();
+		cursor = this.inbox.fetchAllRecords();
 		startManagingCursor(cursor);
-		activityTitle = getString(R.string.inbox_title) + "("
+		// inbox.close();
+		this.activityTitle = getString(R.string.inbox_title) + "("
 				+ cursor.getCount() + ")";
 		// If we're coming from the home screen do not ask for id confirmation
 		if (block) {
@@ -137,7 +141,6 @@ public class InboxListActivity extends ListActivity {
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			public void onItemClick(AdapterView<?> parent, View view,
 					int position, long id) {
-				cursor.close();
 				if (!empty) {
 
 					Intent i = new Intent(view.getContext(),
@@ -210,6 +213,8 @@ public class InboxListActivity extends ListActivity {
 				}
 				break;
 			case Global.KEYWORD_PARSE_SUCCESS:
+				// Release synchronization lock
+				KeywordSynchronizer.completeSynchronization();
 				dismissDialog(PARSE_DIALOG);
 				Toast.makeText(getApplicationContext(),
 						getString(R.string.refreshed), Toast.LENGTH_LONG)
@@ -234,15 +239,15 @@ public class InboxListActivity extends ListActivity {
 		builder.setMessage(R.string.connection_error).setCancelable(false)
 				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
+						// Release synchronization lock
+						KeywordSynchronizer.completeSynchronization();
 						dialog.cancel();
 					}
 				}).setNegativeButton("Retry",
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
 								dialog.cancel();
-								network = new Thread(keywordDownloader);
-								showDialog(CONNECT_DIALOG);
-								network.start();
+								synchronizeTask.updateKeywords();
 							}
 						});
 		AlertDialog alert = builder.create();
@@ -303,15 +308,16 @@ public class InboxListActivity extends ListActivity {
 	 * obtains and displays the currently set user ID in title bar
 	 */
 	private void showCurrentUser() {
-		activityTitle = activityTitle.concat(" | ");
+		this.activityTitle = this.activityTitle.concat(" | ");
 		if (Global.intervieweeName.length() > 30) {
-			activityTitle = activityTitle.concat(Global.intervieweeName
-					.substring(0, 30));
-			activityTitle = activityTitle.concat("...");
+			this.activityTitle = this.activityTitle
+					.concat(Global.intervieweeName.substring(0, 30));
+			this.activityTitle = this.activityTitle.concat("...");
 		} else {
-			activityTitle = activityTitle.concat(Global.intervieweeName);
+			this.activityTitle = this.activityTitle
+					.concat(Global.intervieweeName);
 		}
-		setTitle(activityTitle);
+		setTitle(this.activityTitle);
 	}
 
 	/**
@@ -335,9 +341,9 @@ public class InboxListActivity extends ListActivity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 
 		boolean result = super.onCreateOptionsMenu(menu);
-		menu.add(2, Global.RESET_ID, 1, getString(R.string.menu_reset))
+		menu.add(1, Global.RESET_ID, 1, getString(R.string.menu_reset))
 				.setIcon(R.drawable.search);
-		menu.add(0, Global.REFRESH_ID, 2, getString(R.string.menu_refresh))
+		menu.add(1, Global.REFRESH_ID, 2, getString(R.string.menu_refresh))
 				.setIcon(R.drawable.refresh);
 		menu.add(0, Global.ABOUT_ID, 4, getString(R.string.menu_about))
 				.setIcon(R.drawable.about);
@@ -347,9 +353,16 @@ public class InboxListActivity extends ListActivity {
 				.setIcon(R.drawable.delete);
 		menu.add(0, Global.HOME_ID, 0, getString(R.string.menu_home)).setIcon(
 				R.drawable.home);
-		menu.setGroupEnabled(1, false);
-		if (Global.intervieweeName == null) {
-			menu.setGroupEnabled(2, false);
+
+		return result;
+	}
+
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		boolean result = super.onPrepareOptionsMenu(menu);
+		// Disable keyword updates and new searches
+		if (KeywordSynchronizer.isSynchronizing()) {
+			menu.setGroupEnabled(1, false);
 		}
 		return result;
 	}
@@ -359,12 +372,19 @@ public class InboxListActivity extends ListActivity {
 
 		switch (item.getItemId()) {
 		case Global.RESET_ID:
-			Intent i = new Intent(getApplicationContext(), SearchActivity.class);
-
-			if (searchDatabase != null)
-				searchDatabase.close();
-			startActivity(i);
-			finish();
+			if (!KeywordSynchronizer.isSynchronizing()) {
+				// Get synchronization lock
+				if (KeywordSynchronizer.tryStartSynchronization()) {
+					Intent i = new Intent(getApplicationContext(),
+							SearchActivity.class);
+					if (searchDatabase != null)
+						searchDatabase.close();
+					startActivity(i);
+					finish();
+				} else {
+					Log.i(LOG_TAG, "Failed to get synchronization lock");
+				}
+			}
 			return true;
 		case Global.HOME_ID:
 			Intent l = new Intent(getApplicationContext(),
@@ -376,24 +396,22 @@ public class InboxListActivity extends ListActivity {
 			finish();
 			return true;
 		case Global.REFRESH_ID:
-			searchDatabase = new Storage(this);
-			keywordDownloader = new KeywordDownloader(this.connectHandle);
-			keywordParser = new KeywordParser(this.getApplicationContext(), progressHandler,
-					connectHandle);
-			searchDatabase.open();
-			SharedPreferences settings = PreferenceManager
-					.getDefaultSharedPreferences(getBaseContext());
-			String url = settings.getString(Settings.KEY_SERVER,
-					getString(R.string.server));
-			if (url.endsWith("/")) {
-				url = url.concat(getString(R.string.update_path));
-			} else {
-				url = url.concat("/" + getString(R.string.update_path));
+			if (!KeywordSynchronizer.isSynchronizing()) {
+				// Get synchronization lock
+				if (KeywordSynchronizer.tryStartSynchronization()) {
+					keywordDownloader = new KeywordDownloader(
+							this.connectHandle);
+					keywordParser = new KeywordParser(this
+							.getApplicationContext(), progressHandler,
+							connectHandle);
+					SynchronizeTask synchronizeTask = new SynchronizeTask(
+							this.connectHandle, this.getApplicationContext());
+					showDialog(CONNECT_DIALOG);
+					synchronizeTask.updateKeywords();
+				} else {
+					Log.i(LOG_TAG, "Failed to get synchronization lock");
+				}
 			}
-			Global.URL = url;
-			network = new Thread(keywordDownloader);
-			showDialog(CONNECT_DIALOG);
-			network.start();
 			return true;
 		case Global.ABOUT_ID:
 			Intent k = new Intent(getApplicationContext(), AboutActivity.class);
@@ -415,6 +433,7 @@ public class InboxListActivity extends ListActivity {
 						public void onClick(DialogInterface dialog, int id) {
 							inbox
 									.deleteAllRecords(InboxAdapter.INBOX_DATABASE_TABLE);
+
 							dialog.cancel();
 							Intent j = new Intent(getApplicationContext(),
 									InboxListActivity.class);
@@ -452,5 +471,13 @@ public class InboxListActivity extends ListActivity {
 	@Override
 	protected void onStop() {
 		super.onStop();
+	}
+
+	@Override
+	public void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		if (progressDialog != null) {
+			progressDialog.dismiss();
+		}
 	}
 }

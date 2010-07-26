@@ -15,30 +15,28 @@ package yo.applab.ckwinfo;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.PreferenceActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
 public class Settings extends PreferenceActivity implements
-OnSharedPreferenceChangeListener{
+		OnSharedPreferenceChangeListener {
 	public static String KEY_SERVER = "server";
-        
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        addPreferencesFromResource(R.xml.preferences);
-        setTitle("Settings");
-        updateServer();
-    }
-    
-    private void updateServer() {
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		addPreferencesFromResource(R.xml.preferences);
+		setTitle("Settings");
+		updateServer();
+	}
+
+	private void updateServer() {
 		EditTextPreference editTextPreferences = (EditTextPreference) this
 				.getPreferenceScreen().findPreference(KEY_SERVER);
 		String urlString = editTextPreferences.getText();
@@ -50,61 +48,62 @@ OnSharedPreferenceChangeListener{
 			editTextPreferences.setText(urlString);
 			editTextPreferences.setSummary(urlString);
 		} else {
-			editTextPreferences.setText((String) editTextPreferences.getSummary());
+			editTextPreferences.setText((String) editTextPreferences
+					.getSummary());
 			Toast.makeText(getApplicationContext(), "Sorry, invalid URL!",
 					Toast.LENGTH_SHORT).show();
 		}
 	}
-      
-	 public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-	     updateServer();
-	    }
-	 
-	 private static boolean isValidUrl(String url) {
 
-	        try {
-	            new URL(url);
-	            return true;
-	        } catch (MalformedURLException e) {
-	            return false;
-	        }
+	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+			String key) {
+		updateServer();
+	}
 
-	    }
-	 
-	 @Override
-		public boolean onCreateOptionsMenu(Menu menu) {
-			// TODO Auto-generated method stub
-			boolean result = super.onCreateOptionsMenu(menu);
-			
-			menu.add(0, Global.BACK_ID, 0,
-							getString(R.string.menu_back)).setIcon(R.drawable.done);			
-			return result;
+	private static boolean isValidUrl(String url) {
+
+		try {
+			new URL(url);
+			return true;
+		} catch (MalformedURLException e) {
+			return false;
 		}
 
-		@Override
-		public boolean onOptionsItemSelected(MenuItem item) {
-			// TODO Auto-generated method stub
-			switch (item.getItemId()) {
-			
-			case Global.BACK_ID:				
-				finish();
-				return true;
-			}
-			return super.onOptionsItemSelected(item);
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// TODO Auto-generated method stub
+		boolean result = super.onCreateOptionsMenu(menu);
+
+		menu.add(0, Global.BACK_ID, 0, getString(R.string.menu_back)).setIcon(
+				R.drawable.done);
+		return result;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// TODO Auto-generated method stub
+		switch (item.getItemId()) {
+
+		case Global.BACK_ID:
+			finish();
+			return true;
 		}
-	 
-	  @Override
-	    protected void onPause() {
-	        super.onPause();
-	        getPreferenceScreen().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(
-	                this);
-	    }
+		return super.onOptionsItemSelected(item);
+	}
 
+	@Override
+	protected void onPause() {
+		super.onPause();
+		getPreferenceScreen().getSharedPreferences()
+				.unregisterOnSharedPreferenceChangeListener(this);
+	}
 
-	    @Override
-	    protected void onResume() {
-	        super.onResume();
-	        getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
-	    }
+	@Override
+	protected void onResume() {
+		super.onResume();
+		getPreferenceScreen().getSharedPreferences()
+				.registerOnSharedPreferenceChangeListener(this);
+	}
 }
-

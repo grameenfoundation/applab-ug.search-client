@@ -18,12 +18,11 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -33,10 +32,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class AboutActivity extends Activity {
+	private final String LOG_TAG = "AboutActivity";
 	private KeywordDownloader keywordDownloader;
 	private KeywordParser keywordParser;
 	public Storage searchDatabase;
-
 	private Thread network;
 	private Button closeButton;
 
@@ -47,17 +46,19 @@ public class AboutActivity extends Activity {
 	private static final int CONNECT_DIALOG = 2;
 
 	private ProgressDialog progressDialog;
+	private SynchronizeTask synchronizeTask;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		this.synchronizeTask = new SynchronizeTask(this.connectHandle, this
+				.getApplicationContext());
 		setContentView(R.layout.text_view);
 		setTitle(getString(R.string.about_activity));
 		TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 		String imei = telephonyManager.getDeviceId();
 		TextView phoneId = (TextView) findViewById(R.id.phone_id);
 		phoneId.setText("Phone ID: " + imei);
-
 		TextView nameAndVersion = (TextView) findViewById(R.id.name_version);
 		nameAndVersion.setText(getString(R.string.app_name) + "\nVersion: "
 				+ getString(R.string.app_version));
@@ -128,9 +129,10 @@ public class AboutActivity extends Activity {
 				} else {
 					errorDialog().show();
 				}
-
 				break;
 			case Global.KEYWORD_PARSE_SUCCESS:
+				// Release synchronization lock
+				KeywordSynchronizer.completeSynchronization();
 				dismissDialog(PARSE_DIALOG);
 				Toast.makeText(getApplicationContext(),
 						getString(R.string.refreshed), Toast.LENGTH_LONG)
@@ -154,14 +156,14 @@ public class AboutActivity extends Activity {
 		builder.setMessage(R.string.connection_error).setCancelable(false);
 		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
+				// Release lock
+				KeywordSynchronizer.completeSynchronization();
 				dialog.cancel();
 			}
 		}).setNegativeButton("Retry", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
 				dialog.cancel();
-				network = new Thread(keywordDownloader);
-				showDialog(CONNECT_DIALOG);
-				network.start();
+				synchronizeTask.updateKeywords();
 			}
 		});
 		AlertDialog alert = builder.create();
@@ -189,33 +191,52 @@ public class AboutActivity extends Activity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// TODO Auto-generated method stub
 		boolean result = super.onCreateOptionsMenu(menu);
-		menu.add(2, Global.RESET_ID, 0, getString(R.string.menu_reset))
+		menu.add(1, Global.RESET_ID, 0, getString(R.string.menu_reset))
 				.setIcon(R.drawable.search);
 		menu.add(0, Global.INBOX_ID, 0, getString(R.string.menu_inbox))
 				.setIcon(R.drawable.folder);
-		menu.add(0, Global.REFRESH_ID, 0, getString(R.string.menu_refresh))
+		menu.add(1, Global.REFRESH_ID, 0, getString(R.string.menu_refresh))
 				.setIcon(R.drawable.refresh);
 		menu.add(0, Global.EXIT_ID, 0, getString(R.string.close_button))
 				.setIcon(R.drawable.done);
 		menu.add(0, Global.HOME_ID, 0, getString(R.string.menu_home)).setIcon(
 				R.drawable.home);
-		menu.setGroupEnabled(1, false);
-		if (Global.intervieweeName == null) {
-			menu.setGroupEnabled(2, false);
+		return result;
+	}
+
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		boolean result = super.onPrepareOptionsMenu(menu);
+		// Disable keyword update if background update is running
+		if (KeywordSynchronizer.isSynchronizing()) {
+			// Disable keyword updates and new searches
+			menu.setGroupEnabled(1, false);
 		}
+
 		return result;
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		
+
 		switch (item.getItemId()) {
 		case Global.RESET_ID:
-			Intent i = new Intent(getApplicationContext(), SearchActivity.class);
-			if (searchDatabase != null)//TODO OKP-1#CFR-29, create a private cleanup method
-				searchDatabase.close();
-			startActivity(i);
-			finish();
+			if (!KeywordSynchronizer.isSynchronizing()) {
+				// Get synchronization lock
+				if (KeywordSynchronizer.tryStartSynchronization()) {
+					Intent i = new Intent(getApplicationContext(),
+							SearchActivity.class);
+					if (searchDatabase != null)
+						// TODO OKP-1#CFR-29, create a
+						// private
+						// cleanup method
+						searchDatabase.close();
+					startActivity(i);
+					finish();
+				} else {
+					Log.i(LOG_TAG, "Failed to get synchronization lock");
+				}
+			}
 			return true;
 		case Global.INBOX_ID:
 			Intent j = new Intent(getApplicationContext(),
@@ -226,24 +247,20 @@ public class AboutActivity extends Activity {
 			finish();
 			return true;
 		case Global.REFRESH_ID:
-			searchDatabase = new Storage(this);
-			keywordDownloader = new KeywordDownloader(this.connectHandle);
-			keywordParser = new KeywordParser(this.getApplicationContext(),
-					progressHandler, connectHandle);
-			searchDatabase.open();
-			SharedPreferences settings = PreferenceManager
-					.getDefaultSharedPreferences(getBaseContext());
-			String url = settings.getString(Settings.KEY_SERVER,
-					getString(R.string.server));
-			if (url.endsWith("/")) {
-				url = url.concat(getString(R.string.update_path));
-			} else {
-				url = url.concat("/" + getString(R.string.update_path));
+			if (!KeywordSynchronizer.isSynchronizing()) {
+				// Get synchronization lock
+				if (KeywordSynchronizer.tryStartSynchronization()) {
+					keywordParser = new KeywordParser(this
+							.getApplicationContext(), progressHandler,
+							connectHandle);
+					SynchronizeTask synchronizeTask = new SynchronizeTask(
+							this.connectHandle, this.getApplicationContext());
+					showDialog(CONNECT_DIALOG);
+					synchronizeTask.updateKeywords();
+				} else {
+					Log.i(LOG_TAG, "Failed to get synchronization lock");
+				}
 			}
-			Global.URL = url;
-			network = new Thread(keywordDownloader);
-			showDialog(CONNECT_DIALOG);
-			network.start();
 			return true;
 		case Global.HOME_ID:
 			Intent l = new Intent(getApplicationContext(),
@@ -265,7 +282,9 @@ public class AboutActivity extends Activity {
 	@Override
 	public void onRestoreInstanceState(Bundle savedInstanceState) {
 		super.onRestoreInstanceState(savedInstanceState);
-		progressDialog.dismiss();
+		if (progressDialog != null) {
+			progressDialog.dismiss();
+		}
 	}
 
 }

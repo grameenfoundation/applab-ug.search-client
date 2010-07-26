@@ -1,8 +1,8 @@
 package yo.applab.ckwinfo;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLEncoder;
 
 import android.content.ContentValues;
@@ -15,13 +15,13 @@ import android.util.Log;
  */
 public class SubmitIncompleteSearches {
 	/** an identifier for debugging purposes **/
-	private final String LOG_TAG = "Submit_Log";
-	private String serverUri;
-	private Context applicationContext;	
+	private final String LOG_TAG = "SubmitIncomplete";
+	private String serverUrl;
+	private Context applicationContext;
 
 	public SubmitIncompleteSearches(Context applicationContext, String uri) {
 		this.applicationContext = applicationContext;
-		this.serverUri = uri;
+		this.serverUrl = uri;
 	}
 
 	/**
@@ -29,41 +29,41 @@ public class SubmitIncompleteSearches {
 	 */
 	public void updateIncompleteSearches() {
 		final ContentValues contentValues = new ContentValues();
-		final InboxAdapter inboxAdapter = new InboxAdapter(this.applicationContext);
+		final InboxAdapter inboxAdapter = new InboxAdapter(
+				this.applicationContext);
 		inboxAdapter.open();
-
 		Thread connectThread = new Thread() {
 			public void run() {
-				URI uri;
-				try {
-					uri = new URI(serverUri
-							+ contentValues.getAsString("request"));					
-					String results = DownloadManager.retrieveData(uri);
-					if (results != null) {
-						inboxAdapter.updateRecord(
-								contentValues.getAsLong("ID"), results);
-						getIncompleteSearch(inboxAdapter, contentValues);
+				Log.i(LOG_TAG, "Updating incomplete searches...");
+				getIncompleteSearch(inboxAdapter, contentValues);
+				while (contentValues.size() > 0) {
+					Log.i(LOG_TAG, "Contents size: " + contentValues.size());
+					try {
+						URL url = new URL(serverUrl
+								+ contentValues.getAsString("request"));
+						String results = DownloadManager.retrieveData(url);
+						if (results != null) {
+							inboxAdapter.updateRecord(contentValues
+									.getAsLong("id"), results);
+							getIncompleteSearch(inboxAdapter, contentValues);
+						}
+					} catch (MalformedURLException e) {
+						Log
+								.d(LOG_TAG, "MalformedURLException: "
+										+ e.toString());
 					}
-				} catch (URISyntaxException e) {
-					Log.d(LOG_TAG, "URISyntaxException: " + e.toString());
 				}
-
+				inboxAdapter.close();
 			}
 		};
-		Log.i(LOG_TAG, "Content value size: "
-				+ Integer.toString(contentValues.size()));
-		if (contentValues.size() > 0) {
-			connectThread.start();
-		} else {
-			inboxAdapter.close();
-		}
-
+		connectThread.start();
 	}
 
 	/**
 	 * populates request URI and ID content values
 	 */
-	private void getIncompleteSearch(InboxAdapter inboxAdapter, ContentValues contentValues) {
+	private void getIncompleteSearch(InboxAdapter inboxAdapter,
+			ContentValues contentValues) {
 		contentValues.clear();
 		Cursor searchTableCursor = inboxAdapter.getPendingSearches();
 		if (searchTableCursor.getCount() > 0) {
@@ -92,12 +92,11 @@ public class SubmitIncompleteSearches {
 						+ "&handset_id="
 						+ URLEncoder.encode(Global.IMEI, "UTF-8");
 				contentValues.put("request", uri);
-				contentValues.put("ID", searchTableId);
+				contentValues.put("id", searchTableId);
 
 			} catch (UnsupportedEncodingException e) {
 				Log.e(LOG_TAG, "Bad URL: " + e);
 			}
 		}
-
 	}
 }

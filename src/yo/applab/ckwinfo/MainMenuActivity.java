@@ -27,6 +27,7 @@ import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
 import android.text.InputFilter;
 import android.text.Spanned;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -41,19 +42,15 @@ import android.widget.Toast;
  */
 public class MainMenuActivity extends Activity {
 	/** for debugging purposes in adb logcat */
-	private static final String DEBUG_TAG = "Home";
+	private static final String LOG_TAG = "Home";
 
 	private Button inboxButton;
 	private Button nextButton;
-	private EditText intervieweeNameEditBox ;
+	private EditText intervieweeNameEditBox;
 
 	/** database holding search keywords */
-	public Storage searchDatabase;
-
-	/** runnable class for establishing network connection */
-	private KeywordDownloader keywordDownloader;
-	private Thread network;
-
+	public Storage searchDatabase;	
+	
 	/** runnable class handling XML parsing and initializing keywords database */
 	private KeywordParser keywordParser;
 
@@ -66,29 +63,38 @@ public class MainMenuActivity extends Activity {
 	/** shown when parsing and initializing database */
 	private static final int PARSE_DIALOG = 3;
 
+	/** dialog shown in case a background update is underway */
+	private static final int WAIT_DIALOG = 4;
+
 	private ProgressDialog progressDialog;
 
 	/** true if keyword cache exists, false otherwise */
-	private boolean savedList = false;
+	private boolean cacheExists = false;
+
+	SynchronizeTask synchronizeTask;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);		
+		super.onCreate(savedInstanceState);
+		this.synchronizeTask = new SynchronizeTask(this.connectHandle, this
+				.getApplicationContext());
 		init();
 		setContentView(R.layout.main_menu);
-		// Display the current user in the activity title if available
+		// Display the current user in the activity title if available otherwise
+		// do launch synchronization
 		if (Global.intervieweeName == null) {
 			setTitle(getString(R.string.app_name));
-			//Make the IMEI available to other threads
-			if(Global.IMEI == null){
+			// Make the IMEI available to other threads
+			if (Global.IMEI == null) {
 				TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 				String imei = telephonyManager.getDeviceId();
 				Global.IMEI = imei;
 			}
-			SynchronizeTask synchronizeTask = new SynchronizeTask(this.connectHandle, this.getApplicationContext());
-			//Schedule recurring background tasks
-			synchronizeTask.scheduleRecurringTimer ();
-			//TODO OKP-98, at launch synchronization
+			// Do launch time synchronization unless this is an initial setup
+			// (@cacheExits is false)
+			if (cacheExists) {
+				this.synchronizeTask.startLaunchThread();
+			}
 		} else {
 			String activity_title = getString(R.string.app_name) + " | ";
 			if (Global.intervieweeName.length() > 30) {
@@ -100,11 +106,11 @@ public class MainMenuActivity extends Activity {
 			}
 			setTitle(activity_title);
 		}
-	
+
 		nextButton = (Button) findViewById(R.id.next_button);
 		inboxButton = (Button) findViewById(R.id.inbox_button);
 		inboxButton.setText(getString(R.string.inbox_button));
-		intervieweeNameEditBox  = (EditText) findViewById(R.id.EditText01);
+		intervieweeNameEditBox = (EditText) findViewById(R.id.EditText01);
 
 		// Filter out special characters from the input text
 		InputFilter filter = new InputFilter() {
@@ -123,16 +129,18 @@ public class MainMenuActivity extends Activity {
 			}
 		};
 
-		intervieweeNameEditBox .setFilters(new InputFilter[] { filter });
-		if (!savedList) {
+		intervieweeNameEditBox.setFilters(new InputFilter[] { filter });
+		if (!cacheExists) {
 			inboxButton.setEnabled(false);
 			nextButton.setEnabled(false);
 		}
 		inboxButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				String myEdit = intervieweeNameEditBox .getText().toString().trim();
+				String myEdit = intervieweeNameEditBox.getText().toString()
+						.trim();
 				if (myEdit.length() > 0) {
-					Global.intervieweeName = intervieweeNameEditBox .getText().toString();
+					Global.intervieweeName = intervieweeNameEditBox.getText()
+							.toString();
 					Intent i = new Intent(getApplicationContext(),
 							InboxListActivity.class);
 					i.putExtra("block", false);
@@ -151,15 +159,21 @@ public class MainMenuActivity extends Activity {
 		nextButton.setText(getString(R.string.next_button));
 		nextButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				String myEdit = intervieweeNameEditBox .getText().toString().trim();
+				String myEdit = intervieweeNameEditBox.getText().toString()
+						.trim();
 				if (myEdit.length() > 0) {
-
-					if (savedList) {
-						Global.intervieweeName = intervieweeNameEditBox .getText().toString();
-						Intent i = new Intent(getApplicationContext(),
-								SearchActivity.class);
-						startActivity(i);
-						finish();
+					// check if synchronization is on going if not get the lock
+					if (!KeywordSynchronizer.tryStartSynchronization()) {
+						showDialog(WAIT_DIALOG);
+					} else {
+						if (cacheExists) {
+							Global.intervieweeName = intervieweeNameEditBox
+									.getText().toString();
+							Intent i = new Intent(getApplicationContext(),
+									SearchActivity.class);
+							startActivity(i);
+							finish();
+						}
 					}
 				} else {
 					Toast.makeText(getApplicationContext(),
@@ -194,6 +208,12 @@ public class MainMenuActivity extends Activity {
 			progressDialog.setMessage(getString(R.string.parse_msg));
 			progressDialog.setCancelable(false);
 			return progressDialog;
+		case WAIT_DIALOG:
+			progressDialog = new ProgressDialog(this);
+			progressDialog.setMessage(getString(R.string.wait_on_background));
+			progressDialog.setIndeterminate(true);
+			progressDialog.setCancelable(true);
+			return progressDialog;
 		}
 		return null;
 	}
@@ -216,7 +236,7 @@ public class MainMenuActivity extends Activity {
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case Global.CONNECTION_ERROR:
-				if (savedList) {
+				if (cacheExists) {
 					dismissDialog(CONNECT_DIALOG);
 				} else {
 					dismissDialog(SETUP_DIALOG);
@@ -225,20 +245,21 @@ public class MainMenuActivity extends Activity {
 				break;
 			case Global.CONNECTION_SUCCESS:
 				if (Global.data.trim().endsWith("</Keywords>")) {
-					if (savedList) {
+					if (cacheExists) {
 						dismissDialog(CONNECT_DIALOG);
 					} else {
 						dismissDialog(SETUP_DIALOG);
 					}
 					showDialog(PARSE_DIALOG);
-					if(keywordParser == null){
-						keywordParser = new KeywordParser(getApplicationContext(), progressHandler,
+					if (keywordParser == null) {
+						keywordParser = new KeywordParser(
+								getApplicationContext(), progressHandler,
 								connectHandle);
 					}
 					Thread parser = new Thread(keywordParser);
 					parser.start();
 				} else {
-					if (savedList) {
+					if (cacheExists) {
 						dismissDialog(CONNECT_DIALOG);
 					} else {
 						dismissDialog(SETUP_DIALOG);
@@ -247,17 +268,32 @@ public class MainMenuActivity extends Activity {
 				}
 				break;
 			case Global.KEYWORD_PARSE_SUCCESS:
+				// Release synchronization lock
+				KeywordSynchronizer.completeSynchronization();
 				dismissDialog(PARSE_DIALOG);
 				Toast.makeText(getApplicationContext(),
 						getString(R.string.refreshed), Toast.LENGTH_LONG)
 						.show();
+				if (!cacheExists) {
+					// Start synchronization timer
+					synchronizeTask.scheduleRecurringTimer();
+				}
 				inboxButton.setEnabled(true);
 				nextButton.setEnabled(true);
-				savedList = true;
+				cacheExists = true;
 				break;
 			case Global.KEYWORD_PARSE_ERROR:
 				dismissDialog(PARSE_DIALOG);
 				errorDialog().show();
+				break;
+			case Global.DISMISS_WAIT_DIALOG:
+				try {
+					dismissDialog(WAIT_DIALOG);
+				} catch (IllegalArgumentException e) {
+					// Nothing to do. The dialog may no longer be showing since
+					// it is
+					// cancelable.
+				}
 				break;
 			}
 		}
@@ -275,19 +311,24 @@ public class MainMenuActivity extends Activity {
 		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
 				dialog.cancel();
-				if (searchDatabase != null)
+				KeywordSynchronizer.completeSynchronization();
+				if (searchDatabase != null) {
 					searchDatabase.close();
+				}
+				// Start synchronization timer
+				if (!cacheExists) {
+					synchronizeTask.scheduleRecurringTimer();
+				}
 			}
 		}).setNegativeButton("Retry", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
-				dialog.cancel();
-				network = new Thread(keywordDownloader);
-				if (savedList) {
-					showDialog(CONNECT_DIALOG);
-				} else {
-					showDialog(SETUP_DIALOG);
-				}
-				network.start();
+				dialog.cancel();				
+					if (cacheExists) {
+						showDialog(CONNECT_DIALOG);
+					} else {
+						showDialog(SETUP_DIALOG);
+					}
+					synchronizeTask.updateKeywords();				
 			}
 		});
 		AlertDialog alert = builder.create();
@@ -297,7 +338,7 @@ public class MainMenuActivity extends Activity {
 	/**
 	 * keywordParser error alert dialog builder.
 	 * 
-	 * @return A dialog.
+	 * @return dialog with dismiss button.
 	 */
 	public AlertDialog xmlDialog() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -315,21 +356,24 @@ public class MainMenuActivity extends Activity {
 	 * A start up check to see if search keywords are in database and initialize
 	 * setup if not.
 	 */
+	// TODO Eventually move this logic to the activity onStart method
 	private void init() {
-		if (checkKeywordsCache()) {
-			keywordParser = new KeywordParser(this.getApplicationContext(), progressHandler,
-					connectHandle);
-			keywordDownloader = new KeywordDownloader(this.connectHandle);
-			Global.URL = getURL();
-			network = new Thread(keywordDownloader);
+		if (isCacheEmpty()) {
+			keywordParser = new KeywordParser(this.getApplicationContext(),
+					progressHandler, connectHandle);
 			showDialog(SETUP_DIALOG);
-			network.start();
+			this.synchronizeTask.updateKeywords();
 		} else {
-			savedList = true;
+			cacheExists = true;
 		}
 	}
 
-	private boolean checkKeywordsCache() {
+	/**
+	 * check if the cache has keywords
+	 * 
+	 * @return true if no valid keywords exit, false otherwise
+	 */
+	private boolean isCacheEmpty() {
 		searchDatabase = new Storage(this);
 		searchDatabase.open();
 		// If we have content check if it is valid
@@ -367,7 +411,7 @@ public class MainMenuActivity extends Activity {
 
 		boolean result = super.onCreateOptionsMenu(menu);
 
-		menu.add(0, Global.REFRESH_ID, 0, getString(R.string.menu_refresh))
+		menu.add(1, Global.REFRESH_ID, 0, getString(R.string.menu_refresh))
 				.setIcon(R.drawable.refresh);
 		menu.add(0, Global.ABOUT_ID, 0, getString(R.string.menu_about))
 				.setIcon(R.drawable.about);
@@ -380,18 +424,36 @@ public class MainMenuActivity extends Activity {
 	}
 
 	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		boolean result = super.onPrepareOptionsMenu(menu);
+		// Disable keyword update if background update is running
+		if (KeywordSynchronizer.isSynchronizing()) {
+			// Disable keyword updates and new searches
+			menu.setGroupEnabled(1, false);
+		}
+		return result;
+	}
 
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 
 		case Global.REFRESH_ID:
-			SynchronizeTask synchronizeTask = new SynchronizeTask(this.connectHandle, this.getApplicationContext());
-			synchronizeTask.updateKeywords();
-			if (savedList) {
-				showDialog(CONNECT_DIALOG);
-			} else {
-				showDialog(SETUP_DIALOG);
-			}			
+			if (!KeywordSynchronizer.isSynchronizing()) {
+				// Acquire synchronization lock
+				if (KeywordSynchronizer.tryStartSynchronization()) {
+					SynchronizeTask synchronizeTask = new SynchronizeTask(
+							this.connectHandle, this.getApplicationContext());
+					synchronizeTask.updateKeywords();
+					if (cacheExists) {
+						showDialog(CONNECT_DIALOG);
+					} else {
+						showDialog(SETUP_DIALOG);
+					}
+				} else {
+					Log.i(LOG_TAG, "Failed to get synchronization lock");
+				}
+			}
 			return true;
 		case Global.ABOUT_ID:
 			Intent k = new Intent(getApplicationContext(), AboutActivity.class);
@@ -437,8 +499,10 @@ public class MainMenuActivity extends Activity {
 	@Override
 	public void onRestoreInstanceState(Bundle savedInstanceState) {
 		super.onRestoreInstanceState(savedInstanceState);
-		android.util.Log.e(DEBUG_TAG, "-> onRestoreInstanceState()");
-		progressDialog.dismiss();
+		android.util.Log.e(LOG_TAG, "-> onRestoreInstanceState()");
+		if (progressDialog != null) {
+			progressDialog.dismiss();
+		}
 	}
 
 }

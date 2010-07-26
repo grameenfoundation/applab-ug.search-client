@@ -61,6 +61,8 @@ public class KeywordParser implements Runnable {
 	/** table to update */
 	private String dbTable;
 
+	private String keywords;
+
 	/** handler to which responses are sent */
 	private Handler responseHandler;
 
@@ -69,6 +71,13 @@ public class KeywordParser implements Runnable {
 		this.applicationContext = appCntxt;
 		this.progressHandler = progressHandler;
 		this.responseHandler = activityHandler;
+	}
+
+	public KeywordParser(Context applicationContext, Handler updateHandler,
+			String newKeywords) {
+		this.applicationContext = applicationContext;
+		this.keywords = newKeywords;
+		this.responseHandler = updateHandler;
 	}
 
 	@Override
@@ -88,7 +97,11 @@ public class KeywordParser implements Runnable {
 						.newInstance();
 				DocumentBuilder db = dbf.newDocumentBuilder();
 				InputSource is = new InputSource();
-				is.setCharacterStream(new StringReader(Global.data));
+				if (keywords == null) {
+					is.setCharacterStream(new StringReader(Global.data));
+				} else {
+					is.setCharacterStream(new StringReader(keywords));
+				}
 				Document doc = db.parse(is);
 				NodeList nodes = doc.getElementsByTagName("Keyword");
 				int nodeCount = nodes.getLength();
@@ -102,14 +115,17 @@ public class KeywordParser implements Runnable {
 					NodeList word = element.getElementsByTagName("Keyword");
 					Element line = (Element) word.item(0);
 					store(getCharacterDataFromElement(line).split(" "));
-
-					if (i > 0) {
-						percent = ((double) i / total) * 100.0;
+					// For now if keywords are not passed in we're not updating
+					// on progress
+					if (keywords == null) {
+						if (i > 0) {
+							percent = ((double) i / total) * 100.0;
+						}
+						Message msg1 = progressHandler.obtainMessage();
+						b.putInt("node", (int) percent);
+						msg1.setData(b);
+						progressHandler.sendMessage(msg1);
 					}
-					Message msg1 = progressHandler.obtainMessage();
-					b.putInt("node", (int) percent);
-					msg1.setData(b);
-					progressHandler.sendMessage(msg1);
 				}
 
 			} catch (IOException e) {
@@ -140,19 +156,20 @@ public class KeywordParser implements Runnable {
 						// discard data in the other table
 						storage.deleteAll(Global.DATABASE_TABLE2);
 						// Notify handler: database initialization complete
-						responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_SUCCESS);
+						responseHandler
+								.sendEmptyMessage(Global.KEYWORD_PARSE_SUCCESS);
 						Log.d(LOG_TAG, "DELETED TABLE: "
 								+ Global.DATABASE_TABLE2);
 					} else {
 						// discard data in the other table
 						storage.deleteAll(Global.DATABASE_TABLE);
-						responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_SUCCESS);
+						responseHandler
+								.sendEmptyMessage(Global.KEYWORD_PARSE_SUCCESS);
 						Log.d(LOG_TAG, "DELETED TABLE: "
 								+ Global.DATABASE_TABLE);
 					}
 
 				}// TODO else let the handler know
-
 			}
 		} finally {
 			storage.close();

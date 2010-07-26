@@ -26,12 +26,10 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Gravity;
@@ -94,8 +92,6 @@ public class SearchActivity extends Activity {
 	/** holds selected keywords */
 	private ArrayList<String> selectedKeywords;
 
-	private Thread network;
-
 	private String location;
 	private String submissionTime;
 
@@ -118,15 +114,17 @@ public class SearchActivity extends Activity {
 	private int sequence = 0;
 
 	private KeywordParser keywordParser;
-	private KeywordDownloader keywordDownloader;
+
 	private SynchronizeTask synchronizeTask;
+
 	/** holds search state */
 	private ActivityState searchStateData;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		// setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		synchronizeTask = new SynchronizeTask(this.connectHandle, this
+				.getApplicationContext());
 		setContentView(R.layout.main);
 		String activityTitle = getString(R.string.app_name) + " | ";
 		if (Global.intervieweeName.length() > 30) {
@@ -148,20 +146,19 @@ public class SearchActivity extends Activity {
 		nextButtonSmall.setText(getString(R.string.next_button));
 		layout = (LinearLayout) findViewById(R.id.layout);
 		backButton.setText(getString(R.string.back_button));
-		this.synchronizeTask = new SynchronizeTask(this.connectHandle, this.getApplicationContext());
+
 		final ActivityState data = (ActivityState) getLastNonConfigurationInstance();
 		if (data == null) {
 			layout.setVisibility(View.GONE);
 			searchPath.setTextColor(R.drawable.black);
 			searchPath.bringToFront();
-
-			keywordDownloader = new KeywordDownloader(this.connectHandle);
 			keywordParser = new KeywordParser(this.getApplicationContext(),
 					progressHandler, connectHandle);
 			searchDatabase = new Storage(this);
-			searchDatabase.open();
 			selectedKeywords = new ArrayList<String>();
+			searchDatabase.open();
 			buildRadioList();
+
 		} else {
 			searchStateData = data;
 			selectedKeywords = new ArrayList<String>();
@@ -176,10 +173,11 @@ public class SearchActivity extends Activity {
 				query = query.concat(" >" + selectedKeywords.get(i));
 			}
 			searchPath.setText(query);
-			if (sequence > 0)
+			if (sequence > 0) {
 				startLayout.setVisibility(View.GONE);
-			else
+			} else {
 				layout.setVisibility(View.GONE);
+			}
 			buildRadioList();
 		}
 		nextButtonLarge.setOnClickListener(new OnClickListener() {
@@ -233,16 +231,17 @@ public class SearchActivity extends Activity {
 								Toast.LENGTH_SHORT).show();
 				}
 
-				if (canSubmitQuery) {					
-					if (searchDatabase != null){
+				if (canSubmitQuery) {
+					if (searchDatabase != null) {
 						searchDatabase.close();
 					}
 					try {
-						synchronizeTask.getSearchResults(getURL());
 						showDialog(CONNECT_DIALOG);
-					} catch (UnsupportedEncodingException e) {						
-						Log.e(LOG_TAG, "UnsupportedEncodingException: " + e.toString());
-					}					
+						synchronizeTask.getSearchResults(getURL());
+					} catch (UnsupportedEncodingException e) {
+						Log.e(LOG_TAG, "UnsupportedEncodingException: "
+								+ e.toString());
+					}
 					canSubmitQuery = false;
 				}
 				if (endOfKeywordSequence)
@@ -291,7 +290,7 @@ public class SearchActivity extends Activity {
 		String url = "";
 		String query = "";
 		String name = Global.intervieweeName;
-		location = Global.location;	
+		location = Global.location;
 		url = url.concat("?keyword=");
 
 		for (int i = 1; i < selectedKeywords.size(); i++) {
@@ -555,7 +554,6 @@ public class SearchActivity extends Activity {
 											.get(j));
 								}
 							}
-
 							i.putExtra("search", search);
 							// We have failed to send this query
 							i.putExtra("send", true);
@@ -575,10 +573,20 @@ public class SearchActivity extends Activity {
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
 								dialog.cancel();
-								network = new Thread(keywordDownloader);
 								showDialog(CONNECT_DIALOG);
-								network.start();
+								if (isUpdatingKeywords) {
+									SynchronizeTask synchronizeTask = new SynchronizeTask(
+											connectHandle,
+											getApplicationContext());
+									synchronizeTask.updateKeywords();
+								} else {
+									try {
+										synchronizeTask
+												.getSearchResults(getURL());
+									} catch (UnsupportedEncodingException e) {
 
+									}
+								}
 							}
 						});
 		AlertDialog message = builder.create();
@@ -619,6 +627,29 @@ public class SearchActivity extends Activity {
 		return table;
 	}
 
+	private AlertDialog confirmUpdateDialog() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(getString(R.string.refresh_confirm));
+		builder.setCancelable(false).setPositiveButton("Yes",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int id) {
+						isUpdatingKeywords = true;
+						SynchronizeTask synchronizeTask = new SynchronizeTask(
+								connectHandle, getApplicationContext());
+						showDialog(CONNECT_DIALOG);
+						synchronizeTask.updateKeywords();
+						dialog.cancel();
+					}
+				}).setNegativeButton("No",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int id) {
+						dialog.cancel();
+					}
+				});
+		AlertDialog alert = builder.create();
+		return alert;
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 
@@ -657,43 +688,7 @@ public class SearchActivity extends Activity {
 			finish();
 			return true;
 		case Global.REFRESH_ID:
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			builder.setMessage(getString(R.string.refresh_confirm))
-					.setCancelable(false).setPositiveButton("Yes",
-							new DialogInterface.OnClickListener() {
-								public void onClick(DialogInterface dialog,
-										int id) {
-									isUpdatingKeywords = true;
-									SharedPreferences settings = PreferenceManager
-											.getDefaultSharedPreferences(getBaseContext());
-									String url = settings.getString(
-											Settings.KEY_SERVER,
-											getString(R.string.server));
-									if (url.endsWith("/")) {
-										url = url
-												.concat(getString(R.string.update_path));
-									} else {
-										url = url
-												.concat("/"
-														+ getString(R.string.update_path));
-									}
-									Global.URL = url;
-
-									network = new Thread(keywordDownloader);
-									showDialog(CONNECT_DIALOG);
-									network.start();
-									dialog.cancel();
-								}
-							}).setNegativeButton("No",
-							new DialogInterface.OnClickListener() {
-								public void onClick(DialogInterface dialog,
-										int id) {
-									dialog.cancel();
-								}
-							});
-			AlertDialog alert = builder.create();
-			alert.show();
-
+			confirmUpdateDialog().show();
 			return true;
 		case Global.ABOUT_ID:
 			Intent k = new Intent(getApplicationContext(), AboutActivity.class);
@@ -723,6 +718,8 @@ public class SearchActivity extends Activity {
 	@Override
 	protected void onPause() {
 		super.onPause();
+		// release synchronization lock
+		KeywordSynchronizer.completeSynchronization();
 	}
 
 	@Override
@@ -734,6 +731,14 @@ public class SearchActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 		searchDatabase.open();
+	}
+
+	@Override
+	public void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		if (progressDialog != null) {
+			progressDialog.dismiss();
+		}
 	}
 
 }

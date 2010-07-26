@@ -18,15 +18,14 @@ import java.net.URLEncoder;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 
 /**
  * Looks for any usage logs pending for submission and attempts to submit them.
  */
-public class SubmitLocalSearchUsage implements Runnable {
+public class SubmitLocalSearchUsage {
 	/** an identifier for debugging purposes **/
-	private final String DEBUG_TAG = "Submit_Log";
+	private final String LOG_TAG = "SubmitUsageLog";
 
 	/** inbox content display activity **/
 
@@ -37,7 +36,7 @@ public class SubmitLocalSearchUsage implements Runnable {
 	private String serverBaseUrl;
 
 	private Context applicationContext;
-	
+
 	private InboxAdapter inboxAdapter;
 
 	SubmitLocalSearchUsage(Context appContext, String url) {
@@ -45,59 +44,55 @@ public class SubmitLocalSearchUsage implements Runnable {
 		this.serverBaseUrl = url;
 	}
 
-	@Override
-	public void run() {
-		sendLogs();
-	}
-
 	/**
-	 * Submit any available inbox access logs. Deletes logs once successfully
+	 * Submits any available inbox access logs. Deletes logs once successfully
 	 * submited.
 	 */
-	private void sendLogs() {
-		URL url;		
+	public void sendLogs() {
 		inboxAdapter = new InboxAdapter(applicationContext);
 		inboxAdapter.open();
-		HttpURLConnection connection = null;
-		String urlParameters = createUrlParams();
-		try {
-			while (urlParameters.length() > 0) {
-				Log.e(DEBUG_TAG, "PARAM.LEN: "
-						+ Integer.toString(urlParameters.length()));
-				serverBaseUrl = serverBaseUrl.concat(urlParameters);
-				url = new URL(serverBaseUrl);
-				connection = (HttpURLConnection) url.openConnection();
-				connection.setConnectTimeout(Global.TIMEOUT);
-				connection.setReadTimeout(Global.TIMEOUT);
-				connection.setRequestMethod("GET");
-				connection.connect();
-				int response = connection.getResponseCode();
-				Log
-						.e(DEBUG_TAG, "RESPONSE CODE: "
-								+ Integer.toString(response));
-				if (response == HttpURLConnection.HTTP_OK) {
-					Log.e(DEBUG_TAG, "DELETE INDEX: " + Long.toString(logId));
-					if (inboxAdapter.deleteRecord(InboxAdapter.ACCESS_LOG_DATABASE_TABLE,
-							logId)) {
-						urlParameters = createUrlParams();
-					} else {
-						break;
+		Thread submitThread = new Thread() {
+			public void run() {
+				Log.e(LOG_TAG, "Submitting usage logs...");
+				URL url;
+				HttpURLConnection connection = null;
+				String urlParameters = createUrlParams();
+				try {
+					while (urlParameters.length() > 0) {
+						serverBaseUrl = serverBaseUrl.concat(urlParameters);
+						url = new URL(serverBaseUrl);
+						connection = (HttpURLConnection) url.openConnection();
+						connection.setConnectTimeout(Global.TIMEOUT);
+						connection.setReadTimeout(Global.TIMEOUT);
+						connection.setRequestMethod("GET");
+						connection.connect();
+						int response = connection.getResponseCode();
+						if (response == HttpURLConnection.HTTP_OK) {
+							if (inboxAdapter.deleteRecord(
+									InboxAdapter.ACCESS_LOG_DATABASE_TABLE,
+									logId)) {
+								urlParameters = createUrlParams();
+							} else {
+								break;
+							}
+						} else {
+							break;
+						}
 					}
-				} else {
-					break;
+
+				} catch (Exception e) {
+					Log.e(LOG_TAG, "Exception: " + e.toString());
+				} finally {
+					if (connection != null) {
+						connection.disconnect();
+					}
+					if (inboxAdapter != null) {
+						inboxAdapter.close();
+					}
 				}
 			}
-
-		} catch (Exception e) {
-			Log.e(DEBUG_TAG, "Exception: " + e.toString());
-		} finally {
-			if (connection != null) {
-				connection.disconnect();
-			}
-			if (inboxAdapter != null) {
-				inboxAdapter.close();
-			}
-		}
+		};
+		submitThread.start();
 	}
 
 	/**
@@ -138,10 +133,9 @@ public class SubmitLocalSearchUsage implements Runnable {
 						+ "&handset_id="
 						+ URLEncoder.encode(Global.IMEI, "UTF-8");
 			} catch (UnsupportedEncodingException e) {
-				Log.e(DEBUG_TAG, "Bad URL: " + e);
+				Log.e(LOG_TAG, "Bad URL: " + e);
 			}
 		}
-		Log.e(DEBUG_TAG, "PARAMS: " + urlParams);
 		return urlParams;
 
 	}
