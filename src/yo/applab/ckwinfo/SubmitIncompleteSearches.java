@@ -46,6 +46,8 @@ public class SubmitIncompleteSearches {
 							inboxAdapter.updateRecord(contentValues
 									.getAsLong("id"), results);
 							getIncompleteSearch(inboxAdapter, contentValues);
+						} else {
+							break;
 						}
 					} catch (MalformedURLException e) {
 						Log

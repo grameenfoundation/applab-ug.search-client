@@ -20,17 +20,18 @@ import java.util.Date;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
@@ -43,16 +44,12 @@ import android.widget.Toast;
 
 /**
  * Displays search results.
- * 
  */
 public class DisplaySearchResultsActivity extends Activity {
 	/** for debugging purposes in adb logcat */
 	private final String LOG_TAG = "DisplaySearchResultActivity";
 
-	private KeywordParser keywordParser;
-
-	/** keywords database */
-	public Storage searchDatabase;
+	private static KeywordParser keywordParser;
 
 	/** interviewee name or ID */
 	private String name = "";
@@ -80,13 +77,13 @@ public class DisplaySearchResultsActivity extends Activity {
 	private long rowId;
 
 	/** set true to display "Back" button for inbox list view */
-	private boolean showBackButton = false;
+	private boolean showBackButton;
 
 	/** set true for incomplete searches */
-	private boolean isIncompleteSearch = false;
+	private boolean isIncompleteSearch;
 
 	/** set true when updating keywords */
-	private boolean isUpdatingKeywords = false;
+	private static boolean isUpdatingKeywords;
 
 	/** set true if this inbox access should be logged */
 	private boolean isCachedSearch = true;
@@ -97,13 +94,12 @@ public class DisplaySearchResultsActivity extends Activity {
 	/** view for inbox search results */
 	private TextView searchResultsTextView;
 
-	/** dialog shown during database initialization */
-	private static final int PARSE_DIALOG = 1;
-
-	/** dialog shown when accessing networkThread resources */
-	private static final int CONNECT_DIALOG = 2;
-
 	private ProgressDialog progressDialog;
+
+	private static KeywordDownloader keywordDownloader;
+
+	private static Thread parserThread;
+	private static Thread networkThread;
 
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -117,10 +113,6 @@ public class DisplaySearchResultsActivity extends Activity {
 			activityTitle = activityTitle.concat(Global.intervieweeName);
 		}
 		setTitle(activityTitle);
-		this.searchDatabase = new Storage(this);
-
-		this.keywordParser = new KeywordParser(this.getApplicationContext(),
-				progressHandler, connectHandle);
 		Bundle extras = this.getIntent().getExtras();
 		if (extras != null) {
 			this.searchResult = extras.getString("content");
@@ -261,49 +253,22 @@ public class DisplaySearchResultsActivity extends Activity {
 		}
 		deleteButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-
-				if (inboxDatabase.deleteRecord(
-						InboxAdapter.INBOX_DATABASE_TABLE, rowId)) {
-					Toast.makeText(getApplicationContext(),
-							getString(R.string.record_deleted),
-							Toast.LENGTH_LONG).show();
-				} else {
-					Toast.makeText(getApplicationContext(),
-							getString(R.string.record_notdeleted),
-							Toast.LENGTH_LONG).show();
-				}
-
-				if (showBackButton) {
-					Intent i = new Intent(getApplicationContext(),
-							InboxListActivity.class);
-					i.putExtra("name", name);
-					i.putExtra("location", location);
-					startActivity(i);
-					finish();
-				} else {
-					Intent i = new Intent(getApplicationContext(),
-							SearchActivity.class);
-					i.putExtra("name", name);
-					i.putExtra("location", location);
-					startActivity(i);
-					finish();
-				}
+				confirmDeleteDialog().show();
 			}
-
 		});
 
 		sendButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				isUpdatingKeywords = false;
+				DisplaySearchResultsActivity.isUpdatingKeywords = false;
 				String requestString = getRequestString();
-				showDialog(CONNECT_DIALOG);
+				showProgressDialog(Global.CONNECT_DIALOG);
 				SynchronizeTask synchronizeTask = new SynchronizeTask(
 						connectHandle, getApplicationContext());
 				synchronizeTask.getSearchResults(requestString);
 				isIncompleteSearch = false;
 			}
 		});
-		inboxDatabase.close();
+
 	}
 
 	/**
@@ -312,9 +277,9 @@ public class DisplaySearchResultsActivity extends Activity {
 	 * @return url string
 	 */
 	private String getRequestString() {
-		String request = "";
-		request = request.concat("?keyword=");
-		request = request.concat(request.replace(" ", "%20"));
+		String requestString = "";
+		requestString = requestString.concat("?keyword=");
+		requestString = requestString.concat(request.replace(" ", "%20"));
 		TelephonyManager mTelephonyMngr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 		String imei = mTelephonyMngr.getDeviceId();
 		try {
@@ -322,30 +287,12 @@ public class DisplaySearchResultsActivity extends Activity {
 		} catch (UnsupportedEncodingException e) {
 
 		}
-		request = request.concat("&interviewee_id=" + name.replace(" ", "%20")
-				+ "&handset_id=" + imei + "&location=" + location
-				+ "&handset_submit_time=" + submissionTime);
+		requestString = requestString.concat("&interviewee_id="
+				+ name.replace(" ", "%20") + "&handset_id=" + imei
+				+ "&location=" + location + "&handset_submit_time="
+				+ submissionTime);
 
-		return request;
-	}
-
-	@Override
-	protected Dialog onCreateDialog(int id) {
-		switch (id) {
-		case CONNECT_DIALOG:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setMessage(getString(R.string.progress_msg));
-			progressDialog.setIndeterminate(true);
-			progressDialog.setCancelable(false);
-			return progressDialog;
-		case PARSE_DIALOG:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			progressDialog.setMessage(getString(R.string.parse_msg));
-			progressDialog.setCancelable(false);
-			return progressDialog;
-		}
-		return null;
+		return requestString;
 	}
 
 	/**
@@ -366,17 +313,15 @@ public class DisplaySearchResultsActivity extends Activity {
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case Global.CONNECTION_ERROR:
-				dismissDialog(CONNECT_DIALOG);
+				progressDialog.dismiss();
 				errorDialog().show();
 				break;
 			case Global.CONNECTION_SUCCESS:
-				if (!isUpdatingKeywords) {
-					dismissDialog(CONNECT_DIALOG);
+				if (!DisplaySearchResultsActivity.isUpdatingKeywords) {
+					progressDialog.dismiss();
 					if (Global.data != null) {
-						inboxDatabase.open();
 						// Update content for this incomplete query
 						inboxDatabase.updateRecord(rowId, Global.data);
-						inboxDatabase.close();
 						// Reload this view by restarting itself.
 						Intent i = new Intent(getApplicationContext(),
 								DisplaySearchResultsActivity.class);
@@ -386,16 +331,18 @@ public class DisplaySearchResultsActivity extends Activity {
 						startActivity(i);
 						finish();
 					} else {
-						dismissDialog(CONNECT_DIALOG);
+						progressDialog.dismiss();
 						errorDialog().show();
 					}
 				} else {
-					dismissDialog(CONNECT_DIALOG);
 					if (Global.data.trim().endsWith("</Keywords>")) {
-						showDialog(PARSE_DIALOG);
-						Thread parse = new Thread(keywordParser);
-						parse.start();
-						isUpdatingKeywords = false;
+						showProgressDialog(Global.PARSE_DIALOG);
+						DisplaySearchResultsActivity.keywordParser = new KeywordParser(
+								getApplicationContext(), progressHandler,
+								connectHandle);
+						DisplaySearchResultsActivity.parserThread = new Thread(
+								keywordParser);
+						DisplaySearchResultsActivity.parserThread.start();
 					} else {
 						errorDialog().show();
 					}
@@ -404,13 +351,13 @@ public class DisplaySearchResultsActivity extends Activity {
 			case Global.KEYWORD_PARSE_SUCCESS:
 				// Release synchronization lock
 				KeywordSynchronizer.completeSynchronization();
-				dismissDialog(PARSE_DIALOG);
+				progressDialog.dismiss();
 				Toast.makeText(getApplicationContext(),
 						getString(R.string.refreshed), Toast.LENGTH_LONG)
 						.show();
 				break;
 			case Global.KEYWORD_PARSE_ERROR:
-				dismissDialog(PARSE_DIALOG);
+				progressDialog.dismiss();
 				errorDialog().show();
 				break;
 			}
@@ -430,18 +377,26 @@ public class DisplaySearchResultsActivity extends Activity {
 						dialog.cancel();
 						// Release synchronization lock
 						KeywordSynchronizer.completeSynchronization();
-						isUpdatingKeywords = false;
+						DisplaySearchResultsActivity.isUpdatingKeywords = false;
 					}
 				}).setNegativeButton("Retry",
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
 								dialog.cancel();
-								showDialog(CONNECT_DIALOG);
 								SynchronizeTask synchronizeTask = new SynchronizeTask(
 										connectHandle, getApplicationContext());
-								if (isUpdatingKeywords) {
-									synchronizeTask.updateKeywords();
+								if (DisplaySearchResultsActivity.isUpdatingKeywords) {
+									DisplaySearchResultsActivity.isUpdatingKeywords = true;
+									getServerUrl(R.string.update_path);
+									DisplaySearchResultsActivity.keywordDownloader = new KeywordDownloader(
+											connectHandle);
+									DisplaySearchResultsActivity.networkThread = new Thread(
+											keywordDownloader);
+									DisplaySearchResultsActivity.networkThread
+											.start();
+									showProgressDialog(Global.UPDATE_DIALOG);
 								} else {
+									showProgressDialog(Global.CONNECT_DIALOG);
 									synchronizeTask
 											.getSearchResults(getRequestString());
 								}
@@ -451,21 +406,41 @@ public class DisplaySearchResultsActivity extends Activity {
 		return alert;
 	}
 
-	/**
-	 * Parse error alert dialog builder.
-	 * 
-	 * @return A dialog.
-	 */
-	public AlertDialog xmlDialog() {
+	private AlertDialog confirmDeleteDialog() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setMessage("Error: Malformed XML").setCancelable(false)
-				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+		builder.setMessage(getString(R.string.delete_alert1)).setCancelable(
+				false).setPositiveButton("Yes",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int id) {
+						inboxDatabase.deleteRecord(
+								InboxAdapter.INBOX_DATABASE_TABLE, rowId);
+						Toast.makeText(getApplicationContext(),
+								getString(R.string.record_deleted),
+								Toast.LENGTH_LONG).show();
+
+						if (showBackButton) {
+							Intent i = new Intent(getApplicationContext(),
+									InboxListActivity.class);
+							i.putExtra("name", name);
+							i.putExtra("location", location);
+							startActivity(i);
+							finish();
+						} else {
+							Intent i = new Intent(getApplicationContext(),
+									SearchActivity.class);
+							i.putExtra("name", name);
+							i.putExtra("location", location);
+							startActivity(i);
+							finish();
+						}
+					}
+				}).setNegativeButton("No",
+				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
 						dialog.cancel();
 					}
 				});
-		AlertDialog alert = builder.create();
-		return alert;
+		return builder.create();
 	}
 
 	/**
@@ -482,6 +457,54 @@ public class DisplaySearchResultsActivity extends Activity {
 		log.put(InboxAdapter.KEY_NAME, Global.intervieweeName);
 		return inboxDatabase.insertLog(InboxAdapter.ACCESS_LOG_DATABASE_TABLE,
 				log);
+	}
+
+	/**
+	 * retrieves server URL from preferences
+	 * 
+	 * @param id
+	 *            string resource ID
+	 * @return server URL string
+	 */
+	private String getServerUrl(int id) {
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		String url = settings.getString(Settings.KEY_SERVER, this
+				.getString(R.string.server));
+		url = url.concat("/" + this.getString(id));
+		Global.URL = url;
+		return url;
+	}
+
+	/**
+	 * create and update progress dialogs
+	 * 
+	 * @param id
+	 *            progress dialog type
+	 */
+	private void showProgressDialog(int id) {
+		switch (id) {
+		case Global.UPDATE_DIALOG:
+			progressDialog = new ProgressDialog(this);
+			progressDialog.setMessage(getString(R.string.progress_msg));
+			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setIndeterminate(true);
+			progressDialog.setCancelable(false);
+			progressDialog.show();
+			break;
+		case Global.PARSE_DIALOG:
+			// Updates previously showing update dialog
+			progressDialog.setIndeterminate(false);
+			progressDialog.setMessage(getString(R.string.parse_msg));
+			break;
+		case Global.CONNECT_DIALOG:
+			progressDialog = new ProgressDialog(this);
+			progressDialog.setMessage(getString(R.string.progress_msg));
+			progressDialog.setIndeterminate(true);
+			progressDialog.setCancelable(false);
+			progressDialog.show();
+			break;
+		}
 	}
 
 	@Override
@@ -527,13 +550,16 @@ public class DisplaySearchResultsActivity extends Activity {
 			return true;
 		case Global.REFRESH_ID:
 			if (!KeywordSynchronizer.isSynchronizing()) {
-				isUpdatingKeywords = true;
+				DisplaySearchResultsActivity.isUpdatingKeywords = true;
 				// Acquire synchronization lock
 				if (KeywordSynchronizer.tryStartSynchronization()) {
-					SynchronizeTask synchronizeTask = new SynchronizeTask(
-							this.connectHandle, this.getApplicationContext());
-					showDialog(CONNECT_DIALOG);
-					synchronizeTask.updateKeywords();
+					showProgressDialog(Global.UPDATE_DIALOG);
+					getServerUrl(R.string.update_path);
+					DisplaySearchResultsActivity.keywordDownloader = new KeywordDownloader(
+							connectHandle);
+					DisplaySearchResultsActivity.networkThread = new Thread(
+							keywordDownloader);
+					DisplaySearchResultsActivity.networkThread.start();
 				} else {
 					Log.i(LOG_TAG, "Failed to get synchronization lock");
 				}
@@ -550,7 +576,6 @@ public class DisplaySearchResultsActivity extends Activity {
 			startActivity(k);
 			return true;
 		case Global.EXIT_ID:
-
 			this.finish();
 			return true;
 		}
@@ -569,22 +594,47 @@ public class DisplaySearchResultsActivity extends Activity {
 	}
 
 	@Override
-	protected void onPause() {
-		super.onPause();
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-	}
-
-	@Override
-	public void onRestoreInstanceState(Bundle savedInstanceState) {
-		super.onRestoreInstanceState(savedInstanceState);
-		android.util.Log.e(LOG_TAG, "-> onRestoreInstanceState()");
-		if (progressDialog != null) {
-			progressDialog.dismiss();
+	protected void onStart() {
+		super.onStart();
+		if (DisplaySearchResultsActivity.parserThread != null
+				&& DisplaySearchResultsActivity.parserThread.isAlive()) {
+			Log.i(LOG_TAG, "Parse thread alive.");
+			DisplaySearchResultsActivity.keywordParser.setHandlers(this
+					.getApplicationContext(), this.connectHandle,
+					this.progressHandler);
+			showProgressDialog(Global.UPDATE_DIALOG);
+			showProgressDialog(Global.CONNECT_DIALOG);
+			// Cross check that parser thread is still alive
+			if (!(DisplaySearchResultsActivity.parserThread != null && DisplaySearchResultsActivity.parserThread
+					.isAlive())) {
+				progressDialog.dismiss();
+			}
+		} else if (DisplaySearchResultsActivity.networkThread != null
+				&& DisplaySearchResultsActivity.networkThread.isAlive()) {
+			Log.i(LOG_TAG, "Network thread is alive.");
+			DisplaySearchResultsActivity.keywordDownloader
+					.swap(this.connectHandle);
+			showProgressDialog(Global.UPDATE_DIALOG);
 		}
 	}
 
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		android.util.Log.i(LOG_TAG, "-> onSaveInstanceState()");
+		// remove any showing dialog since activity is going to be recreated
+		if (progressDialog != null && progressDialog.isShowing()) {
+			android.util.Log.i(LOG_TAG, "Remove progress dialog");
+			progressDialog.dismiss();
+		}
+		// Flag for configuration changes
+		outState.putBoolean("changed", true);
+		// continue with the normal instance state save
+		super.onSaveInstanceState(outState);
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		inboxDatabase.close();
+	}
 }

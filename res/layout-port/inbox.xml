@@ -1,70 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<LinearLayout 
-	xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:id="@+id/rl" android:layout_width="fill_parent"
 	android:layout_height="fill_parent" android:orientation="vertical"
 	android:background="@drawable/white">
 
-	<TextView android:id="@+id/Date_time"
-		android:gravity="center" android:layout_width="fill_parent"
-		android:layout_height="wrap_content" android:paddingTop="6px"
-		android:paddingBottom="1px" android:textSize="21px" android:textStyle="bold"
-		 />
+	<RelativeLayout android:id="@+id/r5"
+		android:layout_width="fill_parent" android:layout_height="380dp"
+		android:orientation="vertical">
 
-	<TextView android:gravity="left" android:layout_width="fill_parent"
-		android:layout_height="wrap_content" android:paddingTop="1px"
-		android:paddingLeft="6px" android:paddingBottom="6px"
-		android:textSize="12px" android:textColor="@drawable/black"
-		android:textStyle="bold" android:text="@string/Keyword" />
+		<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+			android:layout_width="fill_parent" android:layout_height="wrap_content">
 
-	<TextView android:layout_width="fill_parent" android:id="@+id/search"
-		android:layout_height="50dp" android:textSize="8pt" 
-		android:textColor="@drawable/black" />
+			<RelativeLayout android:id="@+id/r2"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:orientation="vertical">
 
-	<TextView android:gravity="left" android:layout_width="fill_parent"
-		android:layout_height="wrap_content" android:paddingTop="1px"
-		android:paddingLeft="6px" android:paddingBottom="6px"
-		android:textStyle="bold" android:textColor="@drawable/black"
-		android:textSize="12px" android:text="@string/Content" />
+				<TextView android:id="@+id/Date_time"
+					android:layout_alignParentTop="true" android:layout_width="fill_parent"
+					android:layout_height="wrap_content" android:paddingTop="6px"
+					android:paddingBottom="2px" android:textSize="21px"
+					android:textStyle="bold" android:gravity="center"/>
+
+				<TextView android:gravity="left" android:layout_width="fill_parent"
+					android:layout_height="wrap_content" android:paddingTop="1px"
+					android:paddingLeft="6px" android:paddingBottom="6px"
+					android:textSize="21px" android:textColor="@drawable/black"
+					android:textStyle="bold" android:text="@string/Keyword"
+					android:layout_below="@+id/Date_time" android:id="@+id/Keyword" />
+
+				<TextView android:layout_width="fill_parent" android:id="@+id/search"
+					android:layout_height="50dp" android:textSize="8pt"
+					android:layout_below="@+id/Keyword" android:textColor="@drawable/black" 
+					android:paddingLeft="6px"/>
+
+				<TextView android:gravity="left" android:layout_width="fill_parent"
+					android:layout_height="wrap_content" android:paddingTop="1px"
+					android:paddingLeft="6px" android:paddingBottom="6px"
+					android:textStyle="bold" android:textColor="@drawable/black"
+					android:textSize="21px" android:id="@+id/Content"
+					android:layout_below="@+id/search" android:text="@string/Content" />
 
 
-	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-		android:id="@+id/r2" android:layout_width="fill_parent"
-		android:layout_height="235dp">
-		<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:orientation="vertical"  
-    android:layout_height="fill_parent" > 
-    	<TextView 
-    	android:gravity="left"
-    	android:id="@+id/content_view"
-    	android:layout_width="fill_parent"
-		android:layout_height="wrap_content" 
-		android:textColor="@drawable/black"
-		android:textSize="10pt" />
-    </ScrollView>
-	</LinearLayout>
+				<TextView android:gravity="left" android:id="@+id/content_view"
+					android:layout_width="fill_parent" android:layout_height="wrap_content"
+					android:textColor="@drawable/black" android:textSize="10pt"
+					android:layout_below="@+id/Content" android:paddingLeft="6px"/>
+
+			</RelativeLayout>
+		</ScrollView>
+	</RelativeLayout>
 
 	<TextView android:layout_width="fill_parent"
-		android:layout_height="wrap_content" android:textSize="3pt" android:layout_gravity="bottom"/>
-		
-	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-		android:id="@+id/r2" android:orientation="horizontal" android:background="@drawable/gray"
+		android:layout_height="wrap_content" android:textSize="1pt" />
 
-		android:layout_width="fill_parent" android:layout_height="wrap_content">
+	<LinearLayout android:id="@+id/LinearLayout"
+		android:orientation="horizontal" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:layout_alignParentBottom="true"
+		android:gravity="center"  android:background="@drawable/gray">
+
 		<Button android:id="@+id/delete_button" android:textColor="@drawable/black"
 			android:textSize="21px" android:layout_width="105dp"
-			android:layout_height="wrap_content" android:text="@string/delete_button"/>
-			
-			<Button android:id="@+id/send_button" android:textColor="@drawable/black"
+			android:layout_height="wrap_content" android:text="@string/delete_button"
+			android:layout_alignLeft="@+id/contentview"
+			android:layout_alignParentBottom="true" />
+
+		<Button android:id="@+id/send_button" android:textColor="@drawable/black"
 			android:textSize="21px" android:layout_width="105dp"
-			android:layout_height="wrap_content" android:text="@string/send_button"/>
+			android:layout_height="wrap_content" android:text="@string/send_button"
+			android:layout_toRightOf="@+id/delete_button"
+			android:layout_alignParentBottom="true" />
 
 		<Button android:id="@+id/back_button" android:textColor="@drawable/black"
 			android:textSize="21px" android:layout_width="105dp"
-			android:layout_height="wrap_content" />
+			android:layout_height="wrap_content" android:text="@string/back_button"
+			android:layout_alignRight="@+id/contentview"
+			android:layout_alignParentBottom="true" />
+
 	</LinearLayout>
 
-</LinearLayout>
+</RelativeLayout>

@@ -12,6 +12,7 @@ public class KeywordSynchronizer {
 	private static KeywordSynchronizer singleton = new KeywordSynchronizer();
 
 	private KeywordSynchronizer() {
+		this.canChangeDatabase = true;
 	}
 
 	/**
@@ -24,6 +25,10 @@ public class KeywordSynchronizer {
 	 */
 	public static boolean tryStartSynchronization() {
 		synchronized (KeywordSynchronizer.singleton) {
+			Log.e("Singleton", "isSynchronizing-> "
+					+ KeywordSynchronizer.singleton.isSynchronizing);
+			Log.e("Singleton", "canChangeDatabase-> "
+					+ KeywordSynchronizer.singleton.canChangeDatabase);
 			// Is there a running synchronization task?
 			if (KeywordSynchronizer.singleton.isSynchronizing) {
 				return false;

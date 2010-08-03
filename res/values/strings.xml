@@ -19,7 +19,7 @@
 <string name="connection_error">Unable to establish a connection</string>
 <string name="progress_msg">Loading. Please wait...</string>
 <string name="parse_msg">Initializing CKW Search...\nThis may take a few minutes.</string>
-<string name="progress_retrieve">Loading keywords for the first time. Please wait...</string>
+<string name="progress_initial">Loading keywords for the first time. Please wait...</string>
 <string name="progress_header">Initial setup</string>
 <string name="list_saved">Content saved successfully</string>
 <string name="list_notsaved">A problem occurred\nUnable to save content</string>
@@ -55,7 +55,8 @@
 <string name="inbox_empty">There are no saved results</string>
 <string name="menu_refresh">Update Keywords</string>
 <string name="refreshed">Keywords Updated</string>
-<string name="delete_alert">Are you sure you want to delete ALL results</string>
+<string name="delete_alert">Are you sure you want to delete ALL results?</string>
+<string name="delete_alert1">Are you sure you want to delete this result?</string>
 <string name="menu_home">Home</string>
 <string name="menu_delete">Delete All</string>
 <string name="menu_reset">New Search</string>

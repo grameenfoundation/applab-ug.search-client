@@ -5,7 +5,7 @@
       android:versionCode="69"
       android:versionName="1.2.0 b69">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:theme="@android:style/Theme.Light">
-        <activity android:name=".MainMenuActivity"
+        <activity android:name=".MainMenuActivity" 
                   android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

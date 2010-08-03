@@ -44,6 +44,16 @@ public class KeywordDownloader implements Runnable {
 		this.applicationHandler = handler;
 	}
 
+	/**
+	 * swaps out the handler in case of a configuration change during a previous
+	 * activity instance
+	 * 
+	 * @param handler
+	 */
+	public void swap(Handler handler) {
+		this.applicationHandler = handler;
+	}
+
 	@Override
 	public void run() {
 		boolean error = false;

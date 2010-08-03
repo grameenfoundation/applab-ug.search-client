@@ -21,15 +21,16 @@ import java.util.Date;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Gravity;
@@ -48,22 +49,11 @@ import android.widget.Toast;
  * Responsible for constructing, displaying keyword option sequences, and
  * submitting search queries.
  * 
- * @author Eric Lwanga (elwanga@yo.co.ug)
- * 
  */
 
 public class SearchActivity extends Activity {
 	/** for debugging purposes in adb logcat */
 	private static final String LOG_TAG = "Radio";
-
-	/** dialog shown between search sequences */
-	private static final int LOAD_DIALOG = 1;
-
-	/** dialog shown when accessing network resources */
-	private static final int CONNECT_DIALOG = 2;
-
-	/** dialog shown during database initialization */
-	private static final int PARSE_DIALOG = 3;
 
 	/** database where search keywords are stored */
 	private Storage searchDatabase;
@@ -108,21 +98,37 @@ public class SearchActivity extends Activity {
 	private boolean endOfKeywordSequence = false;
 
 	/** set true when updating keywords */
-	private boolean isUpdatingKeywords = false;
+	private static boolean isUpdatingKeywords;
 
 	/** search sequence number */
 	private int sequence = 0;
 
-	private KeywordParser keywordParser;
+	private static KeywordParser keywordParser;
+
+	private static KeywordDownloader keywordDownloader;
 
 	private SynchronizeTask synchronizeTask;
 
 	/** holds search state */
 	private ActivityState searchStateData;
 
+	private static Thread parserThread;
+	private static Thread networkThread;
+
+	/** true if there has been a configuration change */
+	private boolean configurationChanged;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		this.searchDatabase = new Storage(this);
+		this.searchDatabase.open();
+		if (savedInstanceState != null) {
+			configurationChanged = savedInstanceState.getBoolean("changed");
+			if (configurationChanged) {
+				Log.w(LOG_TAG, "Activity RESTART");
+			}
+		}
 		synchronizeTask = new SynchronizeTask(this.connectHandle, this
 				.getApplicationContext());
 		setContentView(R.layout.main);
@@ -154,16 +160,12 @@ public class SearchActivity extends Activity {
 			searchPath.bringToFront();
 			keywordParser = new KeywordParser(this.getApplicationContext(),
 					progressHandler, connectHandle);
-			searchDatabase = new Storage(this);
 			selectedKeywords = new ArrayList<String>();
-			searchDatabase.open();
 			buildRadioList();
 
 		} else {
 			searchStateData = data;
 			selectedKeywords = new ArrayList<String>();
-			searchDatabase = new Storage(this);
-			searchDatabase.open();
 			sequence = data.myField;
 			selectedKeywords = data.mySelect;
 			canSubmitQuery = data.canSubmitQuery;
@@ -178,7 +180,9 @@ public class SearchActivity extends Activity {
 			} else {
 				layout.setVisibility(View.GONE);
 			}
-			buildRadioList();
+			if (!SearchActivity.isUpdatingKeywords) {
+				buildRadioList();
+			}
 		}
 		nextButtonLarge.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
@@ -202,8 +206,8 @@ public class SearchActivity extends Activity {
 					toast.setGravity(Gravity.CENTER, 0, 0);
 					toast.show();
 				}
-				collectMyLoadedData(selectedKeywords, sequence, canSubmitQuery,
-						endOfKeywordSequence);
+				collectSearchStateData(selectedKeywords, sequence,
+						canSubmitQuery, endOfKeywordSequence);
 			}
 		});
 
@@ -232,11 +236,8 @@ public class SearchActivity extends Activity {
 				}
 
 				if (canSubmitQuery) {
-					if (searchDatabase != null) {
-						searchDatabase.close();
-					}
 					try {
-						showDialog(CONNECT_DIALOG);
+						showProgressDialog(Global.CONNECT_DIALOG);
 						synchronizeTask.getSearchResults(getURL());
 					} catch (UnsupportedEncodingException e) {
 						Log.e(LOG_TAG, "UnsupportedEncodingException: "
@@ -246,8 +247,8 @@ public class SearchActivity extends Activity {
 				}
 				if (endOfKeywordSequence)
 					canSubmitQuery = true;
-				collectMyLoadedData(selectedKeywords, sequence, canSubmitQuery,
-						endOfKeywordSequence);
+				collectSearchStateData(selectedKeywords, sequence,
+						canSubmitQuery, endOfKeywordSequence);
 			}
 
 		});
@@ -273,8 +274,8 @@ public class SearchActivity extends Activity {
 					}
 					searchPath.setText(query);
 				}
-				collectMyLoadedData(selectedKeywords, sequence, canSubmitQuery,
-						endOfKeywordSequence);
+				collectSearchStateData(selectedKeywords, sequence,
+						canSubmitQuery, endOfKeywordSequence);
 			}
 		});
 
@@ -331,12 +332,12 @@ public class SearchActivity extends Activity {
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case Global.CONNECTION_ERROR:
-				dismissDialog(CONNECT_DIALOG);
+				progressDialog.dismiss();
 				errorDialog().show();
 				break;
 			case Global.CONNECTION_SUCCESS:
-				if (!isUpdatingKeywords) {
-					dismissDialog(CONNECT_DIALOG);
+				if (!SearchActivity.isUpdatingKeywords) {
+					progressDialog.dismiss();
 					if (Global.data != null) {
 						nextButtonSmall.setEnabled(false);
 						Intent i = new Intent(getApplicationContext(),
@@ -347,26 +348,22 @@ public class SearchActivity extends Activity {
 							query = query
 									.concat(selectedKeywords.get(j) + "> ");
 						}
-
 						i.putExtra("search", query);
 						i.putExtra("content", Global.data);
 						i.putExtra("name", Global.intervieweeName);
 						i.putExtra("location", Global.location);
-						if (searchDatabase != null)
-							searchDatabase.close();
 						startActivity(i);
 						finish();
 					}
 
 				} else {
-					dismissDialog(CONNECT_DIALOG);
 					if (Global.data != null
 							&& Global.data.trim().endsWith("</Keywords>")) {
-						showDialog(PARSE_DIALOG);
-						Thread parse = new Thread(keywordParser);
-						parse.start();
-						isUpdatingKeywords = false;
+						showProgressDialog(Global.PARSE_DIALOG);
+						parserThread = new Thread(keywordParser);
+						parserThread.start();
 					} else {
+						progressDialog.dismiss();
 						errorDialog().show();
 					}
 				}
@@ -378,17 +375,17 @@ public class SearchActivity extends Activity {
 				activeDatabaseTable = getTable();
 				keywordChoices.clearCheck();
 				keywordChoices.removeAllViews();
-				searchDatabase.open();
 				buildRadioList();
 				layout.setVisibility(View.GONE);
 				startLayout.setVisibility(View.VISIBLE);
-				dismissDialog(PARSE_DIALOG);
+				progressDialog.dismiss();
+				SearchActivity.isUpdatingKeywords = false;
 				Toast.makeText(getApplicationContext(),
 						getString(R.string.refreshed), Toast.LENGTH_LONG)
 						.show();
 				break;
 			case Global.KEYWORD_PARSE_ERROR:
-				dismissDialog(PARSE_DIALOG);
+				progressDialog.dismiss();
 				errorDialog().show();
 				break;
 			}
@@ -413,7 +410,7 @@ public class SearchActivity extends Activity {
 	 * @param send
 	 *            Set to true to send data
 	 */
-	void collectMyLoadedData(ArrayList<String> aList, int pos, boolean done,
+	void collectSearchStateData(ArrayList<String> aList, int pos, boolean done,
 			boolean send) {
 		searchStateData = new ActivityState();
 		searchStateData.myField = sequence;
@@ -436,7 +433,6 @@ public class SearchActivity extends Activity {
 	public void buildRadioList() {
 		RadioButton radio;
 		boolean remove = false;
-		showDialog(LOAD_DIALOG);
 		if (sequence == 0) {
 			Cursor searchCursor = searchDatabase.selectMenuOptions(
 					activeDatabaseTable, "col" + Integer.toString(sequence),
@@ -499,46 +495,19 @@ public class SearchActivity extends Activity {
 				}
 			}
 		}
-		dismissDialog(LOAD_DIALOG);
-	}
-
-	@Override
-	protected Dialog onCreateDialog(int id) {
-		switch (id) {
-		case LOAD_DIALOG:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setMessage(getString(R.string.loading));
-			progressDialog.setIndeterminate(true);
-			progressDialog.setCancelable(false);
-			return progressDialog;
-
-		case CONNECT_DIALOG:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setMessage(getString(R.string.progress_msg));
-			progressDialog.setIndeterminate(true);
-			progressDialog.setCancelable(false);
-			return progressDialog;
-		case PARSE_DIALOG:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			progressDialog.setMessage(getString(R.string.parse_msg));
-			progressDialog.setCancelable(false);
-			return progressDialog;
-		}
-		return null;
 	}
 
 	/**
 	 * Error alert dialog builder.
 	 * 
-	 * @return A dialog.
+	 * @return A dialog with an "OK" and "Retry" button
 	 */
 	public AlertDialog errorDialog() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(R.string.connection_error).setCancelable(false)
 				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
-						if (!isUpdatingKeywords) {
+						if (!SearchActivity.isUpdatingKeywords) {
 							Intent i = new Intent(getApplicationContext(),
 									DisplaySearchResultsActivity.class);
 							String query = "", search = "";
@@ -560,12 +529,10 @@ public class SearchActivity extends Activity {
 							i.putExtra("request", query);
 							i.putExtra("name", Global.intervieweeName);
 							i.putExtra("location", location);
-							if (searchDatabase != null)
-								searchDatabase.close();
 							startActivity(i);
 							finish();
 						} else {
-							isUpdatingKeywords = false;
+							SearchActivity.isUpdatingKeywords = false;
 						}
 						dialog.cancel();
 					}
@@ -573,14 +540,15 @@ public class SearchActivity extends Activity {
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
 								dialog.cancel();
-								showDialog(CONNECT_DIALOG);
-								if (isUpdatingKeywords) {
-									SynchronizeTask synchronizeTask = new SynchronizeTask(
-											connectHandle,
-											getApplicationContext());
-									synchronizeTask.updateKeywords();
+								if (SearchActivity.isUpdatingKeywords) {
+									getServerUrl(R.string.update_path);
+									SearchActivity.networkThread = new Thread(
+											SearchActivity.keywordDownloader);
+									SearchActivity.networkThread.start();
+									showProgressDialog(Global.UPDATE_DIALOG);
 								} else {
 									try {
+										showProgressDialog(Global.CONNECT_DIALOG);
 										synchronizeTask
 												.getSearchResults(getURL());
 									} catch (UnsupportedEncodingException e) {
@@ -627,17 +595,66 @@ public class SearchActivity extends Activity {
 		return table;
 	}
 
+	/**
+	 * retrieves server URL from preferences
+	 * 
+	 * @param id
+	 *            string resource ID
+	 * @return server URL string
+	 */
+	private String getServerUrl(int id) {
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		String url = settings.getString(Settings.KEY_SERVER, this
+				.getString(R.string.server));
+		url = url.concat("/" + this.getString(id));
+		Global.URL = url;
+		return url;
+	}
+
+	/**
+	 * create and update progress dialogs
+	 * 
+	 * @param id
+	 *            progress dialog type
+	 */
+	private void showProgressDialog(int id) {
+		switch (id) {
+		case Global.UPDATE_DIALOG:
+			progressDialog = new ProgressDialog(this);
+			progressDialog.setMessage(getString(R.string.progress_msg));
+			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setIndeterminate(true);
+			progressDialog.setCancelable(false);
+			progressDialog.show();
+			break;
+		case Global.PARSE_DIALOG:
+			// Updates previously showing update dialog
+			progressDialog.setIndeterminate(false);
+			progressDialog.setMessage(getString(R.string.parse_msg));
+			break;
+		case Global.CONNECT_DIALOG:
+			progressDialog = new ProgressDialog(this);
+			progressDialog.setMessage(getString(R.string.progress_msg));
+			progressDialog.setIndeterminate(true);
+			progressDialog.setCancelable(false);
+			progressDialog.show();
+			break;
+		}
+	}
+
 	private AlertDialog confirmUpdateDialog() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(getString(R.string.refresh_confirm));
 		builder.setCancelable(false).setPositiveButton("Yes",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
-						isUpdatingKeywords = true;
-						SynchronizeTask synchronizeTask = new SynchronizeTask(
-								connectHandle, getApplicationContext());
-						showDialog(CONNECT_DIALOG);
-						synchronizeTask.updateKeywords();
+						SearchActivity.isUpdatingKeywords = true;
+						getServerUrl(R.string.update_path);
+						keywordDownloader = new KeywordDownloader(connectHandle);
+						networkThread = new Thread(keywordDownloader);
+						networkThread.start();
+						showProgressDialog(Global.UPDATE_DIALOG);
 						dialog.cancel();
 					}
 				}).setNegativeButton("No",
@@ -682,8 +699,6 @@ public class SearchActivity extends Activity {
 					InboxListActivity.class);
 			j.putExtra("name", Global.intervieweeName);
 			j.putExtra("Global.location", Global.location);
-			if (searchDatabase != null)
-				searchDatabase.close();
 			startActivity(j);
 			finish();
 			return true;
@@ -694,8 +709,6 @@ public class SearchActivity extends Activity {
 			Intent k = new Intent(getApplicationContext(), AboutActivity.class);
 			k.putExtra("name", Global.intervieweeName);
 			k.putExtra("Global.location", Global.location);
-			if (searchDatabase != null)
-				searchDatabase.close();
 			startActivity(k);
 			return true;
 		case Global.EXIT_ID:
@@ -706,8 +719,6 @@ public class SearchActivity extends Activity {
 					MainMenuActivity.class);
 			l.putExtra("name", Global.intervieweeName);
 			l.putExtra("Global.location", Global.location);
-			if (searchDatabase != null)
-				searchDatabase.close();
 			startActivity(l);
 			finish();
 			return true;
@@ -718,27 +729,53 @@ public class SearchActivity extends Activity {
 	@Override
 	protected void onPause() {
 		super.onPause();
-		// release synchronization lock
-		KeywordSynchronizer.completeSynchronization();
+		if (!configurationChanged) {
+			// release synchronization lock
+			KeywordSynchronizer.completeSynchronization();
+			configurationChanged = false;
+		}
 	}
 
 	@Override
-	protected void onStop() {
-		super.onStop();
+	protected void onSaveInstanceState(Bundle outState) {
+		android.util.Log.i(LOG_TAG, "-> onSaveInstanceState()");
+		// remove any showing dialog since activity is going to be recreated
+		if (progressDialog != null && progressDialog.isShowing()) {
+			android.util.Log.i(LOG_TAG, "Remove progress dialog");
+			progressDialog.dismiss();
+		}
+		// Flag for configuration changes
+		outState.putBoolean("changed", true);
+		// continue with the normal instance state save
+		super.onSaveInstanceState(outState);
 	}
 
 	@Override
 	protected void onStart() {
 		super.onStart();
-		searchDatabase.open();
-	}
-
-	@Override
-	public void onRestoreInstanceState(Bundle savedInstanceState) {
-		super.onRestoreInstanceState(savedInstanceState);
-		if (progressDialog != null) {
-			progressDialog.dismiss();
+		if (SearchActivity.parserThread != null
+				&& SearchActivity.parserThread.isAlive()) {
+			SearchActivity.keywordParser.setHandlers(this
+					.getApplicationContext(), this.connectHandle,
+					this.progressHandler);
+			showProgressDialog(Global.UPDATE_DIALOG);
+			showProgressDialog(Global.PARSE_DIALOG);
+			// Cross check that parser thread is still alive
+			if (!(SearchActivity.parserThread != null && SearchActivity.parserThread
+					.isAlive())) {
+				progressDialog.dismiss();
+			}
+		} else if (SearchActivity.networkThread != null
+				&& SearchActivity.networkThread.isAlive()) {
+			Log.i(LOG_TAG, "Network thread is alive.");
+			SearchActivity.keywordDownloader.swap(this.connectHandle);
+			showProgressDialog(Global.UPDATE_DIALOG);
 		}
 	}
 
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		searchDatabase.close();
+	}
 }

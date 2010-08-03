@@ -51,7 +51,9 @@ public class DownloadManager {
 		} catch (IOException e) {
 			Log.e(LOG_TAG, "Exception: " + e.toString());
 		} finally {
-			httpURLConnection.disconnect();
+			if (httpURLConnection != null) {
+				httpURLConnection.disconnect();
+			}
 		}
 		return null;
 	}

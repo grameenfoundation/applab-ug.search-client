@@ -29,6 +29,7 @@ public class SynchronizeTask {
 
 	/** schedules recurring tasks using a timer */
 	private Timer timer;
+	private KeywordDownloader keywordDownloader;
 
 	public SynchronizeTask(Handler uiHandler, Context applicationContext) {
 		this.handler = uiHandler;
@@ -67,8 +68,7 @@ public class SynchronizeTask {
 	 */
 	public void updateKeywords() {
 		getServerUrl(R.string.update_path);
-		KeywordDownloader keywordDownloader = new KeywordDownloader(
-				this.handler);
+		keywordDownloader = new KeywordDownloader(this.handler);
 		Thread network = new Thread(keywordDownloader);
 		network.start();
 	}
@@ -96,6 +96,10 @@ public class SynchronizeTask {
 						this.handler
 								.sendEmptyMessage(Global.DISMISS_WAIT_DIALOG);
 					}
+				} else {
+					Log.i(LOG_TAG, "Failed to connect.");
+					KeywordSynchronizer.completeSynchronization();
+					this.handler.sendEmptyMessage(Global.DISMISS_WAIT_DIALOG);
 				}
 			} catch (MalformedURLException e) {
 				Log.e(LOG_TAG, "MalformedURLException: " + e);
@@ -212,8 +216,9 @@ public class SynchronizeTask {
 			submitPendingUsageLogs();
 			Log.i(LOG_TAG, "Updating incomplete searches...");
 			submitIncompleteSearches();
-			Log.i(LOG_TAG, "Updating keywords...");
-			backgroundUpdateKeywords();
+			//Log.i(LOG_TAG, "Updating keywords...");
+			//backgroundUpdateKeywords(); 
+			//XXX Luke asked to keep this update to launch time synchronization
 		}
 	}
 }

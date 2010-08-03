@@ -14,7 +14,6 @@ package yo.applab.ckwinfo;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -48,37 +47,38 @@ public class MainMenuActivity extends Activity {
 	private Button nextButton;
 	private EditText intervieweeNameEditBox;
 
-	/** database holding search keywords */
-	public Storage searchDatabase;	
-	
 	/** runnable class handling XML parsing and initializing keywords database */
-	private KeywordParser keywordParser;
+	private static KeywordParser keywordParser;
 
-	/** shown at initial keyword setup */
-	private static final int SETUP_DIALOG = 1;
+	private static Thread parserThread;
 
-	/** shown on network access */
-	private static final int CONNECT_DIALOG = 2;
-
-	/** shown when parsing and initializing database */
-	private static final int PARSE_DIALOG = 3;
-
-	/** dialog shown in case a background update is underway */
-	private static final int WAIT_DIALOG = 4;
-
-	private ProgressDialog progressDialog;
+	private static Thread networkThread;
 
 	/** true if keyword cache exists, false otherwise */
-	private boolean cacheExists = false;
+	private static boolean cacheExists;
 
-	SynchronizeTask synchronizeTask;
+	/** true if there has been a configuration change */
+	private boolean configurationChanged;
+
+	private ProgressDialog progressDialog;
+	private SynchronizeTask synchronizeTask;
+
+	private static KeywordDownloader keywordDownloader;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		if (savedInstanceState != null) {
+			configurationChanged = savedInstanceState.getBoolean("changed");
+			if (configurationChanged) {
+				Log.w(LOG_TAG, "Activity RESTART");
+			}
+		}
 		this.synchronizeTask = new SynchronizeTask(this.connectHandle, this
 				.getApplicationContext());
-		init();
+		if (!configurationChanged) {
+			init();
+		}
 		setContentView(R.layout.main_menu);
 		// Display the current user in the activity title if available otherwise
 		// do launch synchronization
@@ -91,8 +91,8 @@ public class MainMenuActivity extends Activity {
 				Global.IMEI = imei;
 			}
 			// Do launch time synchronization unless this is an initial setup
-			// (@cacheExits is false)
-			if (cacheExists) {
+			// (@cacheExits is false) and device configuration has not changed
+			if (MainMenuActivity.cacheExists && !configurationChanged) {
 				this.synchronizeTask.startLaunchThread();
 			}
 		} else {
@@ -130,7 +130,7 @@ public class MainMenuActivity extends Activity {
 		};
 
 		intervieweeNameEditBox.setFilters(new InputFilter[] { filter });
-		if (!cacheExists) {
+		if (!MainMenuActivity.cacheExists) {
 			inboxButton.setEnabled(false);
 			nextButton.setEnabled(false);
 		}
@@ -164,9 +164,9 @@ public class MainMenuActivity extends Activity {
 				if (myEdit.length() > 0) {
 					// check if synchronization is on going if not get the lock
 					if (!KeywordSynchronizer.tryStartSynchronization()) {
-						showDialog(WAIT_DIALOG);
+						showWaitDialog();
 					} else {
-						if (cacheExists) {
+						if (MainMenuActivity.cacheExists) {
 							Global.intervieweeName = intervieweeNameEditBox
 									.getText().toString();
 							Intent i = new Intent(getApplicationContext(),
@@ -186,42 +186,34 @@ public class MainMenuActivity extends Activity {
 
 	}
 
-	@Override
-	protected Dialog onCreateDialog(int id) {
-		switch (id) {
-		case SETUP_DIALOG:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setTitle(getString(R.string.progress_header));
-			progressDialog.setMessage(getString(R.string.progress_retrieve));
-			progressDialog.setIndeterminate(true);
-			progressDialog.setCancelable(false);
-			return progressDialog;
-		case CONNECT_DIALOG:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setMessage(getString(R.string.progress_msg));
-			progressDialog.setIndeterminate(true);
-			progressDialog.setCancelable(false);
-			return progressDialog;
-		case PARSE_DIALOG:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			progressDialog.setMessage(getString(R.string.parse_msg));
-			progressDialog.setCancelable(false);
-			return progressDialog;
-		case WAIT_DIALOG:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setMessage(getString(R.string.wait_on_background));
-			progressDialog.setIndeterminate(true);
-			progressDialog.setCancelable(true);
-			return progressDialog;
-		}
-		return null;
+	/**
+	 * creates dialog shown when connecting to the network
+	 */
+	/*
+	 * private void showConnectDialog() { progressDialog = new
+	 * ProgressDialog(this); progressDialog
+	 * .setMessage(getString(R.string.progress_msg)); progressDialog
+	 * .setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+	 * progressDialog.setIndeterminate(true);
+	 * progressDialog.setCancelable(false); progressDialog.show(); }
+	 */
+
+	/**
+	 * creates dialog shown when waiting on background synchronization to
+	 * complete before proceeding with a search
+	 */
+	private void showWaitDialog() {
+		progressDialog = new ProgressDialog(this);
+		progressDialog.setMessage(getString(R.string.wait_on_background));
+		progressDialog.setIndeterminate(true);
+		progressDialog.setCancelable(true);
+		progressDialog.show();
 	}
 
 	/**
 	 * updates database initialization progress
 	 */
-	final Handler progressHandler = new Handler() {
+	public Handler progressHandler = new Handler() {
 		public void handleMessage(Message msg) {
 			int level = msg.getData().getInt("node");
 			progressDialog.setProgress(level);
@@ -236,63 +228,47 @@ public class MainMenuActivity extends Activity {
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case Global.CONNECTION_ERROR:
-				if (cacheExists) {
-					dismissDialog(CONNECT_DIALOG);
-				} else {
-					dismissDialog(SETUP_DIALOG);
-				}
+				progressDialog.dismiss();
 				errorDialog().show();
 				break;
 			case Global.CONNECTION_SUCCESS:
 				if (Global.data.trim().endsWith("</Keywords>")) {
-					if (cacheExists) {
-						dismissDialog(CONNECT_DIALOG);
-					} else {
-						dismissDialog(SETUP_DIALOG);
-					}
-					showDialog(PARSE_DIALOG);
-					if (keywordParser == null) {
-						keywordParser = new KeywordParser(
+					android.util.Log.i(LOG_TAG, "Show parse dialog");
+					showProgressDialog(Global.PARSE_DIALOG);
+					if (MainMenuActivity.keywordParser == null) {
+						MainMenuActivity.keywordParser = new KeywordParser(
 								getApplicationContext(), progressHandler,
 								connectHandle);
 					}
-					Thread parser = new Thread(keywordParser);
-					parser.start();
+					MainMenuActivity.parserThread = new Thread(
+							MainMenuActivity.keywordParser);
+					MainMenuActivity.parserThread.start();
 				} else {
-					if (cacheExists) {
-						dismissDialog(CONNECT_DIALOG);
-					} else {
-						dismissDialog(SETUP_DIALOG);
-					}
+					progressDialog.dismiss();
 					errorDialog().show();
 				}
 				break;
 			case Global.KEYWORD_PARSE_SUCCESS:
 				// Release synchronization lock
 				KeywordSynchronizer.completeSynchronization();
-				dismissDialog(PARSE_DIALOG);
+				progressDialog.dismiss();
 				Toast.makeText(getApplicationContext(),
 						getString(R.string.refreshed), Toast.LENGTH_LONG)
 						.show();
-				if (!cacheExists) {
-					// Start synchronization timer
+				if (!MainMenuActivity.cacheExists) {
 					synchronizeTask.scheduleRecurringTimer();
 				}
 				inboxButton.setEnabled(true);
 				nextButton.setEnabled(true);
-				cacheExists = true;
+				MainMenuActivity.cacheExists = true;
 				break;
 			case Global.KEYWORD_PARSE_ERROR:
-				dismissDialog(PARSE_DIALOG);
+				progressDialog.dismiss();
 				errorDialog().show();
 				break;
 			case Global.DISMISS_WAIT_DIALOG:
-				try {
-					dismissDialog(WAIT_DIALOG);
-				} catch (IllegalArgumentException e) {
-					// Nothing to do. The dialog may no longer be showing since
-					// it is
-					// cancelable.
+				if (progressDialog != null && progressDialog.isShowing()) {
+					progressDialog.dismiss();
 				}
 				break;
 			}
@@ -312,23 +288,24 @@ public class MainMenuActivity extends Activity {
 			public void onClick(DialogInterface dialog, int id) {
 				dialog.cancel();
 				KeywordSynchronizer.completeSynchronization();
-				if (searchDatabase != null) {
-					searchDatabase.close();
-				}
 				// Start synchronization timer
-				if (!cacheExists) {
+				if (!MainMenuActivity.cacheExists) {
 					synchronizeTask.scheduleRecurringTimer();
 				}
 			}
 		}).setNegativeButton("Retry", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
-				dialog.cancel();				
-					if (cacheExists) {
-						showDialog(CONNECT_DIALOG);
-					} else {
-						showDialog(SETUP_DIALOG);
-					}
-					synchronizeTask.updateKeywords();				
+				dialog.cancel();
+				if (MainMenuActivity.cacheExists) {
+					showProgressDialog(Global.UPDATE_DIALOG);
+				} else {
+					showProgressDialog(Global.SETUP_DIALOG);
+				}
+				getServerUrl(R.string.update_path);
+				MainMenuActivity.keywordDownloader = new KeywordDownloader(
+						connectHandle);
+				MainMenuActivity.networkThread = new Thread(keywordDownloader);
+				MainMenuActivity.networkThread.start();
 			}
 		});
 		AlertDialog alert = builder.create();
@@ -353,28 +330,62 @@ public class MainMenuActivity extends Activity {
 	}
 
 	/**
-	 * A start up check to see if search keywords are in database and initialize
-	 * setup if not.
+	 * create and update progress dialogs
+	 * 
+	 * @param id
+	 *            progress dialog type
 	 */
-	// TODO Eventually move this logic to the activity onStart method
-	private void init() {
-		if (isCacheEmpty()) {
-			keywordParser = new KeywordParser(this.getApplicationContext(),
-					progressHandler, connectHandle);
-			showDialog(SETUP_DIALOG);
-			this.synchronizeTask.updateKeywords();
-		} else {
-			cacheExists = true;
+	private void showProgressDialog(int id) {
+		switch (id) {
+		case Global.UPDATE_DIALOG:
+			progressDialog = new ProgressDialog(this);
+			progressDialog.setMessage(getString(R.string.progress_msg));
+			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setIndeterminate(true);
+			progressDialog.setCancelable(false);
+			progressDialog.show();
+			break;
+		case Global.PARSE_DIALOG:
+			// Updates previously showing update/setup dialog
+			progressDialog.setIndeterminate(false);
+			progressDialog.setMessage(getString(R.string.parse_msg));
+			break;
+		case Global.SETUP_DIALOG:
+			progressDialog = new ProgressDialog(this);
+			progressDialog.setTitle(getString(R.string.progress_header));
+			progressDialog.setMessage(getString(R.string.progress_initial));
+			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setIndeterminate(true);
+			progressDialog.setCancelable(false);
+			progressDialog.show();
+			break;
 		}
 	}
 
 	/**
-	 * check if the cache has keywords
+	 * A start up check to see if search keywords are in database and initialize
+	 * setup if not.
+	 */
+	private void init() {
+		if (isCacheEmpty()) {
+			getServerUrl(R.string.update_path);
+			MainMenuActivity.keywordDownloader = new KeywordDownloader(
+					connectHandle);
+			networkThread = new Thread(MainMenuActivity.keywordDownloader);
+			networkThread.start();
+			showProgressDialog(Global.SETUP_DIALOG);
+		} else {
+			MainMenuActivity.cacheExists = true;
+		}
+	}
+
+	/**
+	 * check if cache has keywords
 	 * 
 	 * @return true if no valid keywords exit, false otherwise
 	 */
 	private boolean isCacheEmpty() {
-		searchDatabase = new Storage(this);
+		Storage searchDatabase = new Storage(this);
 		searchDatabase.open();
 		// If we have content check if it is valid
 		if (!searchDatabase.isEmpty(Global.DATABASE_TABLE)) {
@@ -393,22 +404,8 @@ public class MainMenuActivity extends Activity {
 		return true;
 	}
 
-	private String getURL() {
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(getBaseContext());
-		String url = settings.getString(Settings.KEY_SERVER,
-				getString(R.string.server));
-		if (url.endsWith("/")) {
-			url = url.concat(getString(R.string.update_path));
-		} else {
-			url = url.concat("/" + getString(R.string.update_path));
-		}
-		return url;
-	}
-
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-
 		boolean result = super.onCreateOptionsMenu(menu);
 
 		menu.add(1, Global.REFRESH_ID, 0, getString(R.string.menu_refresh))
@@ -426,7 +423,6 @@ public class MainMenuActivity extends Activity {
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
 		boolean result = super.onPrepareOptionsMenu(menu);
-		// Disable keyword update if background update is running
 		if (KeywordSynchronizer.isSynchronizing()) {
 			// Disable keyword updates and new searches
 			menu.setGroupEnabled(1, false);
@@ -434,21 +430,43 @@ public class MainMenuActivity extends Activity {
 		return result;
 	}
 
+	/**
+	 * retrieves server URL from preferences
+	 * 
+	 * @param id
+	 *            string resource ID
+	 * @return server URL string
+	 */
+	private String getServerUrl(int id) {
+		String url;
+		if (Global.URL == null) {
+			SharedPreferences settings = PreferenceManager
+					.getDefaultSharedPreferences(this);
+			url = settings.getString(Settings.KEY_SERVER, this
+					.getString(R.string.server));
+			url = url.concat("/" + this.getString(id));
+			Global.URL = url;
+		} else {
+			url = Global.URL;
+		}
+		return url;
+	}
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
-
 		case Global.REFRESH_ID:
 			if (!KeywordSynchronizer.isSynchronizing()) {
 				// Acquire synchronization lock
 				if (KeywordSynchronizer.tryStartSynchronization()) {
-					SynchronizeTask synchronizeTask = new SynchronizeTask(
-							this.connectHandle, this.getApplicationContext());
-					synchronizeTask.updateKeywords();
-					if (cacheExists) {
-						showDialog(CONNECT_DIALOG);
+					getServerUrl(R.string.update_path);
+					keywordDownloader = new KeywordDownloader(connectHandle);
+					networkThread = new Thread(keywordDownloader);
+					networkThread.start();
+					if (MainMenuActivity.cacheExists) {
+						showProgressDialog(Global.UPDATE_DIALOG);
 					} else {
-						showDialog(SETUP_DIALOG);
+						showProgressDialog(Global.SETUP_DIALOG);
 					}
 				} else {
 					Log.i(LOG_TAG, "Failed to get synchronization lock");
@@ -472,37 +490,51 @@ public class MainMenuActivity extends Activity {
 	}
 
 	@Override
-	protected void onPause() {
-		super.onPause();
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-	}
-
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-	}
-
-	@Override
-	protected void onResume() {
-		super.onResume();
-	}
-
-	@Override
 	protected void onStart() {
 		super.onStart();
-	}
-
-	@Override
-	public void onRestoreInstanceState(Bundle savedInstanceState) {
-		super.onRestoreInstanceState(savedInstanceState);
-		android.util.Log.e(LOG_TAG, "-> onRestoreInstanceState()");
-		if (progressDialog != null) {
-			progressDialog.dismiss();
+		Log.i(LOG_TAG, "-> onStart()");
+		if (MainMenuActivity.parserThread != null
+				&& MainMenuActivity.parserThread.isAlive()) {
+			MainMenuActivity.keywordParser.setHandlers(this
+					.getApplicationContext(), this.connectHandle,
+					this.progressHandler);
+			Log.i(LOG_TAG, "Parser thread is alive");
+			android.util.Log.e(LOG_TAG, "Show parse dialog");
+			if (MainMenuActivity.cacheExists) {
+				showProgressDialog(Global.UPDATE_DIALOG);
+			} else {
+				showProgressDialog(Global.SETUP_DIALOG);
+			}
+			showProgressDialog(Global.PARSE_DIALOG);
+			// Cross check that parser thread is still alive
+			if (!(MainMenuActivity.parserThread != null && MainMenuActivity.parserThread
+					.isAlive())) {
+				progressDialog.dismiss();
+			}
+		} else if (MainMenuActivity.networkThread != null
+				&& MainMenuActivity.networkThread.isAlive()) {
+			MainMenuActivity.keywordDownloader.swap(this.connectHandle);
+			Log.i(LOG_TAG, "Is still downloading keywords...");
+			android.util.Log.e(LOG_TAG, "Show connect dialog");
+			if (MainMenuActivity.cacheExists) {
+				showProgressDialog(Global.UPDATE_DIALOG);
+			} else {
+				showProgressDialog(Global.SETUP_DIALOG);
+			}
 		}
 	}
 
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		android.util.Log.i(LOG_TAG, "-> onSaveInstanceState()");
+		// remove any showing dialog since activity is going to be recreated
+		if (progressDialog != null && progressDialog.isShowing()) {
+			android.util.Log.i(LOG_TAG, "Remove progress dialog");
+			progressDialog.dismiss();
+		}
+		// Flag for configuration changes
+		outState.putBoolean("changed", true);
+		// continue with the normal instance state save
+		super.onSaveInstanceState(outState);
+	}
 }

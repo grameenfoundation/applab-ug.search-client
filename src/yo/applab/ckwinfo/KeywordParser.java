@@ -44,14 +44,6 @@ public class KeywordParser implements Runnable {
 	private static final String LOG_TAG = "KeywordParser";
 	private Context applicationContext;
 	private Storage storage;
-	private SearchActivity searchActivity;
-	private MainMenuActivity mainMenuActivity;
-	private DisplaySearchResultsActivity displayActivity;
-	private InboxListActivity inboxListActivity;
-	private AboutActivity aboutActivity;
-
-	/** indicator for calling activity */
-	private int parent;
 
 	/** handler to which progress updates are sent */
 	private Handler progressHandler;
@@ -199,42 +191,16 @@ public class KeywordParser implements Runnable {
 	 * @param values
 	 *            a content value pair
 	 */
-	public void store(String[] values) {
+	private void store(String[] values) {
 		for (int i = 0; i < values.length; i++) {
 			insertValues.put("col" + Integer.toString(i), values[i].replace(
 					"_", " "));
 		}
 		storage.insertKeyword(dbTable, insertValues);
 		insertValues.clear();
-	}
+	}// TODO store() should indicate whether insert was successful. On failure
 
-	/**
-	 * Send message to calling activity's message handler and close database.
-	 */
-	public void sendMessage(int m) {
-		switch (parent) {
-		case 0:
-
-			mainMenuActivity.connectHandle.sendEmptyMessage(m);
-			break;
-		case 1:
-
-			searchActivity.connectHandle.sendEmptyMessage(m);
-			break;
-		case 2:
-
-			displayActivity.connectHandle.sendEmptyMessage(m);
-			break;
-		case 3:
-
-			inboxListActivity.connectHandle.sendEmptyMessage(m);
-			break;
-		case 4:
-
-			aboutActivity.connectHandle.sendEmptyMessage(m);
-			break;
-		}
-	}
+	// mark as dirty.
 
 	/**
 	 * obtains characters in a keyword tag
@@ -243,7 +209,7 @@ public class KeywordParser implements Runnable {
 	 *            The document element interface.
 	 * @return keywords string
 	 */
-	public static String getCharacterDataFromElement(Element e) {
+	private static String getCharacterDataFromElement(Element e) {
 		Node child = e.getFirstChild();
 		if (child instanceof CharacterData) {
 			CharacterData cd = (CharacterData) child;
@@ -252,4 +218,21 @@ public class KeywordParser implements Runnable {
 		return null;// TODO Malformed XML error
 	}
 
+	/**
+	 * swaps out handlers in case of a configuration change during a previous
+	 * activity instance
+	 * 
+	 * @param applicationContext
+	 *            the application context
+	 * @param activityHandler
+	 *            handler for receiving thread responses
+	 * @param progressHandler
+	 *            progress dialog hanlder
+	 */
+	public void setHandlers(Context applicationContext,
+			Handler activityHandler, Handler progressHandler) {
+		this.progressHandler = progressHandler;
+		this.responseHandler = activityHandler;
+		this.applicationContext = applicationContext;
+	}
 }
