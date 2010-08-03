@@ -426,6 +426,8 @@ public class MainMenuActivity extends Activity {
 		if (KeywordSynchronizer.isSynchronizing()) {
 			// Disable keyword updates and new searches
 			menu.setGroupEnabled(1, false);
+		}else{
+			menu.setGroupEnabled(1, true);
 		}
 		return result;
 	}

@@ -358,6 +358,8 @@ public class InboxListActivity extends ListActivity {
 		// Disable keyword updates and new searches
 		if (KeywordSynchronizer.isSynchronizing()) {
 			menu.setGroupEnabled(1, false);
+		}else{
+			menu.setGroupEnabled(1, true);
 		}
 		return result;
 	}
