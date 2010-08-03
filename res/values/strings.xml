@@ -2,7 +2,7 @@
 
 <resources>
 <string name="app_name">CKW Search</string>
-<string name="app_version">2.0.2</string>
+<string name="app_version">2.7 release candidate 1 ($Revision$)</string>
 <string name="release_date">June 25 2010</string>
 <string name="info">Grameen Foundation, Applab Uganda\nckw@applab.org</string>
 <string name="inbox_title">Inbox</string>
