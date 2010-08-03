@@ -17,6 +17,8 @@
 <string name="main_menu_details">Enter farmer\'s name or ID in the box below:</string>
 <string name="main_menu_message">Welcome!</string>
 <string name="connection_error">Unable to establish a connection</string>
+<string name="incomplete_keyword_response_error">Failed to get all keywords</string>
+<string name="keyword_parse_error">Failed to process keywords</string>
 <string name="progress_msg">Loading. Please wait...</string>
 <string name="parse_msg">Initializing CKW Search...\nThis may take a few minutes.</string>
 <string name="progress_initial">Loading keywords for the first time. Please wait...</string>
@@ -65,4 +67,5 @@
 <string name="menu_exit">Exit</string>
 <string name="menu_settings">Settings</string>
 <string name="refresh_confirm">This action will discard your current search.\nContinue?</string>
+
 </resources>

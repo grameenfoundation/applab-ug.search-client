@@ -44,7 +44,12 @@ public class SynchronizeTask {
 				Log.i(LOG_TAG, "Launch time synchronization started...");
 				submitPendingUsageLogs();
 				submitIncompleteSearches();
-				backgroundUpdateKeywords();
+				
+				// TODO: Removing this from 2.7 because the user experience isn't yet satisfactory.
+				// For 2.7 we only have Initial update and Manual update
+				// For 2.8 we need to think about how the user expects the timer to work
+				// backgroundUpdateKeywords();
+				
 				// Schedule recurring tasks
 				scheduleRecurringTimer();
 			}
@@ -53,7 +58,7 @@ public class SynchronizeTask {
 	}
 
 	/**
-	 * A timer for sheduled tasks
+	 * A timer for scheduled tasks
 	 */
 	public void scheduleRecurringTimer() {
 		Log.i(LOG_TAG, "Start timer.");
@@ -216,6 +221,7 @@ public class SynchronizeTask {
 			submitPendingUsageLogs();
 			Log.i(LOG_TAG, "Updating incomplete searches...");
 			submitIncompleteSearches();
+			
 			//Log.i(LOG_TAG, "Updating keywords...");
 			//backgroundUpdateKeywords(); 
 			//XXX Luke asked to keep this update to launch time synchronization

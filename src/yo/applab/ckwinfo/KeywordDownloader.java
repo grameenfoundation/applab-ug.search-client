@@ -23,7 +23,7 @@ import android.util.Log;
 
 /**
  * Provides access to network resources including updating keywords and
- * retrieveing search results.
+ * retrieving search results.
  */
 public class KeywordDownloader implements Runnable {
 	/** for debugging purposes in adb logcat */

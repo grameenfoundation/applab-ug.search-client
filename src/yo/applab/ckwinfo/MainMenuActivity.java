@@ -229,7 +229,7 @@ public class MainMenuActivity extends Activity {
 			switch (msg.what) {
 			case Global.CONNECTION_ERROR:
 				progressDialog.dismiss();
-				errorDialog().show();
+				errorDialog(R.string.connection_error).show();
 				break;
 			case Global.CONNECTION_SUCCESS:
 				if (Global.data.trim().endsWith("</Keywords>")) {
@@ -245,7 +245,7 @@ public class MainMenuActivity extends Activity {
 					MainMenuActivity.parserThread.start();
 				} else {
 					progressDialog.dismiss();
-					errorDialog().show();
+					errorDialog(R.string.incomplete_keyword_response_error).show();
 				}
 				break;
 			case Global.KEYWORD_PARSE_SUCCESS:
@@ -264,7 +264,7 @@ public class MainMenuActivity extends Activity {
 				break;
 			case Global.KEYWORD_PARSE_ERROR:
 				progressDialog.dismiss();
-				errorDialog().show();
+				errorDialog(R.string.keyword_parse_error).show();
 				break;
 			case Global.DISMISS_WAIT_DIALOG:
 				if (progressDialog != null && progressDialog.isShowing()) {
@@ -280,9 +280,9 @@ public class MainMenuActivity extends Activity {
 	 * 
 	 * @return A dialog.
 	 */
-	public AlertDialog errorDialog() {
+	public AlertDialog errorDialog(int errorMessage) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setMessage(R.string.connection_error);
+		builder.setMessage(errorMessage);
 		builder.setCancelable(false);
 		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
@@ -341,13 +341,11 @@ public class MainMenuActivity extends Activity {
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage(getString(R.string.progress_msg));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			progressDialog.setIndeterminate(true);
 			progressDialog.setCancelable(false);
 			progressDialog.show();
 			break;
 		case Global.PARSE_DIALOG:
 			// Updates previously showing update/setup dialog
-			progressDialog.setIndeterminate(false);
 			progressDialog.setMessage(getString(R.string.parse_msg));
 			break;
 		case Global.SETUP_DIALOG:
@@ -355,8 +353,6 @@ public class MainMenuActivity extends Activity {
 			progressDialog.setTitle(getString(R.string.progress_header));
 			progressDialog.setMessage(getString(R.string.progress_initial));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			progressDialog.setIndeterminate(true);
-			progressDialog.setCancelable(false);
 			progressDialog.show();
 			break;
 		}

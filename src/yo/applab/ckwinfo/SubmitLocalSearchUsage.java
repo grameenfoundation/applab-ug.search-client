@@ -46,7 +46,7 @@ public class SubmitLocalSearchUsage {
 
 	/**
 	 * Submits any available inbox access logs. Deletes logs once successfully
-	 * submited.
+	 * submitted.
 	 */
 	public void sendLogs() {
 		inboxAdapter = new InboxAdapter(applicationContext);

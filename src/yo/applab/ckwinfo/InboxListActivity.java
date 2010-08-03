@@ -154,6 +154,7 @@ public class InboxListActivity extends ListActivity {
 						Index myIndex = Indices.elementAt(j);
 						if (myIndex.id == id) {
 							i.putExtra("rowId", myIndex.rowId);
+							i.putExtra("fromInbox", true);
 						}
 
 					}
@@ -476,13 +477,11 @@ public class InboxListActivity extends ListActivity {
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage(getString(R.string.progress_msg));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			progressDialog.setIndeterminate(true);
 			progressDialog.setCancelable(false);
 			progressDialog.show();
 			break;
 		case Global.PARSE_DIALOG:
 			// Updates previously showing update dialog
-			progressDialog.setIndeterminate(false);
 			progressDialog.setMessage(getString(R.string.parse_msg));
 			break;
 		}

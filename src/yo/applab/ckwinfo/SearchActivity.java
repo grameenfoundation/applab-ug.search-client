@@ -122,7 +122,6 @@ public class SearchActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		this.searchDatabase = new Storage(this);
-		this.searchDatabase.open();
 		if (savedInstanceState != null) {
 			configurationChanged = savedInstanceState.getBoolean("changed");
 			if (configurationChanged) {
@@ -152,38 +151,40 @@ public class SearchActivity extends Activity {
 		nextButtonSmall.setText(getString(R.string.next_button));
 		layout = (LinearLayout) findViewById(R.id.layout);
 		backButton.setText(getString(R.string.back_button));
-
-		final ActivityState data = (ActivityState) getLastNonConfigurationInstance();
-		if (data == null) {
-			layout.setVisibility(View.GONE);
-			searchPath.setTextColor(R.drawable.black);
-			searchPath.bringToFront();
+		
+		if (keywordParser == null)
+		{
 			keywordParser = new KeywordParser(this.getApplicationContext(),
 					progressHandler, connectHandle);
-			selectedKeywords = new ArrayList<String>();
-			buildRadioList();
-
-		} else {
-			searchStateData = data;
-			selectedKeywords = new ArrayList<String>();
-			sequence = data.myField;
-			selectedKeywords = data.mySelect;
-			canSubmitQuery = data.canSubmitQuery;
-			endOfKeywordSequence = data.endOfKeywordSequence;
-			String query = "Search:";
-			for (int i = 0; i < selectedKeywords.size(); i++) {
-				query = query.concat(" >" + selectedKeywords.get(i));
-			}
-			searchPath.setText(query);
-			if (sequence > 0) {
-				startLayout.setVisibility(View.GONE);
-			} else {
-				layout.setVisibility(View.GONE);
-			}
-			if (!SearchActivity.isUpdatingKeywords) {
-				buildRadioList();
-			}
 		}
+		
+		// Initialize selectedKeywords to empty array list
+		selectedKeywords = new ArrayList<String>();
+		
+		if (!SearchActivity.isUpdatingKeywords) {
+			searchStateData = (ActivityState) getLastNonConfigurationInstance();
+			
+			if (searchStateData != null) {
+				sequence = searchStateData.myField;
+				selectedKeywords = searchStateData.mySelect;
+				canSubmitQuery = searchStateData.canSubmitQuery;
+				endOfKeywordSequence = searchStateData.endOfKeywordSequence;
+				String query = "Search:";
+				for (int i = 0; i < selectedKeywords.size(); i++) {
+					query = query.concat(" >" + selectedKeywords.get(i));
+				}
+				searchPath.setText(query);
+			}
+			
+			buildRadioList();
+		}
+		
+		if (sequence > 0) {
+			startLayout.setVisibility(View.GONE);
+		} else {
+			layout.setVisibility(View.GONE);
+		}
+		
 		nextButtonLarge.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				radioId = keywordChoices.getCheckedRadioButtonId();
@@ -352,6 +353,8 @@ public class SearchActivity extends Activity {
 						i.putExtra("content", Global.data);
 						i.putExtra("name", Global.intervieweeName);
 						i.putExtra("location", Global.location);
+						i.putExtra("fromSearchActivity", true);
+						
 						startActivity(i);
 						finish();
 					}
@@ -369,7 +372,11 @@ public class SearchActivity extends Activity {
 				}
 				break;
 			case Global.KEYWORD_PARSE_SUCCESS:
-				selectedKeywords.clear();
+				
+				// If this is still hanging around, get rid of it
+				if(selectedKeywords != null){
+					selectedKeywords.clear();
+				}
 				searchPath.setText("Search: ");
 				sequence = 0;
 				activeDatabaseTable = getTable();
@@ -431,6 +438,7 @@ public class SearchActivity extends Activity {
 	 * Builds search sequences.
 	 */
 	public void buildRadioList() {
+		this.searchDatabase.open();
 		RadioButton radio;
 		boolean remove = false;
 		if (sequence == 0) {
@@ -495,6 +503,7 @@ public class SearchActivity extends Activity {
 				}
 			}
 		}
+		this.searchDatabase.close();
 	}
 
 	/**
@@ -624,13 +633,11 @@ public class SearchActivity extends Activity {
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage(getString(R.string.progress_msg));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			progressDialog.setIndeterminate(true);
 			progressDialog.setCancelable(false);
 			progressDialog.show();
 			break;
 		case Global.PARSE_DIALOG:
 			// Updates previously showing update dialog
-			progressDialog.setIndeterminate(false);
 			progressDialog.setMessage(getString(R.string.parse_msg));
 			break;
 		case Global.CONNECT_DIALOG:
@@ -771,11 +778,5 @@ public class SearchActivity extends Activity {
 			SearchActivity.keywordDownloader.swap(this.connectHandle);
 			showProgressDialog(Global.UPDATE_DIALOG);
 		}
-	}
-
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		searchDatabase.close();
 	}
 }
