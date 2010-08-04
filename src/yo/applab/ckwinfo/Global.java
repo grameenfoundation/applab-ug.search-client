@@ -42,6 +42,9 @@ public class Global {
 	/** current or last known location */
 	public static String location = "Unknown";
 
+	/** set at application launch */
+	public static boolean applicationLaunched;
+
 	/** holds connection response body */
 	public static String data;
 

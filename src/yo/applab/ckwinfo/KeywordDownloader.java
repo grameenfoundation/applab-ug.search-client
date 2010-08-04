@@ -36,12 +36,11 @@ public class KeywordDownloader implements Runnable {
 
 	private int responseContentLength;
 
-	public KeywordDownloader() {
+	private String urlString;
 
-	}
-
-	public KeywordDownloader(Handler handler) {
+	public KeywordDownloader(Handler handler, String urlString) {
 		this.applicationHandler = handler;
+		this.urlString = urlString;
 	}
 
 	/**
@@ -62,7 +61,7 @@ public class KeywordDownloader implements Runnable {
 		try {
 			try {
 				Log.d(DEBUG_TAG, "Connecting...");
-				inputStream = openHttpConnection(Global.URL);
+				inputStream = openHttpConnection(urlString);
 				int byteIntegerValue = 0;
 
 				if (inputStream != null) {

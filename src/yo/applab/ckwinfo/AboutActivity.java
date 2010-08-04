@@ -41,9 +41,18 @@ public class AboutActivity extends Activity {
 	private ProgressDialog progressDialog;
 	private Button closeButton;
 
+	/** true if there has been a configuration change */
+	private boolean configurationChanged;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		if (savedInstanceState != null) {
+			configurationChanged = savedInstanceState.getBoolean("changed");
+			if (configurationChanged) {
+				Log.w(LOG_TAG, "Activity RESTART");
+			}
+		}
 		setContentView(R.layout.text_view);
 		setTitle(getString(R.string.about_activity));
 		TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
@@ -140,7 +149,7 @@ public class AboutActivity extends Activity {
 				showProgressDialog(Global.UPDATE_DIALOG);
 				getServerUrl(R.string.update_path);
 				AboutActivity.keywordDownloader = new KeywordDownloader(
-						connectHandle);
+						connectHandle, getServerUrl(R.string.update_path));
 				AboutActivity.networkThread = new Thread(keywordDownloader);
 				AboutActivity.networkThread.start();
 			}
@@ -179,7 +188,6 @@ public class AboutActivity extends Activity {
 		String url = settings.getString(Settings.KEY_SERVER, this
 				.getString(R.string.server));
 		url = url.concat("/" + this.getString(id));
-		Global.URL = url;
 		return url;
 	}
 
@@ -196,10 +204,12 @@ public class AboutActivity extends Activity {
 			progressDialog.setMessage(getString(R.string.progress_msg));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 			progressDialog.setCancelable(false);
+			progressDialog.setIndeterminate(true);
 			progressDialog.show();
 			break;
 		case Global.PARSE_DIALOG:
 			// Updates previously showing update dialog
+			progressDialog.setIndeterminate(false);
 			progressDialog.setMessage(getString(R.string.parse_msg));
 			break;
 		}
@@ -229,7 +239,7 @@ public class AboutActivity extends Activity {
 		if (KeywordSynchronizer.isSynchronizing()) {
 			// Disable keyword updates and new searches
 			menu.setGroupEnabled(1, false);
-		}else{
+		} else {
 			menu.setGroupEnabled(1, true);
 		}
 		return result;
@@ -263,9 +273,8 @@ public class AboutActivity extends Activity {
 				// Acquire synchronization lock
 				if (KeywordSynchronizer.tryStartSynchronization()) {
 					showProgressDialog(Global.UPDATE_DIALOG);
-					getServerUrl(R.string.update_path);
 					AboutActivity.keywordDownloader = new KeywordDownloader(
-							connectHandle);
+							connectHandle, getServerUrl(R.string.update_path));
 					AboutActivity.networkThread = new Thread(
 							AboutActivity.keywordDownloader);
 					AboutActivity.networkThread.start();
@@ -290,24 +299,26 @@ public class AboutActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		if (AboutActivity.parserThread != null
-				&& AboutActivity.parserThread.isAlive()) {
-			Log.i(LOG_TAG, "Parse thread alive.");
-			AboutActivity.keywordParser.setHandlers(this
-					.getApplicationContext(), this.connectHandle,
-					this.progressHandler);
-			showProgressDialog(Global.UPDATE_DIALOG);
-			showProgressDialog(Global.PARSE_DIALOG);
-			// Cross check that parser thread is still alive
-			if (!(AboutActivity.parserThread != null && AboutActivity.parserThread
-					.isAlive())) {
-				progressDialog.dismiss();
+		if (configurationChanged) {
+			if (AboutActivity.parserThread != null
+					&& AboutActivity.parserThread.isAlive()) {
+				Log.i(LOG_TAG, "Parse thread alive.");
+				AboutActivity.keywordParser.setHandlers(this
+						.getApplicationContext(), this.connectHandle,
+						this.progressHandler);
+				showProgressDialog(Global.UPDATE_DIALOG);
+				showProgressDialog(Global.PARSE_DIALOG);
+				// Cross check that parser thread is still alive
+				if (!(AboutActivity.parserThread != null && AboutActivity.parserThread
+						.isAlive())) {
+					progressDialog.dismiss();
+				}
+			} else if (AboutActivity.networkThread != null
+					&& AboutActivity.networkThread.isAlive()) {
+				Log.i(LOG_TAG, "Network thread is alive.");
+				AboutActivity.keywordDownloader.swap(this.connectHandle);
+				showProgressDialog(Global.UPDATE_DIALOG);
 			}
-		} else if (AboutActivity.networkThread != null
-				&& AboutActivity.networkThread.isAlive()) {
-			Log.i(LOG_TAG, "Network thread is alive.");
-			AboutActivity.keywordDownloader.swap(this.connectHandle);
-			showProgressDialog(Global.UPDATE_DIALOG);
 		}
 	}
 

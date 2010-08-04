@@ -68,11 +68,11 @@ public class DisplaySearchResultsActivity extends Activity {
 
 	/** handset submission time */
 	private String submissionTime = "";
-	
+
 	/** whether we're coming from the search activity */
-	private Boolean orientationChanged = false;
-	
-	/** whether we're coming from the inbox*/
+	private Boolean configurationChanged = false;
+
+	/** whether we're coming from the inbox */
 	private Boolean fromInbox = false;
 
 	private Button backButton;
@@ -106,14 +106,13 @@ public class DisplaySearchResultsActivity extends Activity {
 
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
 		if (savedInstanceState != null) {
-			this.orientationChanged = savedInstanceState.getBoolean("changed");
-			if (this.orientationChanged) {
+			this.configurationChanged = savedInstanceState
+					.getBoolean("changed");
+			if (this.configurationChanged) {
 				Log.w(LOG_TAG, "Activity RESTART");
 			}
 		}
-		
 		setContentView(R.layout.inbox);
 		String activityTitle = getString(R.string.inbox_title) + " | ";
 		if (Global.intervieweeName.length() > 30) {
@@ -125,20 +124,21 @@ public class DisplaySearchResultsActivity extends Activity {
 		}
 		setTitle(activityTitle);
 		Bundle extras = this.getIntent().getExtras();
-		
+
 		if (extras != null) {
 			this.searchResult = extras.getString("content");
 			this.search = extras.getString("search");
 			this.name = extras.getString("name");
-			
+
 			// From SearchActivity
 			this.isIncompleteSearch = extras.getBoolean("send", false);
 			this.request = extras.getString("request");
 			this.location = extras.getString("location");
 			this.fromInbox = extras.getBoolean("fromInbox");
-			
-			if(!this.orientationChanged) {
-				DisplaySearchResultsActivity.lastRowId = extras.getLong("rowId");
+
+			if (!this.configurationChanged) {
+				DisplaySearchResultsActivity.lastRowId = extras
+						.getLong("rowId");
 			}
 		}
 		this.searchResultsTextView = (TextView) findViewById(R.id.content_view);
@@ -151,18 +151,20 @@ public class DisplaySearchResultsActivity extends Activity {
 		try {
 			this.inboxDatabase = new InboxAdapter(this);
 			this.inboxDatabase.open();
-			
-			if ((!this.orientationChanged) && (searchResult != null)) {
-				DisplaySearchResultsActivity.lastRowId = inboxDatabase.insertRecord(search, searchResult,
-						name, "", "Complete", "");
-			} else if ((!this.orientationChanged) && isIncompleteSearch) {
+
+			if ((!this.configurationChanged) && (searchResult != null)) {
+				DisplaySearchResultsActivity.lastRowId = inboxDatabase
+						.insertRecord(search, searchResult, name, "",
+								"Complete", "");
+			} else if ((!this.configurationChanged) && isIncompleteSearch) {
 				// Save as incomplete search
-				DisplaySearchResultsActivity.lastRowId = inboxDatabase.insertRecord(search, getString(
-						R.string.search_failure, search), name, location,
-						"Incomplete", request);
+				DisplaySearchResultsActivity.lastRowId = inboxDatabase
+						.insertRecord(search, getString(
+								R.string.search_failure, search), name,
+								location, "Incomplete", request);
 			}
-			
-			if(this.fromInbox) {
+
+			if (this.fromInbox) {
 				// From the list view, so return to it when done
 				this.showBackButton = true;
 				this.backButton.setText(getString(R.string.back_button));
@@ -170,7 +172,8 @@ public class DisplaySearchResultsActivity extends Activity {
 			/**
 			 * rowId is either supplied through a bundle or at database insert
 			 */
-			Cursor inboxCursor = this.inboxDatabase.readRecord(DisplaySearchResultsActivity.lastRowId);
+			Cursor inboxCursor = this.inboxDatabase
+					.readRecord(DisplaySearchResultsActivity.lastRowId);
 			int titleColumn = inboxCursor
 					.getColumnIndexOrThrow(InboxAdapter.KEY_TITLE);
 			int bodyColumn = inboxCursor
@@ -195,18 +198,18 @@ public class DisplaySearchResultsActivity extends Activity {
 			if (this.location == null || (this.location.length() == 0)) {
 				this.location = inboxCursor.getString(locationColumn);
 			}
-			
+
 			if (name == null || (name.length() == 0)) {
 				name = inboxCursor.getString(nameColumn);
 			}
-			
+
 			submissionTime = inboxCursor.getString(dateColumn);
 			searchResultsTextView.setText(inboxCursor.getString(bodyColumn));
 			mDate.setText(submissionTime);
 			request = inboxCursor.getString(titleColumn);
-			
+
 			mSearch.setText(request);
-			
+
 			if (!this.showBackButton) {
 				this.backButton.setText(getString(R.string.new_button));
 				this.backButton.setTextSize(15);
@@ -223,14 +226,12 @@ public class DisplaySearchResultsActivity extends Activity {
 			sendButton.setEnabled(true);
 		} else {
 			sendButton.setEnabled(false);
-			
-			if (this.fromInbox && (!this.orientationChanged)) {
+
+			if (this.fromInbox && (!this.configurationChanged)) {
 				insertLogEntry();
 			}
 		}
-		
-		
-		
+
 		if (isIncompleteSearch) {
 			backButton.setOnClickListener(new OnClickListener() {
 				public void onClick(View v) {
@@ -343,11 +344,14 @@ public class DisplaySearchResultsActivity extends Activity {
 					progressDialog.dismiss();
 					if (Global.data != null) {
 						// Update content for this incomplete query
-						inboxDatabase.updateRecord(DisplaySearchResultsActivity.lastRowId, Global.data);
+						inboxDatabase.updateRecord(
+								DisplaySearchResultsActivity.lastRowId,
+								Global.data);
 						// Reload this view by restarting itself.
 						Intent i = new Intent(getApplicationContext(),
 								DisplaySearchResultsActivity.class);
-						i.putExtra("rowId", DisplaySearchResultsActivity.lastRowId);
+						i.putExtra("rowId",
+								DisplaySearchResultsActivity.lastRowId);
 						i.putExtra("name", name);
 						i.putExtra("location", location);
 						startActivity(i);
@@ -411,7 +415,8 @@ public class DisplaySearchResultsActivity extends Activity {
 									DisplaySearchResultsActivity.isUpdatingKeywords = true;
 									getServerUrl(R.string.update_path);
 									DisplaySearchResultsActivity.keywordDownloader = new KeywordDownloader(
-											connectHandle);
+											connectHandle,
+											getServerUrl(R.string.update_path));
 									DisplaySearchResultsActivity.networkThread = new Thread(
 											keywordDownloader);
 									DisplaySearchResultsActivity.networkThread
@@ -435,7 +440,8 @@ public class DisplaySearchResultsActivity extends Activity {
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
 						inboxDatabase.deleteRecord(
-								InboxAdapter.INBOX_DATABASE_TABLE, DisplaySearchResultsActivity.lastRowId);
+								InboxAdapter.INBOX_DATABASE_TABLE,
+								DisplaySearchResultsActivity.lastRowId);
 						Toast.makeText(getApplicationContext(),
 								getString(R.string.record_deleted),
 								Toast.LENGTH_LONG).show();
@@ -494,7 +500,6 @@ public class DisplaySearchResultsActivity extends Activity {
 		String url = settings.getString(Settings.KEY_SERVER, this
 				.getString(R.string.server));
 		url = url.concat("/" + this.getString(id));
-		Global.URL = url;
 		return url;
 	}
 
@@ -511,10 +516,12 @@ public class DisplaySearchResultsActivity extends Activity {
 			progressDialog.setMessage(getString(R.string.progress_msg));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 			progressDialog.setCancelable(false);
+			progressDialog.setIndeterminate(true);
 			progressDialog.show();
 			break;
 		case Global.PARSE_DIALOG:
 			// Updates previously showing update dialog
+			progressDialog.setIndeterminate(false);
 			progressDialog.setMessage(getString(R.string.parse_msg));
 			break;
 		case Global.CONNECT_DIALOG:
@@ -573,9 +580,8 @@ public class DisplaySearchResultsActivity extends Activity {
 				// Acquire synchronization lock
 				if (KeywordSynchronizer.tryStartSynchronization()) {
 					showProgressDialog(Global.UPDATE_DIALOG);
-					getServerUrl(R.string.update_path);
 					DisplaySearchResultsActivity.keywordDownloader = new KeywordDownloader(
-							connectHandle);
+							connectHandle, getServerUrl(R.string.update_path));
 					DisplaySearchResultsActivity.networkThread = new Thread(
 							keywordDownloader);
 					DisplaySearchResultsActivity.networkThread.start();
@@ -608,7 +614,7 @@ public class DisplaySearchResultsActivity extends Activity {
 		if (KeywordSynchronizer.isSynchronizing()) {
 			// Disable keyword updates and new searches
 			menu.setGroupEnabled(1, false);
-		}else{
+		} else {
 			menu.setGroupEnabled(1, true);
 		}
 		return result;
@@ -617,25 +623,27 @@ public class DisplaySearchResultsActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		if (DisplaySearchResultsActivity.parserThread != null
-				&& DisplaySearchResultsActivity.parserThread.isAlive()) {
-			Log.i(LOG_TAG, "Parse thread alive.");
-			DisplaySearchResultsActivity.keywordParser.setHandlers(this
-					.getApplicationContext(), this.connectHandle,
-					this.progressHandler);
-			showProgressDialog(Global.UPDATE_DIALOG);
-			showProgressDialog(Global.CONNECT_DIALOG);
-			// Cross check that parser thread is still alive
-			if (!(DisplaySearchResultsActivity.parserThread != null && DisplaySearchResultsActivity.parserThread
-					.isAlive())) {
-				progressDialog.dismiss();
+		if (configurationChanged) {
+			if (DisplaySearchResultsActivity.parserThread != null
+					&& DisplaySearchResultsActivity.parserThread.isAlive()) {
+				Log.i(LOG_TAG, "Parse thread alive.");
+				DisplaySearchResultsActivity.keywordParser.setHandlers(this
+						.getApplicationContext(), this.connectHandle,
+						this.progressHandler);
+				showProgressDialog(Global.UPDATE_DIALOG);
+				showProgressDialog(Global.CONNECT_DIALOG);
+				// Cross check that parser thread is still alive
+				if (!(DisplaySearchResultsActivity.parserThread != null && DisplaySearchResultsActivity.parserThread
+						.isAlive())) {
+					progressDialog.dismiss();
+				}
+			} else if (DisplaySearchResultsActivity.networkThread != null
+					&& DisplaySearchResultsActivity.networkThread.isAlive()) {
+				Log.i(LOG_TAG, "Network thread is alive.");
+				DisplaySearchResultsActivity.keywordDownloader
+						.swap(this.connectHandle);
+				showProgressDialog(Global.UPDATE_DIALOG);
 			}
-		} else if (DisplaySearchResultsActivity.networkThread != null
-				&& DisplaySearchResultsActivity.networkThread.isAlive()) {
-			Log.i(LOG_TAG, "Network thread is alive.");
-			DisplaySearchResultsActivity.keywordDownloader
-					.swap(this.connectHandle);
-			showProgressDialog(Global.UPDATE_DIALOG);
 		}
 	}
 

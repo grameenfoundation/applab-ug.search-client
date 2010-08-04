@@ -80,10 +80,9 @@ public class MainMenuActivity extends Activity {
 			init();
 		}
 		setContentView(R.layout.main_menu);
-		// Display the current user in the activity title if available otherwise
-		// do launch synchronization
-		if (Global.intervieweeName == null) {
-			setTitle(getString(R.string.app_name));
+		setTitle(getString(R.string.app_name));
+
+		if (!Global.applicationLaunched) {
 			// Make the IMEI available to other threads
 			if (Global.IMEI == null) {
 				TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
@@ -92,19 +91,10 @@ public class MainMenuActivity extends Activity {
 			}
 			// Do launch time synchronization unless this is an initial setup
 			// (@cacheExits is false) and device configuration has not changed
-			if (MainMenuActivity.cacheExists && !configurationChanged) {
+			if (MainMenuActivity.cacheExists) {
 				this.synchronizeTask.startLaunchThread();
 			}
-		} else {
-			String activity_title = getString(R.string.app_name) + " | ";
-			if (Global.intervieweeName.length() > 30) {
-				activity_title = activity_title.concat(Global.intervieweeName
-						.substring(0, 30));
-				activity_title = activity_title.concat("...");
-			} else {
-				activity_title = activity_title.concat(Global.intervieweeName);
-			}
-			setTitle(activity_title);
+			Global.applicationLaunched = true;
 		}
 
 		nextButton = (Button) findViewById(R.id.next_button);
@@ -245,7 +235,8 @@ public class MainMenuActivity extends Activity {
 					MainMenuActivity.parserThread.start();
 				} else {
 					progressDialog.dismiss();
-					errorDialog(R.string.incomplete_keyword_response_error).show();
+					errorDialog(R.string.incomplete_keyword_response_error)
+							.show();
 				}
 				break;
 			case Global.KEYWORD_PARSE_SUCCESS:
@@ -303,7 +294,7 @@ public class MainMenuActivity extends Activity {
 				}
 				getServerUrl(R.string.update_path);
 				MainMenuActivity.keywordDownloader = new KeywordDownloader(
-						connectHandle);
+						connectHandle, getServerUrl(R.string.update_path));
 				MainMenuActivity.networkThread = new Thread(keywordDownloader);
 				MainMenuActivity.networkThread.start();
 			}
@@ -341,18 +332,22 @@ public class MainMenuActivity extends Activity {
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage(getString(R.string.progress_msg));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setIndeterminate(true);
 			progressDialog.setCancelable(false);
 			progressDialog.show();
 			break;
 		case Global.PARSE_DIALOG:
 			// Updates previously showing update/setup dialog
+			progressDialog.setIndeterminate(false);
 			progressDialog.setMessage(getString(R.string.parse_msg));
 			break;
 		case Global.SETUP_DIALOG:
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setTitle(getString(R.string.progress_header));
+			progressDialog.setIndeterminate(true);
 			progressDialog.setMessage(getString(R.string.progress_initial));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setCancelable(false);
 			progressDialog.show();
 			break;
 		}
@@ -364,9 +359,9 @@ public class MainMenuActivity extends Activity {
 	 */
 	private void init() {
 		if (isCacheEmpty()) {
-			getServerUrl(R.string.update_path);
+			// getServerUrl(R.string.update_path);
 			MainMenuActivity.keywordDownloader = new KeywordDownloader(
-					connectHandle);
+					connectHandle, getServerUrl(R.string.update_path));
 			networkThread = new Thread(MainMenuActivity.keywordDownloader);
 			networkThread.start();
 			showProgressDialog(Global.SETUP_DIALOG);
@@ -422,7 +417,7 @@ public class MainMenuActivity extends Activity {
 		if (KeywordSynchronizer.isSynchronizing()) {
 			// Disable keyword updates and new searches
 			menu.setGroupEnabled(1, false);
-		}else{
+		} else {
 			menu.setGroupEnabled(1, true);
 		}
 		return result;
@@ -436,17 +431,11 @@ public class MainMenuActivity extends Activity {
 	 * @return server URL string
 	 */
 	private String getServerUrl(int id) {
-		String url;
-		if (Global.URL == null) {
-			SharedPreferences settings = PreferenceManager
-					.getDefaultSharedPreferences(this);
-			url = settings.getString(Settings.KEY_SERVER, this
-					.getString(R.string.server));
-			url = url.concat("/" + this.getString(id));
-			Global.URL = url;
-		} else {
-			url = Global.URL;
-		}
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		String url = settings.getString(Settings.KEY_SERVER, this
+				.getString(R.string.server));
+		url = url.concat("/" + this.getString(id));
 		return url;
 	}
 
@@ -457,8 +446,8 @@ public class MainMenuActivity extends Activity {
 			if (!KeywordSynchronizer.isSynchronizing()) {
 				// Acquire synchronization lock
 				if (KeywordSynchronizer.tryStartSynchronization()) {
-					getServerUrl(R.string.update_path);
-					keywordDownloader = new KeywordDownloader(connectHandle);
+					keywordDownloader = new KeywordDownloader(connectHandle,
+							getServerUrl(R.string.update_path));
 					networkThread = new Thread(keywordDownloader);
 					networkThread.start();
 					if (MainMenuActivity.cacheExists) {
@@ -491,33 +480,35 @@ public class MainMenuActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 		Log.i(LOG_TAG, "-> onStart()");
-		if (MainMenuActivity.parserThread != null
-				&& MainMenuActivity.parserThread.isAlive()) {
-			MainMenuActivity.keywordParser.setHandlers(this
-					.getApplicationContext(), this.connectHandle,
-					this.progressHandler);
-			Log.i(LOG_TAG, "Parser thread is alive");
-			android.util.Log.e(LOG_TAG, "Show parse dialog");
-			if (MainMenuActivity.cacheExists) {
-				showProgressDialog(Global.UPDATE_DIALOG);
-			} else {
-				showProgressDialog(Global.SETUP_DIALOG);
-			}
-			showProgressDialog(Global.PARSE_DIALOG);
-			// Cross check that parser thread is still alive
-			if (!(MainMenuActivity.parserThread != null && MainMenuActivity.parserThread
-					.isAlive())) {
-				progressDialog.dismiss();
-			}
-		} else if (MainMenuActivity.networkThread != null
-				&& MainMenuActivity.networkThread.isAlive()) {
-			MainMenuActivity.keywordDownloader.swap(this.connectHandle);
-			Log.i(LOG_TAG, "Is still downloading keywords...");
-			android.util.Log.e(LOG_TAG, "Show connect dialog");
-			if (MainMenuActivity.cacheExists) {
-				showProgressDialog(Global.UPDATE_DIALOG);
-			} else {
-				showProgressDialog(Global.SETUP_DIALOG);
+		if (configurationChanged) {
+			if (MainMenuActivity.parserThread != null
+					&& MainMenuActivity.parserThread.isAlive()) {
+				MainMenuActivity.keywordParser.setHandlers(this
+						.getApplicationContext(), this.connectHandle,
+						this.progressHandler);
+				Log.i(LOG_TAG, "Parser thread is alive");
+				android.util.Log.e(LOG_TAG, "Show parse dialog");
+				if (MainMenuActivity.cacheExists) {
+					showProgressDialog(Global.UPDATE_DIALOG);
+				} else {
+					showProgressDialog(Global.SETUP_DIALOG);
+				}
+				showProgressDialog(Global.PARSE_DIALOG);
+				// Cross check that parser thread is still alive
+				if (!(MainMenuActivity.parserThread != null && MainMenuActivity.parserThread
+						.isAlive())) {
+					progressDialog.dismiss();
+				}
+			} else if (MainMenuActivity.networkThread != null
+					&& MainMenuActivity.networkThread.isAlive()) {
+				MainMenuActivity.keywordDownloader.swap(this.connectHandle);
+				Log.i(LOG_TAG, "Is still downloading keywords...");
+				android.util.Log.e(LOG_TAG, "Show connect dialog");
+				if (MainMenuActivity.cacheExists) {
+					showProgressDialog(Global.UPDATE_DIALOG);
+				} else {
+					showProgressDialog(Global.SETUP_DIALOG);
+				}
 			}
 		}
 	}

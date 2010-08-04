@@ -63,7 +63,7 @@ public class InboxListActivity extends ListActivity {
 	private boolean configurationChanged;
 
 	/** set true when the inbox is empty */
-	private boolean empty = false;
+	private boolean inboxEmpty = false;
 
 	SynchronizeTask synchronizeTask;
 
@@ -138,14 +138,14 @@ public class InboxListActivity extends ListActivity {
 			results.add(getString(R.string.inbox_empty));
 			setListAdapter(new ArrayAdapter<String>(this, R.layout.list_inbox,
 					results));
-			empty = true;
+			inboxEmpty = true;
 		}
 		this.listView = getListView();
 		this.inbox.close();
 		this.listView.setOnItemClickListener(new OnItemClickListener() {
 			public void onItemClick(AdapterView<?> parent, View view,
 					int position, long id) {
-				if (!empty) {
+				if (!inboxEmpty) {
 
 					Intent i = new Intent(view.getContext(),
 							DisplaySearchResultsActivity.class);
@@ -240,7 +240,8 @@ public class InboxListActivity extends ListActivity {
 								showProgressDialog(Global.UPDATE_DIALOG);
 								getServerUrl(R.string.update_path);
 								InboxListActivity.keywordDownloader = new KeywordDownloader(
-										connectHandle);
+										connectHandle,
+										getServerUrl(R.string.update_path));
 								InboxListActivity.networkThread = new Thread(
 										keywordDownloader);
 								InboxListActivity.networkThread.start();
@@ -345,7 +346,7 @@ public class InboxListActivity extends ListActivity {
 				.setIcon(R.drawable.about);
 		menu.add(0, Global.EXIT_ID, 5, getString(R.string.menu_exit)).setIcon(
 				R.drawable.exit);
-		menu.add(0, Global.DELETE_ID, 0, getString(R.string.menu_delete))
+		menu.add(2, Global.DELETE_ID, 0, getString(R.string.menu_delete))
 				.setIcon(R.drawable.delete);
 		menu.add(0, Global.HOME_ID, 0, getString(R.string.menu_home)).setIcon(
 				R.drawable.home);
@@ -359,8 +360,11 @@ public class InboxListActivity extends ListActivity {
 		// Disable keyword updates and new searches
 		if (KeywordSynchronizer.isSynchronizing()) {
 			menu.setGroupEnabled(1, false);
-		}else{
+		} else {
 			menu.setGroupEnabled(1, true);
+		}
+		if (inboxEmpty) {
+			menu.removeItem(Global.DELETE_ID);
 		}
 		return result;
 	}
@@ -393,9 +397,8 @@ public class InboxListActivity extends ListActivity {
 				// Acquire synchronization lock
 				if (KeywordSynchronizer.tryStartSynchronization()) {
 					showProgressDialog(Global.UPDATE_DIALOG);
-					getServerUrl(R.string.update_path);
 					InboxListActivity.keywordDownloader = new KeywordDownloader(
-							connectHandle);
+							connectHandle, getServerUrl(R.string.update_path));
 					InboxListActivity.networkThread = new Thread(
 							InboxListActivity.keywordDownloader);
 					InboxListActivity.networkThread.start();
@@ -461,7 +464,6 @@ public class InboxListActivity extends ListActivity {
 		String url = settings.getString(Settings.KEY_SERVER, this
 				.getString(R.string.server));
 		url = url.concat("/" + this.getString(id));
-		Global.URL = url;
 		return url;
 	}
 
@@ -478,10 +480,12 @@ public class InboxListActivity extends ListActivity {
 			progressDialog.setMessage(getString(R.string.progress_msg));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 			progressDialog.setCancelable(false);
+			progressDialog.setIndeterminate(true);
 			progressDialog.show();
 			break;
 		case Global.PARSE_DIALOG:
 			// Updates previously showing update dialog
+			progressDialog.setIndeterminate(false);
 			progressDialog.setMessage(getString(R.string.parse_msg));
 			break;
 		}
@@ -490,24 +494,26 @@ public class InboxListActivity extends ListActivity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		if (InboxListActivity.parserThread != null
-				&& InboxListActivity.parserThread.isAlive()) {
-			Log.i(LOG_TAG, "Parse thread alive.");
-			InboxListActivity.keywordParser.setHandlers(this
-					.getApplicationContext(), this.connectHandle,
-					this.progressHandler);
-			showProgressDialog(Global.UPDATE_DIALOG);
-			showProgressDialog(Global.PARSE_DIALOG);
-			// Cross check that parser thread is still alive
-			if (!(InboxListActivity.parserThread != null && InboxListActivity.parserThread
-					.isAlive())) {
-				progressDialog.dismiss();
+		if (configurationChanged) {
+			if (InboxListActivity.parserThread != null
+					&& InboxListActivity.parserThread.isAlive()) {
+				Log.i(LOG_TAG, "Parse thread alive.");
+				InboxListActivity.keywordParser.setHandlers(this
+						.getApplicationContext(), this.connectHandle,
+						this.progressHandler);
+				showProgressDialog(Global.UPDATE_DIALOG);
+				showProgressDialog(Global.PARSE_DIALOG);
+				// Cross check that parser thread is still alive
+				if (!(InboxListActivity.parserThread != null && InboxListActivity.parserThread
+						.isAlive())) {
+					progressDialog.dismiss();
+				}
+			} else if (InboxListActivity.networkThread != null
+					&& InboxListActivity.networkThread.isAlive()) {
+				Log.i(LOG_TAG, "Network thread is alive.");
+				InboxListActivity.keywordDownloader.swap(this.connectHandle);
+				showProgressDialog(Global.UPDATE_DIALOG);
 			}
-		} else if (InboxListActivity.networkThread != null
-				&& InboxListActivity.networkThread.isAlive()) {
-			Log.i(LOG_TAG, "Network thread is alive.");
-			InboxListActivity.keywordDownloader.swap(this.connectHandle);
-			showProgressDialog(Global.UPDATE_DIALOG);
 		}
 	}
 

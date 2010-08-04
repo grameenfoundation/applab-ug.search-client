@@ -151,19 +151,18 @@ public class SearchActivity extends Activity {
 		nextButtonSmall.setText(getString(R.string.next_button));
 		layout = (LinearLayout) findViewById(R.id.layout);
 		backButton.setText(getString(R.string.back_button));
-		
-		if (keywordParser == null)
-		{
+
+		if (keywordParser == null) {
 			keywordParser = new KeywordParser(this.getApplicationContext(),
 					progressHandler, connectHandle);
 		}
-		
+
 		// Initialize selectedKeywords to empty array list
 		selectedKeywords = new ArrayList<String>();
-		
+
 		if (!SearchActivity.isUpdatingKeywords) {
 			searchStateData = (ActivityState) getLastNonConfigurationInstance();
-			
+
 			if (searchStateData != null) {
 				sequence = searchStateData.myField;
 				selectedKeywords = searchStateData.mySelect;
@@ -175,16 +174,16 @@ public class SearchActivity extends Activity {
 				}
 				searchPath.setText(query);
 			}
-			
+
 			buildRadioList();
 		}
-		
+
 		if (sequence > 0) {
 			startLayout.setVisibility(View.GONE);
 		} else {
 			layout.setVisibility(View.GONE);
 		}
-		
+
 		nextButtonLarge.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				radioId = keywordChoices.getCheckedRadioButtonId();
@@ -354,7 +353,7 @@ public class SearchActivity extends Activity {
 						i.putExtra("name", Global.intervieweeName);
 						i.putExtra("location", Global.location);
 						i.putExtra("fromSearchActivity", true);
-						
+
 						startActivity(i);
 						finish();
 					}
@@ -372,9 +371,9 @@ public class SearchActivity extends Activity {
 				}
 				break;
 			case Global.KEYWORD_PARSE_SUCCESS:
-				
+
 				// If this is still hanging around, get rid of it
-				if(selectedKeywords != null){
+				if (selectedKeywords != null) {
 					selectedKeywords.clear();
 				}
 				searchPath.setText("Search: ");
@@ -550,7 +549,6 @@ public class SearchActivity extends Activity {
 							public void onClick(DialogInterface dialog, int id) {
 								dialog.cancel();
 								if (SearchActivity.isUpdatingKeywords) {
-									getServerUrl(R.string.update_path);
 									SearchActivity.networkThread = new Thread(
 											SearchActivity.keywordDownloader);
 									SearchActivity.networkThread.start();
@@ -617,7 +615,6 @@ public class SearchActivity extends Activity {
 		String url = settings.getString(Settings.KEY_SERVER, this
 				.getString(R.string.server));
 		url = url.concat("/" + this.getString(id));
-		Global.URL = url;
 		return url;
 	}
 
@@ -633,11 +630,13 @@ public class SearchActivity extends Activity {
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage(getString(R.string.progress_msg));
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setIndeterminate(true);
 			progressDialog.setCancelable(false);
 			progressDialog.show();
 			break;
 		case Global.PARSE_DIALOG:
 			// Updates previously showing update dialog
+			progressDialog.setIndeterminate(false);
 			progressDialog.setMessage(getString(R.string.parse_msg));
 			break;
 		case Global.CONNECT_DIALOG:
@@ -657,8 +656,9 @@ public class SearchActivity extends Activity {
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
 						SearchActivity.isUpdatingKeywords = true;
-						getServerUrl(R.string.update_path);
-						keywordDownloader = new KeywordDownloader(connectHandle);
+						keywordDownloader = new KeywordDownloader(
+								connectHandle,
+								getServerUrl(R.string.update_path));
 						networkThread = new Thread(keywordDownloader);
 						networkThread.start();
 						showProgressDialog(Global.UPDATE_DIALOG);
@@ -760,23 +760,25 @@ public class SearchActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		if (SearchActivity.parserThread != null
-				&& SearchActivity.parserThread.isAlive()) {
-			SearchActivity.keywordParser.setHandlers(this
-					.getApplicationContext(), this.connectHandle,
-					this.progressHandler);
-			showProgressDialog(Global.UPDATE_DIALOG);
-			showProgressDialog(Global.PARSE_DIALOG);
-			// Cross check that parser thread is still alive
-			if (!(SearchActivity.parserThread != null && SearchActivity.parserThread
-					.isAlive())) {
-				progressDialog.dismiss();
+		if (configurationChanged) {
+			if (SearchActivity.parserThread != null
+					&& SearchActivity.parserThread.isAlive()) {
+				SearchActivity.keywordParser.setHandlers(this
+						.getApplicationContext(), this.connectHandle,
+						this.progressHandler);
+				showProgressDialog(Global.UPDATE_DIALOG);
+				showProgressDialog(Global.PARSE_DIALOG);
+				// Cross check that parser thread is still alive
+				if (!(SearchActivity.parserThread != null && SearchActivity.parserThread
+						.isAlive())) {
+					progressDialog.dismiss();
+				}
+			} else if (SearchActivity.networkThread != null
+					&& SearchActivity.networkThread.isAlive()) {
+				Log.i(LOG_TAG, "Network thread is alive.");
+				SearchActivity.keywordDownloader.swap(this.connectHandle);
+				showProgressDialog(Global.UPDATE_DIALOG);
 			}
-		} else if (SearchActivity.networkThread != null
-				&& SearchActivity.networkThread.isAlive()) {
-			Log.i(LOG_TAG, "Network thread is alive.");
-			SearchActivity.keywordDownloader.swap(this.connectHandle);
-			showProgressDialog(Global.UPDATE_DIALOG);
 		}
 	}
 }

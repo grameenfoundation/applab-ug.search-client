@@ -86,7 +86,7 @@ public class Storage {
 	public void close() {
 		mDbHelper.close();
 	}
-	
+
 	/**
 	 * Returns SQL string for table creation
 	 * 

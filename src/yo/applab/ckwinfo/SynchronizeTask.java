@@ -44,12 +44,14 @@ public class SynchronizeTask {
 				Log.i(LOG_TAG, "Launch time synchronization started...");
 				submitPendingUsageLogs();
 				submitIncompleteSearches();
-				
-				// TODO: Removing this from 2.7 because the user experience isn't yet satisfactory.
+
+				// TODO: Removing this from 2.7 because the user experience
+				// isn't yet satisfactory.
 				// For 2.7 we only have Initial update and Manual update
-				// For 2.8 we need to think about how the user expects the timer to work
+				// For 2.8 we need to think about how the user expects the timer
+				// to work
 				// backgroundUpdateKeywords();
-				
+
 				// Schedule recurring tasks
 				scheduleRecurringTimer();
 			}
@@ -66,16 +68,6 @@ public class SynchronizeTask {
 		this.timer.scheduleAtFixedRate(new SynchronizeScheduler(this),
 				Global.SYNCHRONIZATION_INTERVAL,
 				Global.SYNCHRONIZATION_INTERVAL);
-	}
-
-	/**
-	 * updates local keywords cache
-	 */
-	public void updateKeywords() {
-		getServerUrl(R.string.update_path);
-		keywordDownloader = new KeywordDownloader(this.handler);
-		Thread network = new Thread(keywordDownloader);
-		network.start();
 	}
 
 	/**
@@ -221,10 +213,10 @@ public class SynchronizeTask {
 			submitPendingUsageLogs();
 			Log.i(LOG_TAG, "Updating incomplete searches...");
 			submitIncompleteSearches();
-			
-			//Log.i(LOG_TAG, "Updating keywords...");
-			//backgroundUpdateKeywords(); 
-			//XXX Luke asked to keep this update to launch time synchronization
+
+			// Log.i(LOG_TAG, "Updating keywords...");
+			// backgroundUpdateKeywords();
+			// XXX Luke asked to keep this update to launch time synchronization
 		}
 	}
 }
