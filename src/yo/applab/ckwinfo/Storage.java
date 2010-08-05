@@ -28,7 +28,7 @@ public class Storage {
 	public static final String KEY_ROWID = "_id";
 	private static final String DATABASE_NAME = "search";
 	private static final String KEY_VALIDITY = "validity";
-	private static final int DATABASE_VERSION = 2;
+	private static final int DATABASE_VERSION = 3;//XXX release version 2.7
 	private static final int SEQUENCES = 32;
 
 	private DatabaseHelper mDbHelper;
@@ -59,11 +59,11 @@ public class Storage {
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			Log.w("StorageAdapter", "Upgrading database from version "
+			Log.w("StorageAdapter", "***Upgrading database from version*** "
 					+ oldVersion + " to " + newVersion
 					+ ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS" + Global.DATABASE_TABLE);
-			db.execSQL("DROP TABLE IF EXISTS" + Global.DATABASE_TABLE2);
+			db.execSQL("DROP TABLE IF EXISTS " + Global.DATABASE_TABLE);
+			db.execSQL("DROP TABLE IF EXISTS " + Global.DATABASE_TABLE2);
 			onCreate(db);
 		}
 	}

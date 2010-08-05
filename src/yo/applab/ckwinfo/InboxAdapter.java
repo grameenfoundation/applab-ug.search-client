@@ -39,7 +39,7 @@ public class InboxAdapter {
 	private static final String DATABASE_NAME = "resultstorage";
 	public static final String INBOX_DATABASE_TABLE = "inbox";
 	public static final String ACCESS_LOG_DATABASE_TABLE = "access_logs";
-	private static final int DATABASE_VERSION = 2;
+	private static final int DATABASE_VERSION = 3;//XXX release version 2.7
 	private DatabaseHelper databaseHelper;
 	private SQLiteDatabase database;
 	private static final String CREATE_INBOX_DATABASE_TABLE = "create table "
@@ -81,8 +81,8 @@ public class InboxAdapter {
 			Log.w("InboxAdapter", "Upgrading database from version "
 					+ oldVersion + " to " + newVersion
 					+ ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS" + INBOX_DATABASE_TABLE);
-			db.execSQL("DROP TABLE IF EXISTS" + ACCESS_LOG_DATABASE_TABLE);
+			db.execSQL("DROP TABLE IF EXISTS " + INBOX_DATABASE_TABLE);
+			db.execSQL("DROP TABLE IF EXISTS " + ACCESS_LOG_DATABASE_TABLE);
 			onCreate(db);
 		}
 	}

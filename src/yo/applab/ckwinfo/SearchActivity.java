@@ -127,9 +127,7 @@ public class SearchActivity extends Activity {
 			if (configurationChanged) {
 				Log.w(LOG_TAG, "Activity RESTART");
 			}
-		}
-		synchronizeTask = new SynchronizeTask(this.connectHandle, this
-				.getApplicationContext());
+		}	
 		setContentView(R.layout.main);
 		String activityTitle = getString(R.string.app_name) + " | ";
 		if (Global.intervieweeName.length() > 30) {
@@ -238,6 +236,7 @@ public class SearchActivity extends Activity {
 				if (canSubmitQuery) {
 					try {
 						showProgressDialog(Global.CONNECT_DIALOG);
+						synchronizeTask = new SynchronizeTask(connectHandle, getApplicationContext());
 						synchronizeTask.getSearchResults(getURL());
 					} catch (UnsupportedEncodingException e) {
 						Log.e(LOG_TAG, "UnsupportedEncodingException: "
@@ -556,6 +555,7 @@ public class SearchActivity extends Activity {
 								} else {
 									try {
 										showProgressDialog(Global.CONNECT_DIALOG);
+										synchronizeTask = new SynchronizeTask(connectHandle, getApplicationContext());
 										synchronizeTask
 												.getSearchResults(getURL());
 									} catch (UnsupportedEncodingException e) {

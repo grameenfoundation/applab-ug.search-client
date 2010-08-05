@@ -408,9 +408,7 @@ public class DisplaySearchResultsActivity extends Activity {
 				}).setNegativeButton("Retry",
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
-								dialog.cancel();
-								SynchronizeTask synchronizeTask = new SynchronizeTask(
-										connectHandle, getApplicationContext());
+								dialog.cancel();								
 								if (DisplaySearchResultsActivity.isUpdatingKeywords) {
 									DisplaySearchResultsActivity.isUpdatingKeywords = true;
 									getServerUrl(R.string.update_path);
@@ -424,6 +422,8 @@ public class DisplaySearchResultsActivity extends Activity {
 									showProgressDialog(Global.UPDATE_DIALOG);
 								} else {
 									showProgressDialog(Global.CONNECT_DIALOG);
+									SynchronizeTask synchronizeTask = new SynchronizeTask(
+											connectHandle, getApplicationContext());
 									synchronizeTask
 											.getSearchResults(getRequestString());
 								}
