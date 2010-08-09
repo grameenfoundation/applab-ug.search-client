@@ -142,8 +142,8 @@ public class DisplaySearchResultsActivity extends Activity {
 			}
 		}
 		this.searchResultsTextView = (TextView) findViewById(R.id.content_view);
-		TextView mSearch = (TextView) findViewById(R.id.search);
-		TextView mDate = (TextView) findViewById(R.id.Date_time);
+		TextView searchResultTitle = (TextView) findViewById(R.id.search);
+		TextView searchDateDisplay = (TextView) findViewById(R.id.Date_time);
 		this.backButton = (Button) findViewById(R.id.back_button);
 		this.deleteButton = (Button) findViewById(R.id.delete_button);
 		this.sendButton = (Button) findViewById(R.id.send_button);
@@ -161,7 +161,7 @@ public class DisplaySearchResultsActivity extends Activity {
 				DisplaySearchResultsActivity.lastRowId = inboxDatabase
 						.insertRecord(search, getString(
 								R.string.search_failure, search), name,
-								location, "Incomplete", request);
+								location, "Incomplete", this.request);
 			}
 
 			if (this.fromInbox) {
@@ -192,7 +192,7 @@ public class DisplaySearchResultsActivity extends Activity {
 					.contentEquals("Incomplete")) {
 				this.isIncompleteSearch = true;
 			}
-			if (this.request == null || (this.request.length() == 0)) {
+			if (this.request == null || this.request.length() == 0) {
 				this.request = inboxCursor.getString(requestColumn);
 			}
 			if (this.location == null || (this.location.length() == 0)) {
@@ -205,10 +205,9 @@ public class DisplaySearchResultsActivity extends Activity {
 
 			submissionTime = inboxCursor.getString(dateColumn);
 			searchResultsTextView.setText(inboxCursor.getString(bodyColumn));
-			mDate.setText(submissionTime);
-			request = inboxCursor.getString(titleColumn);
+			searchDateDisplay.setText(submissionTime);
 
-			mSearch.setText(request);
+			searchResultTitle.setText(inboxCursor.getString(titleColumn));
 
 			if (!this.showBackButton) {
 				this.backButton.setText(getString(R.string.new_button));
@@ -287,7 +286,7 @@ public class DisplaySearchResultsActivity extends Activity {
 				String requestString = getRequestString();
 				showProgressDialog(Global.CONNECT_DIALOG);
 				SynchronizeTask synchronizeTask = new SynchronizeTask(
-						connectHandle, getApplicationContext());
+						connectHandle, getApplicationContext());				
 				synchronizeTask.getSearchResults(requestString);
 				isIncompleteSearch = false;
 			}
@@ -302,7 +301,7 @@ public class DisplaySearchResultsActivity extends Activity {
 	private String getRequestString() {
 		String requestString = "";
 		requestString = requestString.concat("?keyword=");
-		requestString = requestString.concat(request.replace(" ", "%20"));
+		requestString = requestString.concat(this.request.replace(" ", "%20"));
 		TelephonyManager mTelephonyMngr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 		String imei = mTelephonyMngr.getDeviceId();
 		try {
@@ -408,7 +407,7 @@ public class DisplaySearchResultsActivity extends Activity {
 				}).setNegativeButton("Retry",
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
-								dialog.cancel();								
+								dialog.cancel();
 								if (DisplaySearchResultsActivity.isUpdatingKeywords) {
 									DisplaySearchResultsActivity.isUpdatingKeywords = true;
 									getServerUrl(R.string.update_path);
@@ -423,7 +422,8 @@ public class DisplaySearchResultsActivity extends Activity {
 								} else {
 									showProgressDialog(Global.CONNECT_DIALOG);
 									SynchronizeTask synchronizeTask = new SynchronizeTask(
-											connectHandle, getApplicationContext());
+											connectHandle,
+											getApplicationContext());
 									synchronizeTask
 											.getSearchResults(getRequestString());
 								}
