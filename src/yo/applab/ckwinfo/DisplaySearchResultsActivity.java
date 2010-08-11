@@ -621,40 +621,50 @@ public class DisplaySearchResultsActivity extends Activity {
 	}
 
 	@Override
-	protected void onStart() {
-		super.onStart();
-		if (configurationChanged) {
-			if (DisplaySearchResultsActivity.parserThread != null
-					&& DisplaySearchResultsActivity.parserThread.isAlive()) {
-				Log.i(LOG_TAG, "Parse thread alive.");
-				DisplaySearchResultsActivity.keywordParser.setHandlers(this
-						.getApplicationContext(), this.connectHandle,
-						this.progressHandler);
-				showProgressDialog(Global.UPDATE_DIALOG);
-				showProgressDialog(Global.CONNECT_DIALOG);
-				// Cross check that parser thread is still alive
-				if (!(DisplaySearchResultsActivity.parserThread != null && DisplaySearchResultsActivity.parserThread
-						.isAlive())) {
-					progressDialog.dismiss();
-				}
-			} else if (DisplaySearchResultsActivity.networkThread != null
-					&& DisplaySearchResultsActivity.networkThread.isAlive()) {
-				Log.i(LOG_TAG, "Network thread is alive.");
-				DisplaySearchResultsActivity.keywordDownloader
-						.swap(this.connectHandle);
-				showProgressDialog(Global.UPDATE_DIALOG);
+	protected void onResume() {
+		super.onResume();
+		Log.i(LOG_TAG, "-> onResume()");
+		restoreProgressDialogs();
+	}
+
+	private void restoreProgressDialogs() {
+		if (DisplaySearchResultsActivity.parserThread != null
+				&& DisplaySearchResultsActivity.parserThread.isAlive()) {
+			DisplaySearchResultsActivity.keywordParser.swap(this
+					.getApplicationContext(), this.connectHandle,
+					this.progressHandler);
+			Log.i(LOG_TAG, "Parser thread is alive");
+			Log.i(LOG_TAG, "Show parse dialog");
+			showProgressDialog(Global.UPDATE_DIALOG);
+			showProgressDialog(Global.PARSE_DIALOG);
+			// Cross check that parser thread is still alive
+			if (!(DisplaySearchResultsActivity.parserThread != null && DisplaySearchResultsActivity.parserThread
+					.isAlive())) {
+				progressDialog.dismiss();
 			}
+		} else if (DisplaySearchResultsActivity.networkThread != null
+				&& DisplaySearchResultsActivity.networkThread.isAlive()) {
+			DisplaySearchResultsActivity.keywordDownloader
+					.swap(this.connectHandle);
+			Log.i(LOG_TAG, "Is still downloading keywords...");
+			Log.i(LOG_TAG, "Show connect dialog");
+			showProgressDialog(Global.UPDATE_DIALOG);			
 		}
 	}
 
 	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		android.util.Log.i(LOG_TAG, "-> onSaveInstanceState()");
-		// remove any showing dialog since activity is going to be recreated
+	protected void onPause() {
+		Log.i(LOG_TAG, "-> onPause()");
 		if (progressDialog != null && progressDialog.isShowing()) {
-			android.util.Log.i(LOG_TAG, "Remove progress dialog");
+			Log.i(LOG_TAG, "Remove progress dialog");
 			progressDialog.dismiss();
 		}
+		super.onPause();
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		Log.i(LOG_TAG, "-> onSaveInstanceState()");
 		// Flag for configuration changes
 		outState.putBoolean("changed", true);
 		// continue with the normal instance state save

@@ -127,7 +127,7 @@ public class SearchActivity extends Activity {
 			if (configurationChanged) {
 				Log.w(LOG_TAG, "Activity RESTART");
 			}
-		}	
+		}
 		setContentView(R.layout.main);
 		String activityTitle = getString(R.string.app_name) + " | ";
 		if (Global.intervieweeName.length() > 30) {
@@ -236,7 +236,8 @@ public class SearchActivity extends Activity {
 				if (canSubmitQuery) {
 					try {
 						showProgressDialog(Global.CONNECT_DIALOG);
-						synchronizeTask = new SynchronizeTask(connectHandle, getApplicationContext());
+						synchronizeTask = new SynchronizeTask(connectHandle,
+								getApplicationContext());
 						synchronizeTask.getSearchResults(getURL());
 					} catch (UnsupportedEncodingException e) {
 						Log.e(LOG_TAG, "UnsupportedEncodingException: "
@@ -555,7 +556,9 @@ public class SearchActivity extends Activity {
 								} else {
 									try {
 										showProgressDialog(Global.CONNECT_DIALOG);
-										synchronizeTask = new SynchronizeTask(connectHandle, getApplicationContext());
+										synchronizeTask = new SynchronizeTask(
+												connectHandle,
+												getApplicationContext());
 										synchronizeTask
 												.getSearchResults(getURL());
 									} catch (UnsupportedEncodingException e) {
@@ -734,51 +737,59 @@ public class SearchActivity extends Activity {
 	}
 
 	@Override
-	protected void onPause() {
-		super.onPause();
-		if (!configurationChanged) {
-			// release synchronization lock
-			KeywordSynchronizer.completeSynchronization();
-			configurationChanged = false;
+	protected void onDestroy() {
+		super.onDestroy();
+		// release synchronization lock
+		KeywordSynchronizer.completeSynchronization();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		Log.i(LOG_TAG, "-> onResume()");
+		restoreProgressDialogs();
+	}
+
+	private void restoreProgressDialogs() {
+		if (SearchActivity.parserThread != null
+				&& SearchActivity.parserThread.isAlive()) {
+			SearchActivity.keywordParser.swap(this
+					.getApplicationContext(), this.connectHandle,
+					this.progressHandler);
+			Log.i(LOG_TAG, "Parser thread is alive");
+			Log.i(LOG_TAG, "Show parse dialog");
+			showProgressDialog(Global.UPDATE_DIALOG);
+			showProgressDialog(Global.PARSE_DIALOG);
+			// Cross check that parser thread is still alive
+			if (!(SearchActivity.parserThread != null && SearchActivity.parserThread
+					.isAlive())) {
+				progressDialog.dismiss();
+			}
+		} else if (SearchActivity.networkThread != null
+				&& SearchActivity.networkThread.isAlive()) {
+			SearchActivity.keywordDownloader.swap(this.connectHandle);
+			Log.i(LOG_TAG, "Is still downloading keywords...");
+			Log.i(LOG_TAG, "Show connect dialog");
+			showProgressDialog(Global.UPDATE_DIALOG);			
 		}
+	}
+
+	@Override
+	protected void onPause() {
+		Log.i(LOG_TAG, "-> onPause()");
+		if (progressDialog != null && progressDialog.isShowing()) {
+			Log.i(LOG_TAG, "Remove progress dialog");
+			progressDialog.dismiss();
+		}
+		super.onPause();
 	}
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
-		android.util.Log.i(LOG_TAG, "-> onSaveInstanceState()");
-		// remove any showing dialog since activity is going to be recreated
-		if (progressDialog != null && progressDialog.isShowing()) {
-			android.util.Log.i(LOG_TAG, "Remove progress dialog");
-			progressDialog.dismiss();
-		}
+		Log.i(LOG_TAG, "-> onSaveInstanceState()");
 		// Flag for configuration changes
 		outState.putBoolean("changed", true);
 		// continue with the normal instance state save
 		super.onSaveInstanceState(outState);
-	}
-
-	@Override
-	protected void onStart() {
-		super.onStart();
-		if (configurationChanged) {
-			if (SearchActivity.parserThread != null
-					&& SearchActivity.parserThread.isAlive()) {
-				SearchActivity.keywordParser.setHandlers(this
-						.getApplicationContext(), this.connectHandle,
-						this.progressHandler);
-				showProgressDialog(Global.UPDATE_DIALOG);
-				showProgressDialog(Global.PARSE_DIALOG);
-				// Cross check that parser thread is still alive
-				if (!(SearchActivity.parserThread != null && SearchActivity.parserThread
-						.isAlive())) {
-					progressDialog.dismiss();
-				}
-			} else if (SearchActivity.networkThread != null
-					&& SearchActivity.networkThread.isAlive()) {
-				Log.i(LOG_TAG, "Network thread is alive.");
-				SearchActivity.keywordDownloader.swap(this.connectHandle);
-				showProgressDialog(Global.UPDATE_DIALOG);
-			}
-		}
 	}
 }

@@ -209,7 +209,7 @@ public class KeywordParser implements Runnable {
 	 *            The document element interface.
 	 * @return keywords string
 	 */
-	private static String getCharacterDataFromElement(Element e) {
+	private String getCharacterDataFromElement(Element e) {
 		Node child = e.getFirstChild();
 		if (child instanceof CharacterData) {
 			CharacterData cd = (CharacterData) child;
@@ -229,7 +229,7 @@ public class KeywordParser implements Runnable {
 	 * @param progressHandler
 	 *            progress dialog hanlder
 	 */
-	public void setHandlers(Context applicationContext,
+	public void swap(Context applicationContext,
 			Handler activityHandler, Handler progressHandler) {
 		this.progressHandler = progressHandler;
 		this.responseHandler = activityHandler;

@@ -59,7 +59,7 @@ public class MainMenuActivity extends Activity {
 
 	/** true if there has been a configuration change */
 	private boolean configurationChanged;
-
+	private static boolean initial;
 	private ProgressDialog progressDialog;
 	private SynchronizeTask synchronizeTask;
 
@@ -78,6 +78,7 @@ public class MainMenuActivity extends Activity {
 				.getApplicationContext());
 		if (!configurationChanged) {
 			init();
+			MainMenuActivity.initial = true;
 		}
 		setContentView(R.layout.main_menu);
 		setTitle(getString(R.string.app_name));
@@ -175,18 +176,6 @@ public class MainMenuActivity extends Activity {
 		});
 
 	}
-
-	/**
-	 * creates dialog shown when connecting to the network
-	 */
-	/*
-	 * private void showConnectDialog() { progressDialog = new
-	 * ProgressDialog(this); progressDialog
-	 * .setMessage(getString(R.string.progress_msg)); progressDialog
-	 * .setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-	 * progressDialog.setIndeterminate(true);
-	 * progressDialog.setCancelable(false); progressDialog.show(); }
-	 */
 
 	/**
 	 * creates dialog shown when waiting on background synchronization to
@@ -477,50 +466,62 @@ public class MainMenuActivity extends Activity {
 	}
 
 	@Override
-	protected void onStart() {
-		super.onStart();
-		Log.i(LOG_TAG, "-> onStart()");
-		if (configurationChanged) {
-			if (MainMenuActivity.parserThread != null
-					&& MainMenuActivity.parserThread.isAlive()) {
-				MainMenuActivity.keywordParser.setHandlers(this
-						.getApplicationContext(), this.connectHandle,
-						this.progressHandler);
-				Log.i(LOG_TAG, "Parser thread is alive");
-				android.util.Log.e(LOG_TAG, "Show parse dialog");
-				if (MainMenuActivity.cacheExists) {
-					showProgressDialog(Global.UPDATE_DIALOG);
-				} else {
-					showProgressDialog(Global.SETUP_DIALOG);
-				}
-				showProgressDialog(Global.PARSE_DIALOG);
-				// Cross check that parser thread is still alive
-				if (!(MainMenuActivity.parserThread != null && MainMenuActivity.parserThread
-						.isAlive())) {
-					progressDialog.dismiss();
-				}
-			} else if (MainMenuActivity.networkThread != null
-					&& MainMenuActivity.networkThread.isAlive()) {
-				MainMenuActivity.keywordDownloader.swap(this.connectHandle);
-				Log.i(LOG_TAG, "Is still downloading keywords...");
-				android.util.Log.e(LOG_TAG, "Show connect dialog");
-				if (MainMenuActivity.cacheExists) {
-					showProgressDialog(Global.UPDATE_DIALOG);
-				} else {
-					showProgressDialog(Global.SETUP_DIALOG);
-				}
+	protected void onResume() {
+		super.onResume();	
+		Log.i(LOG_TAG, "-> onResume()");
+		if (!MainMenuActivity.initial) {
+			restoreProgressDialogs();
+		} else {
+			MainMenuActivity.initial = false;
+		}
+	}
+
+	private void restoreProgressDialogs() {
+		if (MainMenuActivity.parserThread != null
+				&& MainMenuActivity.parserThread.isAlive()) {
+			MainMenuActivity.keywordParser.swap(this
+					.getApplicationContext(), this.connectHandle,
+					this.progressHandler);
+			Log.i(LOG_TAG, "Parser thread is alive");
+			Log.i(LOG_TAG, "Show parse dialog");
+			if (MainMenuActivity.cacheExists) {
+				showProgressDialog(Global.UPDATE_DIALOG);
+			} else {
+				showProgressDialog(Global.SETUP_DIALOG);
+			}
+			showProgressDialog(Global.PARSE_DIALOG);
+
+			// Cross check that parser thread is still alive
+			if (!(MainMenuActivity.parserThread != null && MainMenuActivity.parserThread
+					.isAlive())) {
+				progressDialog.dismiss();
+			}
+		} else if (MainMenuActivity.networkThread != null
+				&& MainMenuActivity.networkThread.isAlive()) {
+			MainMenuActivity.keywordDownloader.swap(this.connectHandle);
+			Log.i(LOG_TAG, "Is still downloading keywords...");
+			Log.i(LOG_TAG, "Show connect dialog");
+			if (MainMenuActivity.cacheExists) {
+				showProgressDialog(Global.UPDATE_DIALOG);
+			} else {
+				showProgressDialog(Global.SETUP_DIALOG);
 			}
 		}
 	}
 
 	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		android.util.Log.i(LOG_TAG, "-> onSaveInstanceState()");
-		// remove any showing dialog since activity is going to be recreated
+	protected void onPause() {
+		Log.i(LOG_TAG, "-> onPause()");
 		if (progressDialog != null && progressDialog.isShowing()) {
-			android.util.Log.i(LOG_TAG, "Remove progress dialog");
+			Log.i(LOG_TAG, "Remove progress dialog");
 			progressDialog.dismiss();
 		}
+		super.onPause();
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		Log.i(LOG_TAG, "-> onSaveInstanceState()");
 		// Flag for configuration changes
 		outState.putBoolean("changed", true);
 		// continue with the normal instance state save
