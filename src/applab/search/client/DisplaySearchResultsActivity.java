@@ -10,13 +10,15 @@ License for the specific language governing permissions and limitations under
 the License.
  */
 
-package yo.applab.ckwinfo;
+package applab.search.client;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import applab.search.client.R;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -286,7 +288,7 @@ public class DisplaySearchResultsActivity extends Activity {
 				String requestString = getRequestString();
 				showProgressDialog(Global.CONNECT_DIALOG);
 				SynchronizeTask synchronizeTask = new SynchronizeTask(
-						connectHandle, getApplicationContext());				
+						connectHandle, getApplicationContext());
 				synchronizeTask.getSearchResults(requestString);
 				isIncompleteSearch = false;
 			}

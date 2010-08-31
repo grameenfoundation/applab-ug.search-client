@@ -9,8 +9,9 @@ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
  */
-package yo.applab.ckwinfo;
+package applab.search.client;
 
+import applab.search.client.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;

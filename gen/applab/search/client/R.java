@@ -5,7 +5,7 @@
  * should not be modified by hand.
  */
 
-package yo.applab.ckwinfo;
+package applab.search.client;
 
 public final class R {
     public static final class attr {

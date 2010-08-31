@@ -1,4 +1,4 @@
-package yo.applab.ckwinfo;
+package applab.search.client;
 
 import android.util.Log;
 

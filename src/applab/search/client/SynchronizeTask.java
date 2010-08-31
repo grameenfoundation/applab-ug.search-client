@@ -1,9 +1,11 @@
-package yo.applab.ckwinfo;
+package applab.search.client;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import applab.search.client.R;
 
 import android.content.Context;
 import android.content.SharedPreferences;
