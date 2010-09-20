@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>oktopus</name>
+	<name>Search Client</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -30,4 +30,16 @@
 		<nature>com.android.ide.eclipse.adt.AndroidNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>CommonClient</name>
+			<type>2</type>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/commonClient/src</locationURI>
+		</link>
+		<link>
+			<name>commonClient_src</name>
+			<type>2</type>
+			<locationURI>_android_commonClient/src</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

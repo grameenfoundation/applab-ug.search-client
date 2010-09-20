@@ -15,20 +15,44 @@ package applab.search.client;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import applab.client.ApplabActivity;
 import applab.search.client.R;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-public class Settings extends PreferenceActivity implements
-		OnSharedPreferenceChangeListener {
-	public static String KEY_SERVER = "server";
+public class Settings extends PreferenceActivity implements OnSharedPreferenceChangeListener {
+	private static String KEY_SERVER = "server";
+
+	/**
+	 * returns the server url based on our settings
+	 * TODO: unify this with the approach in Pulse and our shared PropertyStorage code
+	 */
+	public static String getServerUrl() {
+	    Context globalContext = ApplabActivity.getGlobalContext();
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(globalContext);
+        String baseServerUrl = settings.getString(KEY_SERVER, globalContext.getString(R.string.server));
+        if (!baseServerUrl.endsWith("/")) {
+            baseServerUrl += "/";
+        }
+
+        return baseServerUrl;
+	}
+	
+	/**
+	 * Helper overload that takes a resource string for the local path
+	 */
+	public static String getServerUrl(int id) {
+        return getServerUrl() + ApplabActivity.getGlobalContext().getString(id);
+    }
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {

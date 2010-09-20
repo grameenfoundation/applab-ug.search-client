@@ -2,13 +2,13 @@
 
 <resources>
 <string name="app_name">CKW Search</string>
-<string name="app_version">2.7.1</string>
-<string name="release_date">August 23 2010</string>
+<string name="app_version">2.8</string>
+<string name="release_date">September 15, 2010</string>
 <string name="info">Grameen Foundation, Applab Uganda\nckw@applab.org</string>
-<string name="inbox_title">Inbox</string>
+<string name="inbox_title">Recent Searches</string>
 <string name="server_url">Server URL</string>
 <string name="new_upload_server">Change server URL</string>
-<string name="new_download_server">Change download Server</string>
+<string name="new_download_server">Change download server</string>
 <string name="about_activity">About</string>
 <string name="settings_activity">Preferences</string>
 <string name="search_path">mobile/oktopus/search.php</string>
@@ -19,8 +19,11 @@
 <string name="connection_error">Unable to establish a connection</string>
 <string name="incomplete_keyword_response_error">Failed to get all keywords</string>
 <string name="keyword_parse_error">Failed to process keywords</string>
+<string name="update_dialog_title">CKW Search Setup</string>
+<string name="update_dialog_message">Downloading Keywords. Please wait...</string>
 <string name="progress_msg">Loading. Please wait...</string>
-<string name="parse_msg">Initializing CKW Search...\nThis may take a few minutes.</string>
+<string name="parse_dialog_title">CKW Search Setup</string>
+<string name="parse_msg">Setting up Keywords. Please wait...</string>
 <string name="progress_initial">Loading keywords for the first time. Please wait...</string>
 <string name="progress_header">Initial setup</string>
 <string name="list_saved">Content saved successfully</string>
@@ -31,8 +34,8 @@
 <string name="end_of_search">You have reached the end of your search.\nPress Send to access the requested information.</string>
 <string name="empty_text">Farmer\'s name or ID cannot be empty!</string>
 <string name="confirm_id">Farmer\'s name or ID:</string>
-<string name="invalid_text">Invalid character!</string>
-<string name="empty_select">Select a keyword!</string>
+<string name="invalid_text">Invalid character.</string>
+<string name="empty_select">Select a keyword.</string>
 <string name="keyword_activity">Search</string>
 <string name="gps_activity">Location</string>
 <string name="gps_header">Getting Location</string>
@@ -41,7 +44,7 @@
 <string name="get_gps2">Replace Location</string>
 <string name="location_accuracy">Accuracy is %s meters.</string>
 <string name="next_button">Next</string>
-<string name="inbox_button">Inbox</string>
+<string name="inbox_button">Recent Searches</string>
 <string name="send_button">Send</string>
 <string name="back_button">Back</string>
 <string name="new_button">New Search</string>
@@ -53,7 +56,7 @@
 <string name="wait_on_background">Keywords are being updated. Please wait...</string>
 <string name="Keyword">Keyword</string>
 <string name="delete_button">Delete</string>
-<string name="menu_inbox">Inbox</string>
+<string name="menu_inbox">Recent Searches</string>
 <string name="inbox_empty">There are no saved results</string>
 <string name="menu_refresh">Update Keywords</string>
 <string name="refreshed">Keywords Updated</string>

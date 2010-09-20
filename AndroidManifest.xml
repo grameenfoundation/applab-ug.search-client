@@ -12,6 +12,7 @@
             </intent-filter>
         </activity>
 <activity android:name="SearchActivity"/>
+<activity android:name="applab.client.ApplabActivity"/>
 <activity android:name=".DisplaySearchResultsActivity"/>
 <activity android:name=".InboxListActivity" android:theme="@android:style/Theme.Light"/>
 <activity android:name=".AboutActivity" android:label="@string/about_activity"/>

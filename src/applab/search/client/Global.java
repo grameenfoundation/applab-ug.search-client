@@ -13,11 +13,14 @@ public class Global {
 	public static final int ABOUT_ID = Menu.FIRST + 7;
 	public static final int BACK_ID = Menu.FIRST;
 
-	public static final int CONNECTION_ERROR = 0;
-	public static final int CONNECTION_SUCCESS = 1;
-	public static final int KEYWORD_PARSE_SUCCESS = 2;
-	public static final int KEYWORD_PARSE_ERROR = 3;
-	public static final int DISMISS_WAIT_DIALOG = 4;
+    public static final int KEYWORD_DOWNLOAD_STARTING = 0;
+    public static final int CONNECTION_ERROR = 1;
+    public static final int KEYWORD_DOWNLOAD_SUCCESS = 2;
+    public static final int KEYWORD_DOWNLOAD_FAILURE = 3;
+    public static final int KEYWORD_PARSE_SUCCESS = 4;
+    public static final int KEYWORD_PARSE_ERROR = 5;
+    public static final int DISMISS_WAIT_DIALOG = 6;
+    public static final int KEYWORD_PARSE_GOT_NODE_TOTAL = 7;
 
 	public static final int UPDATE_DIALOG = 0;
 	public static final int CONNECT_DIALOG = 1;
@@ -26,9 +29,6 @@ public class Global {
 
 	/** connect and read timeout */
 	public static final int TIMEOUT = 30000;
-
-	/** background synchronize time interval in miliseconds */
-	public static final int SYNCHRONIZATION_INTERVAL = 3600000;
 
 	/** keywords table 1 */
 	public static final String DATABASE_TABLE = "keywords";
@@ -42,13 +42,8 @@ public class Global {
 	/** current or last known location */
 	public static String location = "Unknown";
 
-	/** set at application launch */
-	public static boolean applicationLaunched;
-
 	/** holds connection response body */
 	public static String data;
 
 	public static String URL;
-	public static String IMEI;
-
 }

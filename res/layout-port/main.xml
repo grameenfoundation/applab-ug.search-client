@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
   
-<LinearLayout
+<RelativeLayout
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:id="@+id/rl"
   android:layout_width="fill_parent"
@@ -12,7 +12,7 @@
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:id="@+id/r2"
   android:layout_width="fill_parent"
-  android:layout_height="300dp">
+  android:layout_height="360dp">
   
  <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -34,15 +34,19 @@
     
      <TextView
      	  android:id="@+id/search"
+     	  android:layout_below = "@+id/r2"
           android:layout_width="fill_parent"
           android:layout_height="wrap_content"
-          android:textSize="8pt" />
+          android:textSize="6pt" />
           <LinearLayout
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:id="@+id/startLayout"
   android:orientation="vertical"
   android:layout_width="fill_parent"
-  android:layout_height="wrap_content">
+  android:layout_height="wrap_content"
+  android:layout_alignParentBottom="true"
+  android:background="@drawable/gray">
+  
    <Button
           android:id="@+id/next"
           android:textColor="@drawable/black"
@@ -58,7 +62,9 @@
   android:id="@+id/layout"
   android:orientation="horizontal"
   android:layout_width="fill_parent"
-  android:layout_height="wrap_content">
+  android:layout_height="wrap_content"
+  android:layout_alignParentBottom="true"
+  android:background="@drawable/gray">
           <Button
           android:id="@+id/back_button"
           android:textColor="@drawable/black"
@@ -74,7 +80,7 @@
           android:layout_height="wrap_content" 
           />
      </LinearLayout>
-  </LinearLayout>
+  </RelativeLayout>
   
     
 
