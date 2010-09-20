@@ -27,9 +27,6 @@ public class Global {
 	public static final int PARSE_DIALOG = 2;
 	public static final int SETUP_DIALOG = 3;
 
-	/** connect and read timeout */
-	public static final int TIMEOUT = 30000;
-
 	/** keywords table 1 */
 	public static final String DATABASE_TABLE = "keywords";
 
@@ -41,9 +38,4 @@ public class Global {
 
 	/** current or last known location */
 	public static String location = "Unknown";
-
-	/** holds connection response body */
-	public static String data;
-
-	public static String URL;
 }

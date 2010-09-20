@@ -3,7 +3,6 @@ package applab.search.client;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.util.Log;
-import applab.client.ApplabActivity;
 
 /**
  * Helper class that handles the ownership and management of the progress
@@ -34,10 +33,11 @@ public class ProgressDialogManager {
         }
     }
     
-    public static void displayProgressDialog(int type) {
-        displayProgressDialog(type, ApplabActivity.getGlobalContext(), currentMaxVal);
-    }
-    
+    // we'd like to have overloads that don't require a context (and default to the application context)
+    // but a bug in Android 1.5 prevents that approach:
+    // http://stackoverflow.com/questions/1561803/android-progressdialog-show-crashes-with-getapplicationcontext
+    //
+    // However, we may be able to use ApplabActivity.getCurrent() in that case
     public static void displayProgressDialog(int type, Context context) {
         displayProgressDialog(type, context, currentMaxVal);
     }
@@ -52,12 +52,17 @@ public class ProgressDialogManager {
             
             dialog.setMax(currentMaxVal);
             
-            switch (ProgressDialogManager.currentType) {
+            switch (type) {
                 case Global.UPDATE_DIALOG:
                     dialog.setTitle(context.getString(R.string.update_dialog_title));
                     // TODO: MainMenuActivity used to use R.string.progress_msg here
                     dialog.setMessage(context.getString(R.string.update_dialog_message));
                     dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+                    dialog.setIndeterminate(true);
+                    dialog.setCancelable(false);
+                    break;
+                case Global.CONNECT_DIALOG:
+                    dialog.setMessage(context.getString(R.string.progress_msg));
                     dialog.setIndeterminate(true);
                     dialog.setCancelable(false);
                     break;

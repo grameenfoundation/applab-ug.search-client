@@ -3,6 +3,7 @@ package applab.search.client;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Handler;
 import android.os.Message;
@@ -97,7 +98,7 @@ public class SearchRequest {
     /**
      * Method that can be called from the UI thread to submit this request in the background
      */
-    public void submitInBackground(Handler submissionHandler) {
+    public void submitInBackground(Context context, Handler submissionHandler) {
         // store the caller's Handler in a member field since we can't pass state to all the UI paths
         this.submissionHandler = submissionHandler;
 
@@ -105,26 +106,23 @@ public class SearchRequest {
 
         // first bring up a progress dialog since we're going to hit the network
         ProgressDialogManager.silentMode = false;
-        ProgressDialogManager.displayProgressDialog(Global.CONNECT_DIALOG);
+        ProgressDialogManager.displayProgressDialog(Global.CONNECT_DIALOG, context);
+        // pass the results to our UI thread, embedded in the request
+        final Handler internalHandler = new Handler() {
+            @Override
+            public void handleMessage(Message message) {
+                onSearchSubmission(message);
+            }
+        };
 
         // now make a request to our server in the background so that we don't block the UI thread
         Thread backgroundThread = new Thread() {
             public void run() {
-                // pass the results to our UI thread, embedded in the request
-                Handler internalHandler = new Handler() {
-                    @Override
-                    public void handleMessage(Message message) {
-                        onSearchSubmission(message);
-                    }
-                };
-
-                Message submissionMessage;
                 if (submit()) {
-                    submissionMessage = Message.obtain(internalHandler, SEARCH_SUBMISSION_SUCCESS, this);
-                    submissionMessage.sendToTarget();
+                    sendSuccessMessage(internalHandler);
                 }
                 else {
-                    onSubmissionFailure(internalHandler);
+                    sendFailureMessage(internalHandler);
                 }
             }
         };
@@ -150,9 +148,9 @@ public class SearchRequest {
                 DialogInterface.OnClickListener onClickOk = new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.cancel();
-                        
+
                         // only chain to the original caller if the user cancels the request
-                        onSubmissionFailure(submissionHandler);
+                        sendFailureMessage(submissionHandler);
                     }
                 };
                 ErrorDialogManager.show(R.string.connection_error, null, onClickOk, onClickRetry);
@@ -164,7 +162,12 @@ public class SearchRequest {
         }
     }
     
-    private void onSubmissionFailure(Handler handler) {
+    private void sendSuccessMessage(Handler handler) {
+        Message submissionMessage = Message.obtain(handler, SEARCH_SUBMISSION_SUCCESS, this);
+        submissionMessage.sendToTarget();        
+    }
+
+    private void sendFailureMessage(Handler handler) {
         if (handler != null) {
             Message failureMessage = Message.obtain(handler, SEARCH_SUBMISSION_FAILURE, this);
             failureMessage.sendToTarget();

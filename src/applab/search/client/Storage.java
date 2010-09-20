@@ -24,9 +24,7 @@ import android.util.Log;
  * An adapter for the search keywords database
  */
 public class Storage {
-    public static boolean exists; // Flag to check if storage exists
-
-    public static final String KEY_ROWID = "_id";
+    private static final String KEY_ROWID = "_id";
     private static final String DATABASE_NAME = "search";
     private static final String KEY_VALIDITY = "validity";
     private static final int DATABASE_VERSION = 3;
@@ -41,7 +39,7 @@ public class Storage {
     public Storage(Context context) {
         this.context = context;
     }
-    
+
     /**
      * Attempt to open @DATABASE_NAME database
      * 
@@ -150,35 +148,18 @@ public class Storage {
     }
 
     /**
-     * check if table is empty
+     * checks if the given table exists and has valid data.
      */
-    public boolean isEmpty(String table) {
-        int count = database.query(table, new String[] { "_id" }, null, null, null,
-                null, null, "1").getCount();
-        if (count > 0) {
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-    
-    public boolean tableExistsAndIsValid(String table)
-    {
-        int count = database.query(table, new String[] { "_id" }, null, null, null,
-                null, null, "1").getCount();
-        return ((count > 0) && (this.isTableValid(table)));
-    }
-
-    /**
-     * checks if the given table has valid data.
-     */
-    public boolean isTableValid(String table) {
-        Cursor cursor = database.query(table, new String[] { KEY_VALIDITY }, null,
+    public boolean tableExistsAndIsValid(String table) {
+        Cursor cursor = database.query(table, new String[] { KEY_ROWID, KEY_VALIDITY }, null,
                 null, null, null, null, "1");
-        cursor.moveToFirst();
-        int columnIndex = cursor.getColumnIndexOrThrow(KEY_VALIDITY);
-        return cursor.getInt(columnIndex) > 0;
+        boolean isValid = false;
+        if (cursor.moveToFirst()) {
+            int columnIndex = cursor.getColumnIndexOrThrow(KEY_VALIDITY);
+            isValid = cursor.getInt(columnIndex) > 0;
+        }
+        cursor.close();
+        return isValid;
     }
 
     private static class DatabaseHelper extends SQLiteOpenHelper {

@@ -159,13 +159,12 @@ public class InboxAdapter {
                 KEY_REQUEST, KEY_DATE, KEY_NAME }, null, null, null, null,
                 KEY_DATE + " ASC", "1");
         ArrayList<SearchUsage> pendingSearches = new ArrayList<SearchUsage>();
-		if (cursor != null) {
-			if (cursor.moveToFirst()) {
-				do {
-					pendingSearches.add(new SearchUsage(cursor, true));
-				} while (cursor.moveToNext());
-			}
-		}
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                pendingSearches.add(new SearchUsage(cursor, true));
+            }
+            cursor.close();
+        }
         return pendingSearches;
     }
 
@@ -179,13 +178,12 @@ public class InboxAdapter {
                 KEY_ROWID, KEY_REQUEST, KEY_DATE, KEY_LOCATION, KEY_NAME },
                 KEY_STATUS + "='Incomplete'", null, null, null, KEY_DATE + " ASC", "1");
         ArrayList<SearchUsage> pendingSearches = new ArrayList<SearchUsage>();
-		if (cursor != null) {
-			if (cursor.moveToFirst()) {
-				do {
-					pendingSearches.add(new SearchUsage(cursor, false));
-				} while (cursor.moveToNext());
-			}
-		}
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                pendingSearches.add(new SearchUsage(cursor, false));
+            }
+            cursor.close();
+        }
         return pendingSearches;
     }
     

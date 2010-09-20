@@ -40,28 +40,7 @@ public class MainMenuActivity extends BaseSearchActivity {
         this.inboxButton = (Button)findViewById(R.id.inbox_button);
         this.inboxButton.setText(getString(R.string.inbox_button));
         this.farmerNameEditBox = (EditText)findViewById(R.id.EditText01);
-
-        // Filter out special characters from the input text
-        InputFilter filter = new InputFilter() {
-            public CharSequence filter(CharSequence source, int start, int end,
-                                       Spanned dest, int destinationStart, int destinationEnd) {
-                for (int characterIndex = start; characterIndex < end; characterIndex++) {
-                    char currentCharacter = source.charAt(characterIndex);
-                    if (Character.isLetterOrDigit(currentCharacter)) {
-                        continue;
-                    }
-
-                    if (Character.isWhitespace(currentCharacter)) {
-                        continue;
-                    }
-
-                    showToast(R.string.invalid_text);
-                    return "";
-                }
-                return null;
-            }
-        };
-        this.farmerNameEditBox.setFilters(new InputFilter[] { filter });
+        this.farmerNameEditBox.setFilters(new InputFilter[] { getFarmerInputFilter() });
 
         if (!StorageManager.hasKeywords()) {
             this.inboxButton.setEnabled(false);
@@ -94,8 +73,7 @@ public class MainMenuActivity extends BaseSearchActivity {
             Global.intervieweeName = farmerName;
             Intent nextActivity = new Intent(getApplicationContext(), classId);
             nextActivity.putExtra("block", false);
-            startActivity(nextActivity);
-            finish();
+            switchToActivity(nextActivity);
         }
         else {
             showToast(R.string.empty_text);

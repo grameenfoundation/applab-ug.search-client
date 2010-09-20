@@ -236,6 +236,7 @@ public class SynchronizationManager {
                 // the Global.KEYWORD_PARSE_GOT_NODE_TOTAL signal
                 break;
             case Global.KEYWORD_DOWNLOAD_FAILURE:
+                //TODO: don't show an error dialog if this was a background synchronization
                 showErrorDialog(R.string.incomplete_keyword_response_error);
                 break;
             case Global.KEYWORD_PARSE_GOT_NODE_TOTAL:
@@ -286,7 +287,7 @@ public class SynchronizationManager {
             parseKeywords(newKeywords);
         }
 
-        // TODO: should Looper.loop be called before downloadKeywords?
+        // TODO: Looper.loop is problematic here. This should be restructured
         Looper.loop();
         Looper looper = Looper.getMainLooper();
         looper.quit();
@@ -333,7 +334,7 @@ public class SynchronizationManager {
         // PulseDataCollector.downloadTabUpdates into our CommonClient library
         // HttpPost httpPost = HttpHelpers.createPost(baseServerUrl + "search/getKeywords");
 
-        String newKeywords = HttpHelpers.fetchContent(baseServerUrl + ApplabActivity.getGlobalContext().getString(R.string.update_path));
+        String newKeywords = HttpHelpers.fetchContent(baseServerUrl + R.string.update_path);
 
         // Check if we downloaded successfully
         int connectionResult = Global.KEYWORD_DOWNLOAD_FAILURE;

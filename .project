@@ -34,12 +34,7 @@
 		<link>
 			<name>CommonClient</name>
 			<type>2</type>
-			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/commonClient/src</locationURI>
-		</link>
-		<link>
-			<name>commonClient_src</name>
-			<type>2</type>
-			<locationURI>_android_commonClient/src</locationURI>
+			<locationURI>_android_CommonClient/src</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

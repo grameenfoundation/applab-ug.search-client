@@ -34,7 +34,7 @@ public class ErrorDialogManager {
                             DialogInterface.OnClickListener okListener, String okLabel,
                             DialogInterface.OnClickListener noListener, String negativeLabel) {
         if (context == null) {
-            context = ApplabActivity.getGlobalContext();
+            context = ApplabActivity.getCurrent();
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setMessage(errorMessage);

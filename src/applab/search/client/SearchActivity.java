@@ -84,7 +84,7 @@ public class SearchActivity extends BaseSearchActivity {
 
     /** true if there has been a configuration change */
     private boolean configurationChanged;
-    
+
     private String lastSelection = "";
 
     @Override
@@ -267,7 +267,7 @@ public class SearchActivity extends BaseSearchActivity {
         SearchRequest request = new SearchRequest(keyword.toString(),
                     Global.intervieweeName, dateFormat.format(new Date()));
 
-        request.submitInBackground(new Handler() {
+        request.submitInBackground(this, new Handler() {
             @Override
             public void handleMessage(Message message) {
                 onSearchSubmission(message);
@@ -280,7 +280,6 @@ public class SearchActivity extends BaseSearchActivity {
             case SearchRequest.SEARCH_SUBMISSION_SUCCESS:
                 // the search results are stored in the message object
                 SearchRequest searchRequest = (SearchRequest)message.obj;
-                this.nextButtonSmall.setEnabled(false);
                 showSearchResults(searchRequest);
                 break;
             case SearchRequest.SEARCH_SUBMISSION_FAILURE:
@@ -302,7 +301,6 @@ public class SearchActivity extends BaseSearchActivity {
         // was this a successful search?
         if (searchResult != null && searchResult.length() > 0) {
             searchResultActivity.putExtra("content", searchResult);
-            searchResultActivity.putExtra("fromSearchActivity", true);
         }
         else {
             // TODO: clean up the extras taxonomy
@@ -310,8 +308,7 @@ public class SearchActivity extends BaseSearchActivity {
             searchResultActivity.putExtra("request", searchRequest.getKeyword());
         }
 
-        startActivity(searchResultActivity);
-        finish();
+        switchToActivity(searchResultActivity);
     }
 
     /**
@@ -322,30 +319,28 @@ public class SearchActivity extends BaseSearchActivity {
         RadioButton radioButton;
         String radioButtonText;
         int radioButtonId = 1;
-        boolean remove = false;
         if (sequence == 0) {
             Cursor searchCursor = searchDatabase.selectMenuOptions(
                     activeDatabaseTable, "col" + Integer.toString(sequence), null);
             startManagingCursor(searchCursor);
 
-            if (searchCursor.moveToFirst()) {
-                while (!searchCursor.isAfterLast()) {
-                    int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
-                    radioButton = new RadioButton(this);
-                    radioButton.setId(radioButtonId++);
-                    radioButtonText = searchCursor.getString(option);
-                    radioButton.setText(radioButtonText);
-                    if(radioButtonText.compareTo(lastSelection) == 0){
-                    	radioButton.setChecked(true);
-                    	radioButton.setSelected(true);
-                    };
-                    radioButton.setTextColor(-16777216);
-                    radioButton.setTextSize(21);
-                    radioButton.setPadding(40, 1, 1, 1);
-                    this.keywordChoices.addView(radioButton);
-                    searchCursor.moveToNext();
+            while (searchCursor.moveToNext()) {
+                int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
+                radioButton = new RadioButton(this);
+                radioButton.setId(radioButtonId++);
+                radioButtonText = searchCursor.getString(option);
+                radioButton.setText(radioButtonText);
+                if (radioButtonText.compareTo(lastSelection) == 0) {
+                    radioButton.setChecked(true);
+                    radioButton.setSelected(true);
                 }
+                radioButton.setTextColor(-16777216);
+                radioButton.setTextSize(21);
+                radioButton.setPadding(40, 1, 1, 1);
+                this.keywordChoices.addView(radioButton);
             }
+
+            searchCursor.close();
         }
         else {
             String condition = "col0='" + selectedKeywords.get(0) + "'";
@@ -357,38 +352,36 @@ public class SearchActivity extends BaseSearchActivity {
 
             Cursor searchCursor = searchDatabase.selectMenuOptions(
                     activeDatabaseTable, "col" + Integer.toString(sequence), condition);
-            startManagingCursor(searchCursor);
-            if (searchCursor.moveToFirst()) {
-                while (!searchCursor.isAfterLast()) {
-                    int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
-                    if (searchCursor.getString(option) == null) {
-                        this.endOfKeywordSequence = true;
-                        this.nextButtonSmall.setText(getString(R.string.send_button));
-                        Toast toast = Toast.makeText(getApplicationContext(), getString(R.string.end_of_search), Toast.LENGTH_LONG);
-                        toast.setGravity(Gravity.CENTER, 0, 0);
-                        toast.show();
-                        break;
-                    }
-                    if (!remove) {
-                        this.keywordChoices.clearCheck();
-                        this.keywordChoices.removeAllViews();
-                        remove = true;
-                    }
-                    radioButton = new RadioButton(this);
-                    radioButton.setId(radioButtonId++);
-                    radioButtonText = searchCursor.getString(option);
-                    radioButton.setText(radioButtonText);
-                    if(radioButtonText.compareTo(lastSelection) == 0){
-                    	radioButton.setChecked(true);
-                    	radioButton.setSelected(true);
-                    }
-                    radioButton.setTextColor(-16777216);
-                    radioButton.setTextSize(21);
-                    radioButton.setPadding(40, 1, 1, 1);
-                    this.keywordChoices.addView(radioButton);
-                    searchCursor.moveToNext();
+            boolean remove = false;
+            while (searchCursor.moveToNext()) {
+                int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
+                if (searchCursor.getString(option) == null) {
+                    this.endOfKeywordSequence = true;
+                    this.nextButtonSmall.setText(getString(R.string.send_button));
+                    Toast toast = Toast.makeText(getApplicationContext(), getString(R.string.end_of_search), Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    break;
                 }
+                if (!remove) {
+                    this.keywordChoices.clearCheck();
+                    this.keywordChoices.removeAllViews();
+                    remove = true;
+                }
+                radioButton = new RadioButton(this);
+                radioButton.setId(radioButtonId++);
+                radioButtonText = searchCursor.getString(option);
+                radioButton.setText(radioButtonText);
+                if (radioButtonText.compareTo(lastSelection) == 0) {
+                    radioButton.setChecked(true);
+                    radioButton.setSelected(true);
+                }
+                radioButton.setTextColor(-16777216);
+                radioButton.setTextSize(21);
+                radioButton.setPadding(40, 1, 1, 1);
+                this.keywordChoices.addView(radioButton);
             }
+            searchCursor.close();
         }
         this.searchDatabase.close();
     }

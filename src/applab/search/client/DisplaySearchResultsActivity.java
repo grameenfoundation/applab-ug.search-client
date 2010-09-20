@@ -20,11 +20,9 @@ import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -36,8 +34,6 @@ import android.widget.Toast;
  */
 public class DisplaySearchResultsActivity extends BaseSearchActivity {
     /** for debugging purposes in adb logcat */
-    private final String LOG_TAG = "DisplaySearchResultActivity";
-
     /** interviewee name or ID */
     private String name = "";
 
@@ -55,9 +51,6 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
 
     /** handset submission time */
     private String submissionTime = "";
-
-    /** whether we're coming from the search activity */
-    private Boolean configurationChanged;
 
     /** whether we're coming from the inbox */
     private Boolean fromInbox;
@@ -88,11 +81,9 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        boolean configurationChanged = false;
         if (savedInstanceState != null) {
-            this.configurationChanged = savedInstanceState.getBoolean("changed");
-            if (this.configurationChanged) {
-                Log.w(LOG_TAG, "Activity RESTART");
-            }
+            configurationChanged = savedInstanceState.getBoolean("changed");
         }
         setContentView(R.layout.inbox);
 
@@ -106,9 +97,9 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
             this.isIncompleteSearch = extras.getBoolean("send", false);
             this.request = extras.getString("request");
             this.location = extras.getString("location");
-            this.fromInbox = extras.getBoolean("fromInbox");
+            this.fromInbox = extras.getBoolean("fromInbox", false);
 
-            if (!this.configurationChanged) {
+            if (!configurationChanged) {
                 DisplaySearchResultsActivity.lastRowId = extras.getLong("rowId");
             }
         }
@@ -119,11 +110,12 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
         this.deleteButton = (Button)findViewById(R.id.delete_button);
         this.sendButton = (Button)findViewById(R.id.send_button);
 
+        Cursor inboxCursor = null;
         try {
             this.inboxDatabase = new InboxAdapter(this);
             this.inboxDatabase.open();
 
-            if (!this.configurationChanged) {
+            if (!configurationChanged) {
                 if (searchResult != null) {
                     DisplaySearchResultsActivity.lastRowId =
                             inboxDatabase.insertRecord(search, searchResult, name, "", "Complete", "");
@@ -144,7 +136,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
             /**
              * rowId is either supplied through a bundle or at database insert
              */
-            Cursor inboxCursor = this.inboxDatabase.readRecord(DisplaySearchResultsActivity.lastRowId);
+            inboxCursor = this.inboxDatabase.readRecord(DisplaySearchResultsActivity.lastRowId);
             int titleColumn = inboxCursor.getColumnIndexOrThrow(InboxAdapter.KEY_TITLE);
             int bodyColumn = inboxCursor.getColumnIndexOrThrow(InboxAdapter.KEY_BODY);
             int dateColumn = inboxCursor.getColumnIndexOrThrow(InboxAdapter.KEY_DATE);
@@ -177,11 +169,13 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
                 this.backButton.setTextSize(15);
             }
         }
-        catch (SQLException e) {
-            searchResultsTextView.setText(e.toString());
-        }
         catch (Exception e) {
             searchResultsTextView.setText(e.toString());
+        }
+        finally {
+            if (inboxCursor != null) {
+                inboxCursor.close();
+            }
         }
 
         if (isIncompleteSearch) {
@@ -190,7 +184,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
         else {
             sendButton.setEnabled(false);
 
-            if (this.fromInbox && !this.configurationChanged) {
+            if (this.fromInbox && !configurationChanged) {
                 insertLogEntry();
             }
         }
@@ -229,15 +223,19 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
 
         sendButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                SearchRequest incompleteSearchRequest = new SearchRequest(request, name, submissionTime, location);
-                incompleteSearchRequest.submitInBackground(new Handler() {
-                    @Override
-                    public void handleMessage(Message message) {
-                        onSearchSubmission(message);
-                    }
-                });
+                submitSearch();
             }
         });
+    }
+    
+    private void submitSearch() {
+        SearchRequest incompleteSearchRequest = new SearchRequest(this.request, this.name, this.submissionTime, this.location);
+        incompleteSearchRequest.submitInBackground(this, new Handler() {
+            @Override
+            public void handleMessage(Message message) {
+                onSearchSubmission(message);
+            }
+        });     
     }
 
     private void onSearchSubmission(Message message) {
@@ -249,12 +247,11 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
                 this.inboxDatabase.updateRecord(DisplaySearchResultsActivity.lastRowId, searchRequest.getResult());
                 
                 // Reload this view by restarting itself.
-                Intent displayActivity = new Intent(getApplicationContext(), DisplaySearchResultsActivity.class);
-                displayActivity.putExtra("rowId", DisplaySearchResultsActivity.lastRowId);
-                displayActivity.putExtra("name", name);
-                displayActivity.putExtra("location", location);
-                startActivity(displayActivity);
-                finish();
+                Intent displayResults = new Intent(getApplicationContext(), DisplaySearchResultsActivity.class);
+                displayResults.putExtra("rowId", DisplaySearchResultsActivity.lastRowId);
+                displayResults.putExtra("name", name);
+                displayResults.putExtra("location", location);
+                switchToActivity(displayResults);
                 break;
         }
     }
@@ -263,16 +260,14 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
         Intent searchActivity = new Intent(getApplicationContext(), SearchActivity.class);
         searchActivity.putExtra("name", name);
         searchActivity.putExtra("location", location);
-        startActivity(searchActivity);
-        finish();
+        switchToActivity(searchActivity);
     }
 
     private void openRecentSearches() {
         Intent inboxListActivity = new Intent(getApplicationContext(), InboxListActivity.class);
         inboxListActivity.putExtra("name", this.name);
         inboxListActivity.putExtra("location", this.location);
-        startActivity(inboxListActivity);
-        finish();
+        switchToActivity(inboxListActivity);
     }
 
     /**

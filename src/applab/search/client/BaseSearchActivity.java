@@ -1,10 +1,11 @@
 package applab.search.client;
 
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.InputFilter;
+import android.text.Spanned;
 import android.view.Menu;
 import android.view.MenuItem;
 import applab.client.ApplabActivity;
@@ -76,16 +77,30 @@ public abstract class BaseSearchActivity extends ApplabActivity {
     }
     
     /**
-     * return the base name to use in the title. Default is "CKW Search"
-     * @return
+     * Return an InputFilter that can validate farmer id characters entered in the UI
      */
-    protected String getTitleName() {
-        return getString(R.string.app_name);
-    }
+    public static InputFilter getFarmerInputFilter() {
+        return new InputFilter() {
+            public CharSequence filter(CharSequence source, int start, int end,
+                                       Spanned destination, int destinationStart, int destinationEnd) {
+                for (int characterIndex = start; characterIndex < end; characterIndex++) {
+                    char currentCharacter = source.charAt(characterIndex);
+                    if (Character.isLetterOrDigit(currentCharacter)) {
+                        continue;
+                    }
 
-    /**
-     * Set default activity title to R.string.app_name. Bypass or override as necessary
-     */
+                    if (Character.isWhitespace(currentCharacter)) {
+                        continue;
+                    }
+
+                    showToast(R.string.invalid_text);
+                    return "";
+                }
+                return null;
+            }
+        };        
+    }
+    
     private void setActivityTitle() {
         String title = getTitleName();
         
@@ -102,6 +117,14 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         }
 
         this.setTitle(title);
+    }
+
+    /**
+     * return the base name to use in the title. Default is "CKW Search"
+     * @return
+     */
+    protected String getTitleName() {
+        return getString(R.string.app_name);
     }
 
     // TODO: do we want this? It was in SearchActivity.java...
@@ -137,18 +160,12 @@ public abstract class BaseSearchActivity extends ApplabActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         boolean result = super.onCreateOptionsMenu(menu);
         // groupId, itemId, order, title
-        menu.add(1, Global.REFRESH_ID, 0, R.string.menu_refresh)
-                .setIcon(R.drawable.refresh);
-        menu.add(0, Global.INBOX_ID, 0, R.string.menu_inbox)
-                .setIcon(R.drawable.folder);
-        menu.add(0, Global.ABOUT_ID, 0, R.string.menu_about)
-                .setIcon(R.drawable.about);
-        menu.add(0, Global.EXIT_ID, 0, R.string.menu_exit).setIcon(
-                R.drawable.exit);
-        menu.add(0, Global.SETTINGS_ID, 0, R.string.menu_settings)
-                .setIcon(R.drawable.settings);
-        menu.add(0, Global.HOME_ID, 0, R.string.menu_home).setIcon(
-                R.drawable.home);
+        menu.add(1, Global.REFRESH_ID, 0, R.string.menu_refresh).setIcon(R.drawable.refresh);
+        menu.add(0, Global.INBOX_ID, 0, R.string.menu_inbox).setIcon(R.drawable.folder);
+        menu.add(0, Global.ABOUT_ID, 0, R.string.menu_about).setIcon(R.drawable.about);
+        menu.add(0, Global.EXIT_ID, 0, R.string.menu_exit).setIcon(R.drawable.exit);
+        menu.add(0, Global.SETTINGS_ID, 0, R.string.menu_settings).setIcon(R.drawable.settings);
+        menu.add(0, Global.HOME_ID, 0, R.string.menu_home).setIcon(R.drawable.home);
         menu.add(1, Global.RESET_ID, 0, R.string.menu_reset);
 
         return result;
@@ -180,31 +197,24 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                 }
                 return true;
             case Global.ABOUT_ID:
-                Intent aboutIntent = new Intent(getApplicationContext(), AboutActivity.class);
-                startActivity(aboutIntent);
+                startActivity(AboutActivity.class);
                 return true;
             case Global.EXIT_ID:
                 finish();
                 return true;
             case Global.SETTINGS_ID:
-                Intent settingsIntent = new Intent(getApplicationContext(), Settings.class);
-                startActivity(settingsIntent);
+                startActivity(Settings.class);
                 return true;
             case Global.INBOX_ID:
-                Intent inboxIntent = new Intent(getApplicationContext(), InboxListActivity.class);
-                startActivity(inboxIntent);
+                switchToActivity(InboxListActivity.class);
                 finish();
                 return true;
             case Global.HOME_ID:
-                Intent homeIntent = new Intent(getApplicationContext(), MainMenuActivity.class);
-                startActivity(homeIntent);
-                finish();
+                switchToActivity(MainMenuActivity.class);
                 return true;
             case Global.RESET_ID:
                 // TODO: should we check if the system is in the middle of synchronizing?
-                Intent searchIntent = new Intent(getApplicationContext(), SearchActivity.class);
-                startActivity(searchIntent);
-                finish();
+                switchToActivity(SearchActivity.class);
                 return true;
         }
         return false;
