@@ -334,7 +334,7 @@ public class SynchronizationManager {
         // PulseDataCollector.downloadTabUpdates into our CommonClient library
         // HttpPost httpPost = HttpHelpers.createPost(baseServerUrl + "search/getKeywords");
 
-        String newKeywords = HttpHelpers.fetchContent(baseServerUrl + R.string.update_path);
+        String newKeywords = HttpHelpers.fetchContent(baseServerUrl + "mobile/ckwsearch.php");
 
         // Check if we downloaded successfully
         int connectionResult = Global.KEYWORD_DOWNLOAD_FAILURE;
