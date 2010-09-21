@@ -23,6 +23,7 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -199,7 +200,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
                 }
             }
         });
-        
+
         deleteButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
                 // show a dialog to confirm the delete
@@ -216,7 +217,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
                         }
                     }
                 };
-                ErrorDialogManager.show(R.string.delete_alert1, getApplicationContext(), 
+                ErrorDialogManager.show(R.string.delete_alert1, null,
                         okListener, "Yes", null, "No");
             }
         });
@@ -227,7 +228,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
             }
         });
     }
-    
+
     private void submitSearch() {
         SearchRequest incompleteSearchRequest = new SearchRequest(this.request, this.name, this.submissionTime, this.location);
         incompleteSearchRequest.submitInBackground(this, new Handler() {
@@ -235,7 +236,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
             public void handleMessage(Message message) {
                 onSearchSubmission(message);
             }
-        });     
+        });
     }
 
     private void onSearchSubmission(Message message) {
@@ -245,7 +246,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
                 SearchRequest searchRequest = (SearchRequest)message.obj;
                 // Update content for this incomplete query
                 this.inboxDatabase.updateRecord(DisplaySearchResultsActivity.lastRowId, searchRequest.getResult());
-                
+
                 // Reload this view by restarting itself.
                 Intent displayResults = new Intent(getApplicationContext(), DisplaySearchResultsActivity.class);
                 displayResults.putExtra("rowId", DisplaySearchResultsActivity.lastRowId);
@@ -288,5 +289,16 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
     protected void onDestroy() {
         super.onDestroy();
         inboxDatabase.close();
+    }
+
+    // Remove unnecessary menu items for this activity
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        boolean result = super.onPrepareOptionsMenu(menu);
+        menu.removeItem(Global.INBOX_ID);
+        menu.removeItem(Global.SETTINGS_ID);
+        menu.removeItem(Global.DELETE_ID);
+        menu.removeItem(Global.ABOUT_ID);
+        return result;
     }
 }

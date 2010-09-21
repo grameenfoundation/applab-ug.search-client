@@ -22,7 +22,6 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -42,8 +41,7 @@ public class InboxListActivity extends BaseSearchActivity {
     private HashMap<Long, Long> listIndexToDatabaseRowMap = new HashMap<Long, Long>();
 
     private int inboxCount;
-    
-    
+
     @Override
     protected String getTitleName() {
         return getString(R.string.inbox_title) + "(" + this.inboxCount + ")";
@@ -73,7 +71,7 @@ public class InboxListActivity extends BaseSearchActivity {
         this.inbox.open();
 
         Cursor cursor = this.inbox.fetchAllRecords();
-        
+
         // store the count for use during the activity's lifetime
         this.inboxCount = cursor.getCount();
 
@@ -168,43 +166,14 @@ public class InboxListActivity extends BaseSearchActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        boolean result = super.onCreateOptionsMenu(menu);
-        menu.add(2, Global.DELETE_ID, 0, getString(R.string.menu_delete)).setIcon(R.drawable.delete);
-        return result;
-    }
-
-    @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         boolean result = super.onPrepareOptionsMenu(menu);
         if (this.inboxCount == 0) {
             menu.findItem(Global.DELETE_ID).setEnabled(false);
         }
+        menu.removeItem(Global.ABOUT_ID);
+        menu.removeItem(Global.SETTINGS_ID);
+        menu.removeItem(Global.INBOX_ID);
         return result;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case Global.DELETE_ID:
-                DialogInterface.OnClickListener okListener = new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        inbox.open();
-                        inbox.deleteAllRecords(InboxAdapter.INBOX_DATABASE_TABLE);
-                        inbox.close();
-                        dialog.cancel();
-
-                        // replace ourself with a new instance that doesn't block
-                        Intent inboxList = new Intent(getApplicationContext(), InboxListActivity.class);
-                        inboxList.putExtra("block", false);
-                        startActivity(inboxList);
-                        finish();
-                    }
-                };
-
-                ErrorDialogManager.show(R.string.delete_alert, this, okListener, "Yes", null, "No");
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 }

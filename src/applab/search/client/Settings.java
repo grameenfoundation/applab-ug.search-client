@@ -30,14 +30,14 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 public class Settings extends PreferenceActivity implements OnSharedPreferenceChangeListener {
-	private static String KEY_SERVER = "server";
+    private static String KEY_SERVER = "server";
 
-	/**
-	 * returns the server url based on our settings
-	 * TODO: unify this with the approach in Pulse and our shared PropertyStorage code
-	 */
-	public static String getServerUrl() {
-	    Context globalContext = ApplabActivity.getGlobalContext();
+    /**
+     * returns the server url based on our settings TODO: unify this with the approach in Pulse and our shared
+     * PropertyStorage code
+     */
+    public static String getServerUrl() {
+        Context globalContext = ApplabActivity.getGlobalContext();
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(globalContext);
         String baseServerUrl = settings.getString(KEY_SERVER, globalContext.getString(R.string.server));
         if (!baseServerUrl.endsWith("/")) {
@@ -45,91 +45,93 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
         }
 
         return baseServerUrl;
-	}
-	
-	/**
-	 * Helper overload that takes a resource string for the local path
-	 */
-	public static String getServerUrl(int id) {
+    }
+
+    /**
+     * Helper overload that takes a resource string for the local path
+     */
+    public static String getServerUrl(int id) {
         return getServerUrl() + ApplabActivity.getGlobalContext().getString(id);
     }
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		addPreferencesFromResource(R.xml.preferences);
-		setTitle("Settings");
-		updateServer();
-	}
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        addPreferencesFromResource(R.xml.preferences);
+        setTitle("Settings");
+        updateServer();
+    }
 
-	private void updateServer() {
-		EditTextPreference editTextPreferences = (EditTextPreference) this
-				.getPreferenceScreen().findPreference(KEY_SERVER);
-		String urlString = editTextPreferences.getText();
-		urlString = urlString.trim();
-		if (!urlString.endsWith("/")) {
-			urlString = urlString.concat("/");
-		}
-		if (isValidUrl(urlString)) {
-			editTextPreferences.setText(urlString);
-			editTextPreferences.setSummary(urlString);
-		} else {
-			editTextPreferences.setText((String) editTextPreferences
-					.getSummary());
-			Toast.makeText(getApplicationContext(), "Sorry, invalid URL!",
-					Toast.LENGTH_SHORT).show();
-		}
-	}
+    private void updateServer() {
+        EditTextPreference editTextPreferences = (EditTextPreference)this
+                .getPreferenceScreen().findPreference(KEY_SERVER);
+        String urlString = editTextPreferences.getText();
+        urlString = urlString.trim();
+        if (!urlString.endsWith("/")) {
+            urlString = urlString.concat("/");
+        }
+        if (isValidUrl(urlString)) {
+            editTextPreferences.setText(urlString);
+            editTextPreferences.setSummary(urlString);
+        }
+        else {
+            editTextPreferences.setText((String)editTextPreferences
+                    .getSummary());
+            Toast.makeText(getApplicationContext(), "Sorry, invalid URL!",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
 
-	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
-			String key) {
-		updateServer();
-	}
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+                                          String key) {
+        updateServer();
+    }
 
-	private static boolean isValidUrl(String url) {
+    private static boolean isValidUrl(String url) {
 
-		try {
-			new URL(url);
-			return true;
-		} catch (MalformedURLException e) {
-			return false;
-		}
+        try {
+            new URL(url);
+            return true;
+        }
+        catch (MalformedURLException e) {
+            return false;
+        }
 
-	}
+    }
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// TODO Auto-generated method stub
-		boolean result = super.onCreateOptionsMenu(menu);
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // TODO Auto-generated method stub
+        boolean result = super.onCreateOptionsMenu(menu);
 
-		menu.add(0, Global.BACK_ID, 0, getString(R.string.menu_back)).setIcon(
-				R.drawable.done);
-		return result;
-	}
+        menu.add(0, Global.BACK_ID, 0, getString(R.string.menu_back)).setIcon(
+                R.drawable.done);
+        return result;
+    }
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// TODO Auto-generated method stub
-		switch (item.getItemId()) {
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // TODO Auto-generated method stub
+        switch (item.getItemId()) {
 
-		case Global.BACK_ID:
-			finish();
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
-	}
+            case Global.BACK_ID:
+                finish();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
-	@Override
-	protected void onPause() {
-		super.onPause();
-		getPreferenceScreen().getSharedPreferences()
-				.unregisterOnSharedPreferenceChangeListener(this);
-	}
+    @Override
+    protected void onPause() {
+        super.onPause();
+        getPreferenceScreen().getSharedPreferences()
+                .unregisterOnSharedPreferenceChangeListener(this);
+    }
 
-	@Override
-	protected void onResume() {
-		super.onResume();
-		getPreferenceScreen().getSharedPreferences()
-				.registerOnSharedPreferenceChangeListener(this);
-	}
+    @Override
+    protected void onResume() {
+        super.onResume();
+        getPreferenceScreen().getSharedPreferences()
+                .registerOnSharedPreferenceChangeListener(this);
+    }
 }

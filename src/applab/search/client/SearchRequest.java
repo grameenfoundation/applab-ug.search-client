@@ -161,10 +161,10 @@ public class SearchRequest {
             this.submissionHandler.handleMessage(message);
         }
     }
-    
+
     private void sendSuccessMessage(Handler handler) {
         Message submissionMessage = Message.obtain(handler, SEARCH_SUBMISSION_SUCCESS, this);
-        submissionMessage.sendToTarget();        
+        submissionMessage.sendToTarget();
     }
 
     private void sendFailureMessage(Handler handler) {

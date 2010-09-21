@@ -21,7 +21,7 @@ public class StorageManager {
     public static boolean hasKeywords() {
         return singleton.privateHasKeywords();
     }
-    
+
     public static String getActiveTable() {
         String table = Global.DATABASE_TABLE;
         // Check if other table qualifies otherwise return above table

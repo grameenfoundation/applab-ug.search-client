@@ -25,6 +25,7 @@ import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -260,7 +261,7 @@ public class SearchActivity extends BaseSearchActivity {
         StringBuilder keyword = new StringBuilder();
         // we need to start at index 1 since the category determines "selectedKeywords[0]"
         for (int i = 1; i < selectedKeywords.size(); i++) {
-            keyword.append(selectedKeywords.get(i) + "%20");
+            keyword.append(selectedKeywords.get(i) + " ");
         }
 
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -430,5 +431,15 @@ public class SearchActivity extends BaseSearchActivity {
         ArrayList<String> keywords;
         boolean endOfKeywordSequence;
         boolean canSubmitQuery;
+    }
+
+    // Remove unnecessary menu items for this activity
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        boolean result = super.onPrepareOptionsMenu(menu);
+        menu.removeItem(Global.SETTINGS_ID);
+        menu.removeItem(Global.DELETE_ID);
+        menu.removeItem(Global.ABOUT_ID);
+        return result;
     }
 }

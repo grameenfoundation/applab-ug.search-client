@@ -186,7 +186,7 @@ public class InboxAdapter {
         }
         return pendingSearches;
     }
-    
+
     /**
      * Represents a usage of our search application, either an unsent search or a successful local search
      */
@@ -205,8 +205,8 @@ public class InboxAdapter {
                 int locationColumn = cursor.getColumnIndexOrThrow(KEY_LOCATION);
                 location = cursor.getString(locationColumn);
             }
-            
-            this.searchRequest = new SearchRequest(cursor.getString(keywordColumn), 
+
+            this.searchRequest = new SearchRequest(cursor.getString(keywordColumn),
                     cursor.getString(farmerIdColumn), cursor.getString(submissionTimeColumn), location, isLog);
 
             int idColumn = cursor.getColumnIndexOrThrow(KEY_ROWID);

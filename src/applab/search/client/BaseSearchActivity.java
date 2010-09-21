@@ -1,6 +1,7 @@
 package applab.search.client;
 
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -75,7 +76,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         // Call parent
         super.onResume();
     }
-    
+
     /**
      * Return an InputFilter that can validate farmer id characters entered in the UI
      */
@@ -98,16 +99,16 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                 }
                 return null;
             }
-        };        
+        };
     }
-    
+
     private void setActivityTitle() {
         String title = getTitleName();
-        
+
         // TODO: move this out of a global and into an Intent extra
         int maxFarmerNameLength = 30;
-        String farmerName = Global.intervieweeName; 
-        
+        String farmerName = Global.intervieweeName;
+
         if (farmerName != null && farmerName.length() > 0) {
             title += " | ";
             if (farmerName.length() > maxFarmerNameLength) {
@@ -121,6 +122,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
 
     /**
      * return the base name to use in the title. Default is "CKW Search"
+     * 
      * @return
      */
     protected String getTitleName() {
@@ -162,11 +164,12 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         // groupId, itemId, order, title
         menu.add(1, Global.REFRESH_ID, 0, R.string.menu_refresh).setIcon(R.drawable.refresh);
         menu.add(0, Global.INBOX_ID, 0, R.string.menu_inbox).setIcon(R.drawable.folder);
-        menu.add(0, Global.ABOUT_ID, 0, R.string.menu_about).setIcon(R.drawable.about);
-        menu.add(0, Global.EXIT_ID, 0, R.string.menu_exit).setIcon(R.drawable.exit);
-        menu.add(0, Global.SETTINGS_ID, 0, R.string.menu_settings).setIcon(R.drawable.settings);
+        menu.add(0, Global.ABOUT_ID, 2, R.string.menu_about).setIcon(R.drawable.about);
+        menu.add(0, Global.EXIT_ID, 3, R.string.menu_exit).setIcon(R.drawable.exit);
+        menu.add(0, Global.SETTINGS_ID, 1, R.string.menu_settings).setIcon(R.drawable.settings);
         menu.add(0, Global.HOME_ID, 0, R.string.menu_home).setIcon(R.drawable.home);
-        menu.add(1, Global.RESET_ID, 0, R.string.menu_reset);
+        menu.add(1, Global.RESET_ID, 0, R.string.menu_reset).setIcon(R.drawable.search);
+        menu.add(0, Global.DELETE_ID, 0, R.string.menu_delete).setIcon(R.drawable.delete);
 
         return result;
     }
@@ -174,7 +177,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
     private void refreshKeywords() {
         SynchronizationManager.synchronize(this, keywordSynchronizationCallback);
     }
-    
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         super.onOptionsItemSelected(item);
@@ -216,6 +219,25 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                 // TODO: should we check if the system is in the middle of synchronizing?
                 switchToActivity(SearchActivity.class);
                 return true;
+            case Global.DELETE_ID:
+                DialogInterface.OnClickListener okListener = new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        InboxAdapter inbox = new InboxAdapter(getApplicationContext());
+                        inbox.open();
+                        inbox.deleteAllRecords(InboxAdapter.INBOX_DATABASE_TABLE);
+                        inbox.close();
+                        dialog.cancel();
+
+                        // replace ourself with a new instance that doesn't block
+                        Intent inboxList = new Intent(getApplicationContext(), InboxListActivity.class);
+                        inboxList.putExtra("block", false);
+                        startActivity(inboxList);
+                        finish();
+                    }
+                };
+
+                ErrorDialogManager.show(R.string.delete_alert, this, okListener, "Yes", null, "No");
+                return true;
         }
         return false;
     }
@@ -232,11 +254,6 @@ public abstract class BaseSearchActivity extends ApplabActivity {
          * if (SynchronizationManager.isSynchronizing()) { // Disable keyword updates and new searches
          * menu.setGroupEnabled(1, false); } else { menu.setGroupEnabled(1, true); }
          */
-
-        // Disable new search option if no interviewee name has been supplied
-        if (Global.intervieweeName == null) {
-            menu.findItem(Global.RESET_ID).setEnabled(false);
-        }
 
         return result;
     }

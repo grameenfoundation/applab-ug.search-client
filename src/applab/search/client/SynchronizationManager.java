@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.widget.Toast;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
@@ -158,8 +159,8 @@ public class SynchronizationManager {
     }
 
     /**
-     * We have a new activity to attach to our progress UI and/or we have to bring up a progress dialog to link
-     * into an existing synchronization
+     * We have a new activity to attach to our progress UI and/or we have to bring up a progress dialog to link into an
+     * existing synchronization
      */
     private void attachActivity(Context context, Handler completionCallback) {
         this.completionCallback = completionCallback;
@@ -236,7 +237,7 @@ public class SynchronizationManager {
                 // the Global.KEYWORD_PARSE_GOT_NODE_TOTAL signal
                 break;
             case Global.KEYWORD_DOWNLOAD_FAILURE:
-                //TODO: don't show an error dialog if this was a background synchronization
+                // TODO: don't show an error dialog if this was a background synchronization
                 showErrorDialog(R.string.incomplete_keyword_response_error);
                 break;
             case Global.KEYWORD_PARSE_GOT_NODE_TOTAL:
@@ -275,7 +276,7 @@ public class SynchronizationManager {
 
         submitPendingUsageLogs(inboxAdapter);
         submitIncompleteSearches(inboxAdapter);
-        
+
         inboxAdapter.close();
 
         // we may want to associate UI with this task, so create
@@ -283,7 +284,7 @@ public class SynchronizationManager {
         // don't have a message pump)
         Looper.prepare();
         String newKeywords = downloadKeywords(Settings.getServerUrl());
-        if (newKeywords != null) {
+        if (newKeywords != null && newKeywords.trim().endsWith("</Keywords>")) {
             parseKeywords(newKeywords);
         }
 
@@ -292,10 +293,10 @@ public class SynchronizationManager {
         Looper looper = Looper.getMainLooper();
         looper.quit();
     }
-    
+
     /**
-     * Upload the data about searches that have been performed off-line so that the CKW
-     * and farmer statistics are updated correctly
+     * Upload the data about searches that have been performed off-line so that the CKW and farmer statistics are
+     * updated correctly
      */
     private void submitPendingUsageLogs(InboxAdapter inboxAdapter) {
         List<InboxAdapter.SearchUsage> pendingSearches = inboxAdapter.getLocalSearches();
@@ -303,10 +304,10 @@ public class SynchronizationManager {
             String searchResult = pendingSearch.submitSearch();
             if (searchResult != null) {
                 inboxAdapter.deleteRecord(InboxAdapter.ACCESS_LOG_DATABASE_TABLE, pendingSearch.getSearchTableId());
-            }            
+            }
         }
     }
-    
+
     /**
      * Perform searches that were unable to be completed earlier due to lack of connectivity
      */
@@ -316,7 +317,7 @@ public class SynchronizationManager {
             String searchResult = pendingSearch.submitSearch();
             if (searchResult != null) {
                 inboxAdapter.updateRecord(pendingSearch.getSearchTableId(), searchResult);
-            }            
+            }
         }
     }
 
@@ -334,7 +335,7 @@ public class SynchronizationManager {
         // PulseDataCollector.downloadTabUpdates into our CommonClient library
         // HttpPost httpPost = HttpHelpers.createPost(baseServerUrl + "search/getKeywords");
 
-        String newKeywords = HttpHelpers.fetchContent(baseServerUrl + "mobile/ckwsearch.php");
+        String newKeywords = HttpHelpers.fetchContent(baseServerUrl + this.currentContext.getString(R.string.update_path));
 
         // Check if we downloaded successfully
         int connectionResult = Global.KEYWORD_DOWNLOAD_FAILURE;

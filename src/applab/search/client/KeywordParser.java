@@ -96,7 +96,7 @@ public class KeywordParser implements Runnable {
                 store(getCharacterDataFromElement(line).split(" "));
                 // For now if keywords are not passed in we're not updating
                 // on progress
-                if (keywords == null) {
+                if (keywords != null) {
                     if (i > 0) {
                         percent = ((double)i / total) * 100.0;
                     }

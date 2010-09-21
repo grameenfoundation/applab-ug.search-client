@@ -9,8 +9,8 @@ import applab.client.ApplabActivity;
 // into common code?
 public class ErrorDialogManager {
     /**
-     * Show an error dialog with OK and Retry as the options. If a listener is not provide, the
-     * default one will simply dismiss the dialog.
+     * Show an error dialog with OK and Retry as the options. If a listener is not provide, the default one will simply
+     * dismiss the dialog.
      */
     public static void show(int errorMessage, Context context, DialogInterface.OnClickListener okListener,
                             DialogInterface.OnClickListener retryListener) {
@@ -18,19 +18,19 @@ public class ErrorDialogManager {
     }
 
     /**
-     * Show an error dialog with OK and negativeLabel as the options. If a listener is not provide, the
-     * default one will simply dismiss the dialog.
+     * Show an error dialog with OK and negativeLabel as the options. If a listener is not provide, the default one will
+     * simply dismiss the dialog.
      */
     public static void show(int errorMessage, Context context, DialogInterface.OnClickListener okListener,
                             DialogInterface.OnClickListener noListener, String negativeLabel) {
         show(errorMessage, context, okListener, "OK", noListener, negativeLabel);
     }
-    
+
     /**
-     * Show an error dialog with okLabel and negativeLabel as the options. If a listener is not provide, the
-     * default one will simply dismiss the dialog.
+     * Show an error dialog with okLabel and negativeLabel as the options. If a listener is not provided, the default
+     * one will simply dismiss the dialog.
      */
-    public static void show(int errorMessage, Context context, 
+    public static void show(int errorMessage, Context context,
                             DialogInterface.OnClickListener okListener, String okLabel,
                             DialogInterface.OnClickListener noListener, String negativeLabel) {
         if (context == null) {
@@ -39,7 +39,7 @@ public class ErrorDialogManager {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setMessage(errorMessage);
         builder.setCancelable(false);
-        
+
         // if not explicitly set, default the click listeners to simple ones that will just dismiss the alert
         if (okListener == null) {
             okListener = new DialogInterface.OnClickListener() {

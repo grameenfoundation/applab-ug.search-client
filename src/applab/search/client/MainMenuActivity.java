@@ -14,6 +14,7 @@ package applab.search.client;
 
 import android.content.Intent;
 import android.text.InputFilter;
+import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -86,5 +87,16 @@ public class MainMenuActivity extends BaseSearchActivity {
             this.inboxButton.setEnabled(true);
             this.nextButton.setEnabled(true);
         }
+    }
+
+    // Remove unnecessary menu items for this activity
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        boolean result = super.onPrepareOptionsMenu(menu);
+        menu.removeItem(Global.HOME_ID);
+        menu.removeItem(Global.RESET_ID);
+        menu.removeItem(Global.DELETE_ID);
+        menu.removeItem(Global.INBOX_ID);
+        return result;
     }
 }

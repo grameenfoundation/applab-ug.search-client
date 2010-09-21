@@ -11,6 +11,7 @@ the License.
  */
 package applab.search.client;
 
+import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -18,9 +19,9 @@ import android.widget.TextView;
 import applab.client.Handset;
 
 /**
- * Shows the about page for our application
- * TODO: can we factor out the common parts into CommonClient (ApplabAboutActivity?) 
- *
+ * Shows the about page for our application TODO: can we factor out the common parts into CommonClient
+ * (ApplabAboutActivity?)
+ * 
  */
 public class AboutActivity extends BaseSearchActivity {
     private Button closeButton;
@@ -47,5 +48,19 @@ public class AboutActivity extends BaseSearchActivity {
                 finish();
             }
         });
+    }
+
+    // Remove unnecessary menu items for this activity
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        boolean result = super.onPrepareOptionsMenu(menu);
+        // Disable new search option if no interviewee name has been supplied
+        if (Global.intervieweeName == null) {
+            menu.findItem(Global.RESET_ID).setEnabled(false);
+        }
+        menu.removeItem(Global.ABOUT_ID);
+        menu.removeItem(Global.SETTINGS_ID);
+        menu.removeItem(Global.DELETE_ID);
+        return result;
     }
 }
