@@ -145,7 +145,7 @@ public class SearchRequest {
                     }
                 };
 
-                DialogInterface.OnClickListener onClickOk = new DialogInterface.OnClickListener() {
+                DialogInterface.OnClickListener onClickCancel = new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.cancel();
 
@@ -153,7 +153,7 @@ public class SearchRequest {
                         sendFailureMessage(submissionHandler);
                     }
                 };
-                ErrorDialogManager.show(R.string.connection_error, null, onClickOk, onClickRetry);
+                ErrorDialogManager.show(R.string.connection_error, null, onClickRetry, "Retry", onClickCancel, "Cancel");
                 break;
         }
 

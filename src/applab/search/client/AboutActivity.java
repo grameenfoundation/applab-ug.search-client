@@ -19,8 +19,8 @@ import android.widget.TextView;
 import applab.client.Handset;
 
 /**
- * Shows the about page for our application TODO: can we factor out the common parts into CommonClient
- * (ApplabAboutActivity?)
+ * Shows the about page for our application 
+ * TODO: can we factor out the common parts into CommonClient (ApplabAboutActivity?)
  * 
  */
 public class AboutActivity extends BaseSearchActivity {

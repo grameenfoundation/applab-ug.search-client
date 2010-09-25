@@ -9,7 +9,6 @@ import android.content.DialogInterface;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 import android.widget.Toast;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
@@ -192,6 +191,10 @@ public class SynchronizationManager {
         };
     }
 
+    /**
+     * Show an error dialog that allows the user to either choose "Retry" to attempt
+     * synchronization again, or "Cancel" to abandon the process
+     */
     private void showErrorDialog(int errorText) {
         // if the progress dialog is still showing, remove it since
         // we're replacing the UI with an error dialog
@@ -206,13 +209,14 @@ public class SynchronizationManager {
         };
 
         // for the error-out case, release the lock and we'll try again later
-        DialogInterface.OnClickListener onClickOk = new DialogInterface.OnClickListener() {
+        DialogInterface.OnClickListener onClickCancel = new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 dialog.cancel();
                 SynchronizationManager.completeSynchronization();
             }
         };
-        ErrorDialogManager.show(errorText, this.currentContext, onClickOk, onClickRetry);
+        
+        ErrorDialogManager.show(errorText, this.currentContext, onClickRetry, "Retry", onClickCancel, "Cancel");
     }
 
     /**

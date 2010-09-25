@@ -186,14 +186,14 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         switch (item.getItemId()) {
             case Global.REFRESH_ID:
                 if (confirmRefresh()) {
-                    DialogInterface.OnClickListener onClickOk = new DialogInterface.OnClickListener() {
+                    DialogInterface.OnClickListener onClickYes = new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
                             dialog.cancel();
                             refreshKeywords();
                         }
                     };
 
-                    ErrorDialogManager.show(R.string.refresh_confirm, this, onClickOk, null, "No");
+                    ErrorDialogManager.show(R.string.refresh_confirm, this, onClickYes, null);
                 }
                 else {
                     refreshKeywords();
@@ -236,7 +236,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                     }
                 };
 
-                ErrorDialogManager.show(R.string.delete_alert, this, okListener, "Yes", null, "No");
+                ErrorDialogManager.show(R.string.delete_alert, this, okListener, null);
                 return true;
         }
         return false;
