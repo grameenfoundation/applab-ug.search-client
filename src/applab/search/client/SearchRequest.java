@@ -75,14 +75,14 @@ public class SearchRequest {
      * unsent-searches and logs
      */
     public boolean submit() {
-        String searchUrl = Settings.getServerUrl() + "mobile/oktopus/search.php";
+        String searchUrl = Settings.getNewServerUrl() + "/search/search";
         StringBuilder requestParameters = new StringBuilder();
         try {
-            requestParameters.append("?handset_submit_time=" + URLEncoder.encode(this.submissionTime, "UTF-8"));
-            requestParameters.append("&interviewee_id=" + URLEncoder.encode(this.farmerId, "UTF-8"));
+            requestParameters.append("?submissionTime=" + URLEncoder.encode(this.submissionTime, "UTF-8"));
+            requestParameters.append("&intervieweeId=" + URLEncoder.encode(this.farmerId, "UTF-8"));
             requestParameters.append("&keyword=" + URLEncoder.encode(this.keyword, "UTF-8"));
             requestParameters.append("&location=" + URLEncoder.encode(this.location, "UTF-8"));
-            requestParameters.append("&handset_id=" + URLEncoder.encode(Handset.getImei(), "UTF-8"));
+            requestParameters.append("&handsetId=" + URLEncoder.encode(Handset.getImei(), "UTF-8"));
         }
         catch (UnsupportedEncodingException e) {
             // we should never get here, but if so, report failure

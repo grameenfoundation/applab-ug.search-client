@@ -54,6 +54,17 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
         return getServerUrl() + ApplabActivity.getGlobalContext().getString(id);
     }
 
+    /**
+     * Returns the new server url (with :8888/ appended) - this function will only be used while we're still communicating with the php code. Once we've fully switched over, it will be removed
+     * @return
+     */
+    public static String getNewServerUrl() {
+        String serverUrl = Settings.getServerUrl();
+        serverUrl = serverUrl.substring(0, serverUrl.length()
+                - 1);
+        return serverUrl + ":8888/";
+    }
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
