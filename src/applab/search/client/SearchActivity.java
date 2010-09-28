@@ -266,7 +266,7 @@ public class SearchActivity extends BaseSearchActivity {
 
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         SearchRequest request = new SearchRequest(keyword.toString(),
-                    Global.intervieweeName, dateFormat.format(new Date()));
+                    GlobalConstants.intervieweeName, dateFormat.format(new Date()));
 
         request.submitInBackground(this, new Handler() {
             @Override
@@ -437,9 +437,9 @@ public class SearchActivity extends BaseSearchActivity {
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         boolean result = super.onPrepareOptionsMenu(menu);
-        menu.removeItem(Global.SETTINGS_ID);
-        menu.removeItem(Global.DELETE_ID);
-        menu.removeItem(Global.ABOUT_ID);
+        menu.removeItem(GlobalConstants.SETTINGS_ID);
+        menu.removeItem(GlobalConstants.DELETE_ID);
+        menu.removeItem(GlobalConstants.ABOUT_ID);
         return result;
     }
 }

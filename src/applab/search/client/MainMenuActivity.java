@@ -12,40 +12,82 @@ the License.
 
 package applab.search.client;
 
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Bundle;
 import android.text.InputFilter;
 import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
+import applab.client.BrowserActivity;
+import applab.client.BrowserResultDialog;
+import applab.client.Handset;
 
 /**
  * The Search application home screen
  * 
  */
 public class MainMenuActivity extends BaseSearchActivity {
+    private static final int REGISTRATION_CODE = 2;
+    private static final int FORGOT_ID_CODE = 3;
+    private static final int AGINFO_CODE = 1;
     private Button inboxButton;
     private Button nextButton;
+    private Button forgotButton;
+    private Button registerButton;
+    private Button aginfoButton;
     private EditText farmerNameEditBox;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Request to display an icon in the title bar. Must be done in onCreate()
+        requestWindowFeature(Window.FEATURE_RIGHT_ICON);
+    }
 
     @Override
     public void onResume() {
         // First run parent code
         super.onResume();
-
-        setContentView(R.layout.main_menu);
+        setContentView(R.layout.launch_menu);
+        setFeatureDrawableResource(Window.FEATURE_RIGHT_ICON, R.drawable.search_title);
 
         this.nextButton = (Button)findViewById(R.id.next_button);
         this.inboxButton = (Button)findViewById(R.id.inbox_button);
         this.inboxButton.setText(getString(R.string.inbox_button));
-        this.farmerNameEditBox = (EditText)findViewById(R.id.EditText01);
+        this.farmerNameEditBox = (EditText)findViewById(R.id.id_field);
+        this.forgotButton = (Button)findViewById(R.id.forgot_button);
+        this.registerButton = (Button)findViewById(R.id.register_button);
+        this.aginfoButton = (Button)findViewById(R.id.aginfo_button);
         this.farmerNameEditBox.setFilters(new InputFilter[] { getFarmerInputFilter() });
 
         if (!StorageManager.hasKeywords()) {
             this.inboxButton.setEnabled(false);
             this.nextButton.setEnabled(false);
         }
+
+        this.forgotButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                onRequestBrowserIntentButtonClick("findFarmerId", FORGOT_ID_CODE);
+            }
+        });
+
+        this.registerButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                onRequestBrowserIntentButtonClick("getFarmerRegistrationForm", REGISTRATION_CODE);
+            }
+        });
+
+        this.aginfoButton.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                onRequestBrowserIntentButtonClick("getSubscriptionForm", AGINFO_CODE);
+            }
+        });
 
         this.nextButton.setText("Start New Search");
         this.nextButton.setOnClickListener(new OnClickListener() {
@@ -62,18 +104,122 @@ public class MainMenuActivity extends BaseSearchActivity {
         });
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        switch (requestCode) {
+            case REGISTRATION_CODE:
+                if (resultCode == RESULT_OK) {
+                    BrowserResultDialog.show(this, "Registration successful.", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            switchToActivity(SearchActivity.class);
+                            dialog.cancel();
+                        }
+                    });
+                }
+                else if (resultCode == RESULT_CANCELED) {
+                    // reset the Farmer ID
+                    GlobalConstants.intervieweeName = "";
+                    // Show error dialog
+                    BrowserResultDialog.show(this, "Unable to register farmer. \nCheck the ID or try again later.");
+                }
+                break;
+            case AGINFO_CODE:
+                if (resultCode == RESULT_OK) {
+                    // reset the Farmer ID
+                    GlobalConstants.intervieweeName = "";
+                    BrowserResultDialog.show(this, "Subscriptions updated successfully");
+                }
+                else if (resultCode == RESULT_CANCELED) {
+                    // reset the Farmer ID
+                    GlobalConstants.intervieweeName = "";
+                    BrowserResultDialog.show(this, "Subscription was unsuccessful.\nPlease try again later.");
+                }
+                break;
+            case FORGOT_ID_CODE:
+                if (resultCode == RESULT_OK) {
+                    if (data != null) {
+                        String farmerId = data.getDataString();
+                        BrowserResultDialog.show(this, "Selected ID: " + farmerId, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                switchToActivity(SearchActivity.class);
+                                dialog.cancel();
+                            }
+                        });
+                    }
+                }
+                else if (resultCode == RESULT_CANCELED) {
+                    // reset the Farmer ID
+                    GlobalConstants.intervieweeName = "";
+                    BrowserResultDialog.show(this, "Unable to find ID. Try again later.");
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Common code for handling button clicks that start a browser activity for a result.
+     * 
+     * @param urlPattern
+     *            The @BrowserActivity.EXTRA_URL_INTENT related url pattern
+     * @param requestCode
+     *            Code identifying the button that invoked the browser call. This so that the result is handled
+     *            accordingly in the parent activity.
+     */
+    private void onRequestBrowserIntentButtonClick(String urlPattern, int requestCode) {
+        String farmerName = farmerNameEditBox.getText().toString().replace(" ", "");
+        if (farmerName.length() > 0 || urlPattern.contentEquals("findFarmerId")) {
+            if (urlPattern.contentEquals("findFarmerId") || checkId(farmerName)) {
+                // Set the farmer ID
+                GlobalConstants.intervieweeName = farmerName;
+                Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
+
+                String serverUrl = Settings.getServerUrl();
+                serverUrl = serverUrl.substring(0, serverUrl.length()
+                        - 1);
+                webActivity.putExtra(BrowserActivity.EXTRA_URL_INTENT,
+                        serverUrl + ":8888/services/" + urlPattern + "?handsetId=" + Handset.getImei() + "&farmerId="
+                                + farmerName);
+                startActivityForResult(webActivity, requestCode);
+            }
+            else {
+                showToast("Invalid Farmer ID.");
+            }
+        }
+        else {
+            showToast(R.string.empty_text);
+        }
+    }
+
     /**
      * Common code for handling button clicks for "New Search" and "Recent Searches"
      * 
      * @param classId
      */
     private void onButtonClick(Class<?> classId) {
-        String farmerName = farmerNameEditBox.getText().toString().trim();
+        String farmerName = farmerNameEditBox.getText().toString().replace(" ", "");
         if (farmerName.length() > 0) {
-            Global.intervieweeName = farmerName;
-            Intent nextActivity = new Intent(getApplicationContext(), classId);
-            nextActivity.putExtra("block", false);
-            switchToActivity(nextActivity);
+            if (checkId(farmerName)) {
+                GlobalConstants.intervieweeName = farmerName;
+                Intent nextActivity = new Intent(getApplicationContext(), classId);
+                nextActivity.putExtra("block", false);
+                switchToActivity(nextActivity);
+            }
+            else {
+                showTestSearchDialog(new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        GlobalConstants.intervieweeName = "TEST";
+                        switchToActivity(SearchActivity.class);
+                        dialog.cancel();
+                    }
+                }, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+            }
         }
         else {
             showToast(R.string.empty_text);
@@ -93,10 +239,10 @@ public class MainMenuActivity extends BaseSearchActivity {
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         boolean result = super.onPrepareOptionsMenu(menu);
-        menu.removeItem(Global.HOME_ID);
-        menu.removeItem(Global.RESET_ID);
-        menu.removeItem(Global.DELETE_ID);
-        menu.removeItem(Global.INBOX_ID);
+        menu.removeItem(GlobalConstants.HOME_ID);
+        menu.removeItem(GlobalConstants.RESET_ID);
+        menu.removeItem(GlobalConstants.DELETE_ID);
+        menu.removeItem(GlobalConstants.INBOX_ID);
         return result;
     }
 }

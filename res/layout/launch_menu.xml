@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/rl" android:layout_width="fill_parent"
+	android:layout_height="fill_parent" android:orientation="vertical"
+	android:background="@drawable/white">
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:orientation="vertical" android:paddingTop="5px"
+		android:paddingBottom="5px" android:id="@+id/layout1">
+
+		<TextView android:gravity="left" android:layout_width="fill_parent"
+			android:layout_height="wrap_content" android:paddingTop="1px"
+			android:paddingLeft="6px" android:paddingBottom="3px"
+			android:textColor="@drawable/black" android:text="@string/enter_id" />
+
+		<EditText android:id="@+id/id_field" android:layout_width="fill_parent"
+			android:layout_height="wrap_content">
+		</EditText>
+	</LinearLayout>
+	<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="fill_parent" android:orientation="vertical"
+		android:layout_below="@+id/layout1" android:layout_height="fill_parent">
+		<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			android:id="@+id/vertical_buttons" android:paddingLeft="10px"
+			android:paddingRight="10px" android:layout_width="fill_parent"
+			android:layout_height="fill_parent" android:orientation="vertical"
+			android:paddingTop="2px" android:paddingBottom="2px">
+
+			<Button android:id="@+id/next_button" android:textSize="21px"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:padding="20px" />
+
+			<TextView android:layout_width="fill_parent"
+				android:layout_height="wrap_content" android:textSize="2pt" />
+
+			<Button android:id="@+id/inbox_button" android:textSize="21px"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:padding="20px" />
+			<TextView android:layout_width="fill_parent"
+				android:layout_height="wrap_content" android:textSize="2pt" />
+
+			<Button android:id="@+id/aginfo_button" android:textSize="21px"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:padding="20px" android:text="AgInfo Subscriptions" />
+			<TextView android:layout_width="fill_parent"
+				android:layout_height="wrap_content" android:textSize="2pt" />
+
+			<Button android:id="@+id/register_button" android:textSize="21px"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:padding="20px" android:text="Register New Farmer" />
+			<TextView android:layout_width="fill_parent"
+				android:layout_height="wrap_content" android:textSize="2pt" />
+
+			<Button android:id="@+id/forgot_button" android:textSize="21px"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:padding="20px" android:text="Forgot Farmer\'s ID" />
+
+		</LinearLayout>
+	</ScrollView>
+</RelativeLayout>

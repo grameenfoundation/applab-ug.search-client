@@ -55,7 +55,9 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
     }
 
     /**
-     * Returns the new server url (with :8888/ appended) - this function will only be used while we're still communicating with the php code. Once we've fully switched over, it will be removed
+     * Returns the new server url (with :8888/ appended) - this function will only be used while we're still
+     * communicating with the php code. Once we've fully switched over, it will be removed
+     * 
      * @return
      */
     public static String getNewServerUrl() {
@@ -64,7 +66,7 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
                 - 1);
         return serverUrl + ":8888/";
     }
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -115,7 +117,7 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
         // TODO Auto-generated method stub
         boolean result = super.onCreateOptionsMenu(menu);
 
-        menu.add(0, Global.BACK_ID, 0, getString(R.string.menu_back)).setIcon(
+        menu.add(0, GlobalConstants.BACK_ID, 0, getString(R.string.menu_back)).setIcon(
                 R.drawable.done);
         return result;
     }
@@ -125,7 +127,7 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
         // TODO Auto-generated method stub
         switch (item.getItemId()) {
 
-            case Global.BACK_ID:
+            case GlobalConstants.BACK_ID:
                 finish();
                 return true;
         }

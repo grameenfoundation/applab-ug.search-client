@@ -192,8 +192,8 @@ public class SynchronizationManager {
     }
 
     /**
-     * Show an error dialog that allows the user to either choose "Retry" to attempt
-     * synchronization again, or "Cancel" to abandon the process
+     * Show an error dialog that allows the user to either choose "Retry" to attempt synchronization again, or "Cancel"
+     * to abandon the process
      */
     private void showErrorDialog(int errorText) {
         // if the progress dialog is still showing, remove it since
@@ -215,7 +215,7 @@ public class SynchronizationManager {
                 SynchronizationManager.completeSynchronization();
             }
         };
-        
+
         ErrorDialogManager.show(errorText, this.currentContext, onClickRetry, "Retry", onClickCancel, "Cancel");
     }
 
@@ -225,30 +225,30 @@ public class SynchronizationManager {
      */
     private void handleBackgroundThreadMessage(Message message) {
         switch (message.what) {
-            case Global.KEYWORD_DOWNLOAD_STARTING:
+            case GlobalConstants.KEYWORD_DOWNLOAD_STARTING:
                 // TODO: Can we do this on the UI thread before we offload the process into the background?
                 // it would cleanup the code, allow us to easily thread in Global.SETUP_DIALOG when Storage is empty,
                 // and avoid a few extra thread switches
-                ProgressDialogManager.displayProgressDialog(Global.UPDATE_DIALOG, this.currentContext);
+                ProgressDialogManager.displayProgressDialog(GlobalConstants.UPDATE_DIALOG, this.currentContext);
                 break;
-            case Global.CONNECTION_ERROR:
+            case GlobalConstants.CONNECTION_ERROR:
                 showErrorDialog(R.string.connection_error);
                 break;
-            case Global.KEYWORD_DOWNLOAD_SUCCESS:
+            case GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS:
                 // TODO: do we want to update the progress dialog here?
                 // download complete, start parsing
                 // NOTE: we do not dismiss the dialog, so that it shows until we receive
                 // the Global.KEYWORD_PARSE_GOT_NODE_TOTAL signal
                 break;
-            case Global.KEYWORD_DOWNLOAD_FAILURE:
+            case GlobalConstants.KEYWORD_DOWNLOAD_FAILURE:
                 // TODO: don't show an error dialog if this was a background synchronization
                 showErrorDialog(R.string.incomplete_keyword_response_error);
                 break;
-            case Global.KEYWORD_PARSE_GOT_NODE_TOTAL:
+            case GlobalConstants.KEYWORD_PARSE_GOT_NODE_TOTAL:
                 int nodeCount = message.getData().getInt("nodeCount");
-                ProgressDialogManager.displayProgressDialog(Global.PARSE_DIALOG, this.currentContext, nodeCount);
+                ProgressDialogManager.displayProgressDialog(GlobalConstants.PARSE_DIALOG, this.currentContext, nodeCount);
                 break;
-            case Global.KEYWORD_PARSE_SUCCESS:
+            case GlobalConstants.KEYWORD_PARSE_SUCCESS:
                 ProgressDialogManager.tryDestroyProgressDialog();
                 Toast updateToast = Toast.makeText(this.currentContext, this.currentContext.getString(R.string.refreshed),
                         Toast.LENGTH_LONG);
@@ -258,10 +258,10 @@ public class SynchronizationManager {
                 // it should hit this path
                 SynchronizationManager.completeSynchronization();
                 break;
-            case Global.KEYWORD_PARSE_ERROR:
+            case GlobalConstants.KEYWORD_PARSE_ERROR:
                 showErrorDialog(R.string.keyword_parse_error);
                 break;
-            case Global.DISMISS_WAIT_DIALOG:
+            case GlobalConstants.DISMISS_WAIT_DIALOG:
                 ProgressDialogManager.tryDestroyProgressDialog();
                 break;
         }
@@ -333,7 +333,7 @@ public class SynchronizationManager {
      */
     private String downloadKeywords(String baseServerUrl) {
         // notify the UI that we're starting a download
-        sendInternalMessage(Global.KEYWORD_DOWNLOAD_STARTING);
+        sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING);
 
         // TODO: replace this get with a post call, factor out HttpPost code from
         // PulseDataCollector.downloadTabUpdates into our CommonClient library
@@ -342,9 +342,9 @@ public class SynchronizationManager {
         String newKeywords = HttpHelpers.fetchContent(baseServerUrl + this.currentContext.getString(R.string.update_path));
 
         // Check if we downloaded successfully
-        int connectionResult = Global.KEYWORD_DOWNLOAD_FAILURE;
+        int connectionResult = GlobalConstants.KEYWORD_DOWNLOAD_FAILURE;
         if (newKeywords != null && newKeywords.trim().endsWith("</Keywords>")) {
-            connectionResult = Global.KEYWORD_DOWNLOAD_SUCCESS;
+            connectionResult = GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS;
         }
 
         // and notify again that we've completed (either with success or failure

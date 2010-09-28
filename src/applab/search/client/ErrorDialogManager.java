@@ -9,8 +9,8 @@ import applab.client.ApplabActivity;
 // into common code?
 public class ErrorDialogManager {
     /**
-     * Show an error dialog with Yes and No as the options. If a listener is not provided, the
-     * default one will simply dismiss the dialog.
+     * Show an error dialog with Yes and No as the options. If a listener is not provided, the default one will simply
+     * dismiss the dialog.
      */
     public static void show(int errorMessage, Context context, DialogInterface.OnClickListener yesListener,
                             DialogInterface.OnClickListener noListener) {
@@ -18,8 +18,8 @@ public class ErrorDialogManager {
     }
 
     /**
-     * Show an error dialog with yesLabel and noLabel as the options. If a listener is not provided, the
-     * default one will simply dismiss the dialog.
+     * Show an error dialog with yesLabel and noLabel as the options. If a listener is not provided, the default one
+     * will simply dismiss the dialog.
      */
     public static void show(int errorMessage, Context context,
                             DialogInterface.OnClickListener yesListener, String yesLabel,

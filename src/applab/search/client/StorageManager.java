@@ -23,10 +23,10 @@ public class StorageManager {
     }
 
     public static String getActiveTable() {
-        String table = Global.DATABASE_TABLE;
+        String table = GlobalConstants.DATABASE_TABLE;
         // Check if other table qualifies otherwise return above table
-        if (singleton.getLegacyStorage().tableExistsAndIsValid(Global.DATABASE_TABLE2)) {
-            table = Global.DATABASE_TABLE2;
+        if (singleton.getLegacyStorage().tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE2)) {
+            table = GlobalConstants.DATABASE_TABLE2;
         }
 
         return table;
@@ -45,8 +45,8 @@ public class StorageManager {
         // once we have valid data, that never changes, but we can
         // switch from invalid to valid at any time
         if (!this.hasKeywords) {
-            this.hasKeywords = getLegacyStorage().tableExistsAndIsValid(Global.DATABASE_TABLE)
-                    || getLegacyStorage().tableExistsAndIsValid(Global.DATABASE_TABLE2);
+            this.hasKeywords = getLegacyStorage().tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE)
+                    || getLegacyStorage().tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE2);
         }
 
         return this.hasKeywords;

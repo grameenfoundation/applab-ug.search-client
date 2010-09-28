@@ -12,6 +12,7 @@ the License.
 
 package applab.search.client;
 
+import applab.client.AboutDialog;
 import applab.search.client.R;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -55,9 +56,9 @@ public class LocationActivity extends Activity implements LocationListener {
         /**
          * XXX Display the location for this session if available
          */
-        if (Global.location != null
-                && !Global.location.contentEquals("Unknown")) {
-            mTextView.setText(Global.location.replace(",", "\n"));
+        if (GlobalConstants.location != null
+                && !GlobalConstants.location.contentEquals("Unknown")) {
+            mTextView.setText(GlobalConstants.location.replace(",", "\n"));
             mButton.setText(getString(R.string.get_gps2));
             next = true;
         }
@@ -92,13 +93,13 @@ public class LocationActivity extends Activity implements LocationListener {
                 i.putExtra("name", intervieweeName);
                 if (accuracy != null) {
                     // i.putExtra("location", location);
-                    Global.location = "Latitude = " + lat + ", Longitude = "
+                    GlobalConstants.location = "Latitude = " + lat + ", Longitude = "
                             + lon + ", Altitude = " + alt + "m"
                             + ", Accuracy = " + accuracy + "m";
                 }
                 else {
                     i.putExtra("location", "Unknown");
-                    Global.location = "Unknown";
+                    GlobalConstants.location = "Unknown";
                 }
                 startActivity(i);
                 finish();
@@ -255,13 +256,13 @@ public class LocationActivity extends Activity implements LocationListener {
         // TODO Auto-generated method stub
         boolean result = super.onCreateOptionsMenu(menu);
 
-        menu.add(0, Global.INBOX_ID, 0, getString(R.string.menu_inbox));
+        menu.add(0, GlobalConstants.INBOX_ID, 0, getString(R.string.menu_inbox));
         /*
          * menu.add(0, globalVariables.REFRESH_ID, 0, getString(R.string.menu_refresh));
          */
-        menu.add(0, Global.ABOUT_ID, 1, getString(R.string.menu_about));
-        menu.add(0, Global.EXIT_ID, 0, getString(R.string.menu_exit));
-        menu.add(0, Global.HOME_ID, 0, getString(R.string.menu_home));
+        menu.add(0, GlobalConstants.ABOUT_ID, 1, getString(R.string.menu_about));
+        menu.add(0, GlobalConstants.EXIT_ID, 0, getString(R.string.menu_exit));
+        menu.add(0, GlobalConstants.HOME_ID, 0, getString(R.string.menu_home));
 
         return result;
     }
@@ -271,7 +272,7 @@ public class LocationActivity extends Activity implements LocationListener {
         // TODO Auto-generated method stub
         switch (item.getItemId()) {
 
-            case Global.INBOX_ID:
+            case GlobalConstants.INBOX_ID:
                 Intent j = new Intent(getApplicationContext(),
                         InboxListActivity.class);
                 j.putExtra("name", intervieweeName);
@@ -282,13 +283,11 @@ public class LocationActivity extends Activity implements LocationListener {
                 /*
                  * case globalVariables.REFRESH_ID: mStorage.open(); Connect(); return true;
                  */
-            case Global.ABOUT_ID:
-                Intent k = new Intent(getApplicationContext(), AboutActivity.class);
-                k.putExtra("name", intervieweeName);
-                k.putExtra("location", location);
-                startActivity(k);
+            case GlobalConstants.ABOUT_ID:
+                AboutDialog.show(this, getString(R.string.app_version), getString(R.string.app_name),
+                        getString(R.string.release_date), getString(R.string.info), R.drawable.icon);
                 return true;
-            case Global.HOME_ID:
+            case GlobalConstants.HOME_ID:
                 Intent l = new Intent(getApplicationContext(),
                         MainMenuActivity.class);
                 l.putExtra("name", intervieweeName);
@@ -296,7 +295,7 @@ public class LocationActivity extends Activity implements LocationListener {
                 startActivity(l);
                 finish();
                 return true;
-            case Global.EXIT_ID:
+            case GlobalConstants.EXIT_ID:
                 this.finish();
                 return true;
         }

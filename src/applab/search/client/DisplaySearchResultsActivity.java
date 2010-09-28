@@ -281,7 +281,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
         ContentValues log = new ContentValues();
         log.put(InboxAdapter.KEY_REQUEST, request.replace(">", ""));
         log.put(InboxAdapter.KEY_DATE, dateFormat.format(new Date()));
-        log.put(InboxAdapter.KEY_NAME, Global.intervieweeName);
+        log.put(InboxAdapter.KEY_NAME, GlobalConstants.intervieweeName);
         return inboxDatabase.insertLog(InboxAdapter.ACCESS_LOG_DATABASE_TABLE, log);
     }
 
@@ -295,10 +295,10 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         boolean result = super.onPrepareOptionsMenu(menu);
-        menu.removeItem(Global.INBOX_ID);
-        menu.removeItem(Global.SETTINGS_ID);
-        menu.removeItem(Global.DELETE_ID);
-        menu.removeItem(Global.ABOUT_ID);
+        menu.removeItem(GlobalConstants.INBOX_ID);
+        menu.removeItem(GlobalConstants.SETTINGS_ID);
+        menu.removeItem(GlobalConstants.DELETE_ID);
+        menu.removeItem(GlobalConstants.ABOUT_ID);
         return result;
     }
 }

@@ -2,7 +2,7 @@ package applab.search.client;
 
 import android.view.Menu;
 
-public class Global {
+public class GlobalConstants {
     public static final int HOME_ID = Menu.FIRST;
     public static final int INBOX_ID = Menu.FIRST + 1;
     public static final int REFRESH_ID = Menu.FIRST + 2;

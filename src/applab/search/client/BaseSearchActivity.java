@@ -1,14 +1,17 @@
 package applab.search.client;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.text.InputFilter;
-import android.text.Spanned;
 import android.view.Menu;
 import android.view.MenuItem;
+import applab.client.AboutDialog;
 import applab.client.ApplabActivity;
 
 /**
@@ -23,7 +26,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         @Override
         public void handleMessage(Message message) {
             switch (message.what) {
-                case Global.KEYWORD_PARSE_SUCCESS:
+                case GlobalConstants.KEYWORD_PARSE_SUCCESS:
                     onKeywordUpdateComplete();
                     break;
             }
@@ -77,39 +80,14 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         super.onResume();
     }
 
-    /**
-     * Return an InputFilter that can validate farmer id characters entered in the UI
-     */
-    public static InputFilter getFarmerInputFilter() {
-        return new InputFilter() {
-            public CharSequence filter(CharSequence source, int start, int end,
-                                       Spanned destination, int destinationStart, int destinationEnd) {
-                for (int characterIndex = start; characterIndex < end; characterIndex++) {
-                    char currentCharacter = source.charAt(characterIndex);
-                    if (Character.isLetterOrDigit(currentCharacter)) {
-                        continue;
-                    }
-
-                    if (Character.isWhitespace(currentCharacter)) {
-                        continue;
-                    }
-
-                    showToast(R.string.invalid_text);
-                    return "";
-                }
-                return null;
-            }
-        };
-    }
-
     private void setActivityTitle() {
         String title = getTitleName();
 
         // TODO: move this out of a global and into an Intent extra
         int maxFarmerNameLength = 30;
-        String farmerName = Global.intervieweeName;
+        String farmerName = GlobalConstants.intervieweeName;
 
-        if (farmerName != null && farmerName.length() > 0) {
+        if (farmerName != null && farmerName.length() > 0 && this.getLocalClassName().compareTo("MainMenuActivity") != 0) {
             title += " | ";
             if (farmerName.length() > maxFarmerNameLength) {
                 farmerName = farmerName.substring(0, maxFarmerNameLength) + "...";
@@ -162,14 +140,14 @@ public abstract class BaseSearchActivity extends ApplabActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         boolean result = super.onCreateOptionsMenu(menu);
         // groupId, itemId, order, title
-        menu.add(1, Global.REFRESH_ID, 0, R.string.menu_refresh).setIcon(R.drawable.refresh);
-        menu.add(0, Global.INBOX_ID, 0, R.string.menu_inbox).setIcon(R.drawable.folder);
-        menu.add(0, Global.ABOUT_ID, 2, R.string.menu_about).setIcon(R.drawable.about);
-        menu.add(0, Global.EXIT_ID, 3, R.string.menu_exit).setIcon(R.drawable.exit);
-        menu.add(0, Global.SETTINGS_ID, 1, R.string.menu_settings).setIcon(R.drawable.settings);
-        menu.add(0, Global.HOME_ID, 0, R.string.menu_home).setIcon(R.drawable.home);
-        menu.add(1, Global.RESET_ID, 0, R.string.menu_reset).setIcon(R.drawable.search);
-        menu.add(0, Global.DELETE_ID, 0, R.string.menu_delete).setIcon(R.drawable.delete);
+        menu.add(1, GlobalConstants.REFRESH_ID, 0, R.string.menu_refresh).setIcon(R.drawable.refresh);
+        menu.add(0, GlobalConstants.INBOX_ID, 0, R.string.menu_inbox).setIcon(R.drawable.folder);
+        menu.add(0, GlobalConstants.ABOUT_ID, 2, R.string.menu_about).setIcon(R.drawable.about);
+        menu.add(0, GlobalConstants.EXIT_ID, 3, R.string.menu_exit).setIcon(R.drawable.exit);
+        menu.add(0, GlobalConstants.SETTINGS_ID, 1, R.string.menu_settings).setIcon(R.drawable.settings);
+        menu.add(0, GlobalConstants.HOME_ID, 0, R.string.menu_home).setIcon(R.drawable.home);
+        menu.add(1, GlobalConstants.RESET_ID, 0, R.string.menu_reset).setIcon(R.drawable.search);
+        menu.add(0, GlobalConstants.DELETE_ID, 0, R.string.menu_delete).setIcon(R.drawable.delete);
 
         return result;
     }
@@ -184,7 +162,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
 
         // for a number of our menu items, the correct action is
         switch (item.getItemId()) {
-            case Global.REFRESH_ID:
+            case GlobalConstants.REFRESH_ID:
                 if (confirmRefresh()) {
                     DialogInterface.OnClickListener onClickYes = new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
@@ -199,27 +177,30 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                     refreshKeywords();
                 }
                 return true;
-            case Global.ABOUT_ID:
-                startActivity(AboutActivity.class);
+            case GlobalConstants.ABOUT_ID:
+                AboutDialog.show(this, getString(R.string.app_version), getString(R.string.app_name),
+                        getString(R.string.release_date), getString(R.string.info), R.drawable.icon);
+
                 return true;
-            case Global.EXIT_ID:
+            case GlobalConstants.EXIT_ID:
                 finish();
                 return true;
-            case Global.SETTINGS_ID:
+            case GlobalConstants.SETTINGS_ID:
+                // At the moment switchToActivity will make it impossible to leave the settings activity
                 startActivity(Settings.class);
                 return true;
-            case Global.INBOX_ID:
+            case GlobalConstants.INBOX_ID:
                 switchToActivity(InboxListActivity.class);
                 finish();
                 return true;
-            case Global.HOME_ID:
+            case GlobalConstants.HOME_ID:
                 switchToActivity(MainMenuActivity.class);
                 return true;
-            case Global.RESET_ID:
+            case GlobalConstants.RESET_ID:
                 // TODO: should we check if the system is in the middle of synchronizing?
                 switchToActivity(SearchActivity.class);
                 return true;
-            case Global.DELETE_ID:
+            case GlobalConstants.DELETE_ID:
                 DialogInterface.OnClickListener okListener = new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         InboxAdapter inbox = new InboxAdapter(getApplicationContext());
@@ -231,7 +212,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                         // replace ourself with a new instance that doesn't block
                         Intent inboxList = new Intent(getApplicationContext(), InboxListActivity.class);
                         inboxList.putExtra("block", false);
-                        startActivity(inboxList);
+                        switchToActivity(inboxList);
                         finish();
                     }
                 };
@@ -256,5 +237,41 @@ public abstract class BaseSearchActivity extends ApplabActivity {
          */
 
         return result;
+    }
+
+    /**
+     * Regular expression check to match 2 letters followed by at least 4 but at most 5 digits for a Farmer ID.
+     * 
+     * @param text
+     *            the matcher
+     * @return true if the matcher is an exact match of the input text
+     */
+    boolean checkId(String text) {
+        Pattern pattern = Pattern.compile("[a-zA-Z]{2}[0-9]{4,5}+");
+        Matcher matcher = pattern.matcher(text);
+        return matcher.matches();
+    }
+
+    /**
+     * Dialog confirming a test search
+     * 
+     * @param yesListener
+     *            the listener to call on clicking the positive button
+     * @param noListener
+     *            the listener to call on clicking the negative button
+     */
+    void showTestSearchDialog(DialogInterface.OnClickListener yesListener, DialogInterface.OnClickListener noListener) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setIcon(R.drawable.help);
+        builder.setTitle("Perform Test Search?");
+        builder.setMessage("The ID you entered is not valid, "
+                + "it should be 2 letters followed by at least 4 numbers."
+                + "\nWould you like to do a test search instead?"
+                + " NOTE: You will NOT be compensated for doing a test search.")
+                .setCancelable(false)
+                .setPositiveButton("Yes", yesListener)
+                .setNegativeButton("No", noListener);
+        AlertDialog alert = builder.create();
+        alert.show();
     }
 }

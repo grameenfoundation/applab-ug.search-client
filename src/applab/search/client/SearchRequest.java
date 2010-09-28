@@ -45,7 +45,7 @@ public class SearchRequest {
         this.farmerId = farmerId;
         this.submissionTime = submissionTime;
         if (location == null || location.length() == 0) {
-            location = Global.location;
+            location = GlobalConstants.location;
         }
 
         this.location = location;
@@ -75,7 +75,7 @@ public class SearchRequest {
      * unsent-searches and logs
      */
     public boolean submit() {
-        String searchUrl = Settings.getNewServerUrl() + "/search/search";
+        String searchUrl = Settings.getNewServerUrl() + "search/search";
         StringBuilder requestParameters = new StringBuilder();
         try {
             requestParameters.append("?submissionTime=" + URLEncoder.encode(this.submissionTime, "UTF-8"));
@@ -106,7 +106,7 @@ public class SearchRequest {
 
         // first bring up a progress dialog since we're going to hit the network
         ProgressDialogManager.silentMode = false;
-        ProgressDialogManager.displayProgressDialog(Global.CONNECT_DIALOG, context);
+        ProgressDialogManager.displayProgressDialog(GlobalConstants.CONNECT_DIALOG, context);
         // pass the results to our UI thread, embedded in the request
         final Handler internalHandler = new Handler() {
             @Override

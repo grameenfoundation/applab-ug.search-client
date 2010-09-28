@@ -17,7 +17,7 @@ public class ProgressDialogManager {
     private static ProgressDialog progressDialog;
 
     // Progress Dialog Status
-    private static int currentType = Global.UPDATE_DIALOG;
+    private static int currentType = GlobalConstants.UPDATE_DIALOG;
 
     // Silent mode (used for background sync)
     // TODO: we need a more robust mechanism here so that we can share this across synchronization
@@ -53,7 +53,7 @@ public class ProgressDialogManager {
             dialog.setMax(currentMaxVal);
 
             switch (type) {
-                case Global.UPDATE_DIALOG:
+                case GlobalConstants.UPDATE_DIALOG:
                     dialog.setTitle(context.getString(R.string.update_dialog_title));
                     // TODO: MainMenuActivity used to use R.string.progress_msg here
                     dialog.setMessage(context.getString(R.string.update_dialog_message));
@@ -61,19 +61,19 @@ public class ProgressDialogManager {
                     dialog.setIndeterminate(true);
                     dialog.setCancelable(false);
                     break;
-                case Global.CONNECT_DIALOG:
+                case GlobalConstants.CONNECT_DIALOG:
                     dialog.setMessage(context.getString(R.string.progress_msg));
                     dialog.setIndeterminate(true);
                     dialog.setCancelable(false);
                     break;
-                case Global.PARSE_DIALOG:
+                case GlobalConstants.PARSE_DIALOG:
                     dialog.setTitle(context.getString(R.string.parse_dialog_title));
                     dialog.setMessage(context.getString(R.string.parse_msg));
                     dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
                     dialog.setIndeterminate(false);
                     dialog.setCancelable(false);
                     break;
-                case Global.SETUP_DIALOG:
+                case GlobalConstants.SETUP_DIALOG:
                     dialog.setTitle(context.getString(R.string.progress_header));
                     dialog.setMessage(context.getString(R.string.progress_initial));
                     dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);

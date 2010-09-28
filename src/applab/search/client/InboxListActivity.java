@@ -136,8 +136,8 @@ public class InboxListActivity extends BaseSearchActivity {
     public void showAccessDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText farmerNameEditBox = new EditText(this);
-        if (Global.intervieweeName != null) {
-            farmerNameEditBox.setText(Global.intervieweeName);
+        if (GlobalConstants.intervieweeName != null) {
+            farmerNameEditBox.setText(GlobalConstants.intervieweeName);
         }
         farmerNameEditBox.setFilters(new InputFilter[] { BaseSearchActivity.getFarmerInputFilter() });
         builder.setMessage(getString(R.string.confirm_id)).setCancelable(false)
@@ -147,7 +147,22 @@ public class InboxListActivity extends BaseSearchActivity {
                                 String input = farmerNameEditBox.getText().toString().trim();
                                 if (input.length() > 0) {
                                     dialog.cancel();
-                                    Global.intervieweeName = input;
+                                    if (checkId(input)) {
+                                        GlobalConstants.intervieweeName = input;
+                                    }
+                                    else {
+                                        showTestSearchDialog(new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                GlobalConstants.intervieweeName = "TEST";
+                                                dialog.cancel();
+                                            }
+                                        }, new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                dialog.cancel();
+                                                showAccessDialog();
+                                            }
+                                        });
+                                    }
                                 }
                                 else {
                                     ApplabActivity.showToast(R.string.empty_text);
@@ -169,11 +184,11 @@ public class InboxListActivity extends BaseSearchActivity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         boolean result = super.onPrepareOptionsMenu(menu);
         if (this.inboxCount == 0) {
-            menu.findItem(Global.DELETE_ID).setEnabled(false);
+            menu.findItem(GlobalConstants.DELETE_ID).setEnabled(false);
         }
-        menu.removeItem(Global.ABOUT_ID);
-        menu.removeItem(Global.SETTINGS_ID);
-        menu.removeItem(Global.INBOX_ID);
+        menu.removeItem(GlobalConstants.ABOUT_ID);
+        menu.removeItem(GlobalConstants.SETTINGS_ID);
+        menu.removeItem(GlobalConstants.INBOX_ID);
         return result;
     }
 }

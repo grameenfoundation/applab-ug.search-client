@@ -78,7 +78,7 @@ public class KeywordParser implements Runnable {
             // Show parse dialog (send signal with total node count)
             Message msg = responseHandler.obtainMessage();
             b.putInt("nodeCount", nodeCount);
-            msg.what = Global.KEYWORD_PARSE_GOT_NODE_TOTAL;
+            msg.what = GlobalConstants.KEYWORD_PARSE_GOT_NODE_TOTAL;
             msg.setData(b);
             responseHandler.sendMessage(msg);
 
@@ -109,44 +109,44 @@ public class KeywordParser implements Runnable {
 
             // mark this table as valid
             if (storage.validateTable(dbTable)) {
-                if (dbTable.contentEquals(Global.DATABASE_TABLE)) {
+                if (dbTable.contentEquals(GlobalConstants.DATABASE_TABLE)) {
                     // discard data in the other table
-                    storage.deleteAll(Global.DATABASE_TABLE2);
+                    storage.deleteAll(GlobalConstants.DATABASE_TABLE2);
                     // Notify handler: database initialization complete
                     responseHandler
-                                .sendEmptyMessage(Global.KEYWORD_PARSE_SUCCESS);
+                                .sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_SUCCESS);
                     Log.d(LOG_TAG, "DELETED TABLE: "
-                                + Global.DATABASE_TABLE2);
+                                + GlobalConstants.DATABASE_TABLE2);
                 }
                 else {
                     // discard data in the other table
-                    storage.deleteAll(Global.DATABASE_TABLE);
+                    storage.deleteAll(GlobalConstants.DATABASE_TABLE);
                     responseHandler
-                                .sendEmptyMessage(Global.KEYWORD_PARSE_SUCCESS);
+                                .sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_SUCCESS);
                     Log.d(LOG_TAG, "DELETED TABLE: "
-                                + Global.DATABASE_TABLE);
+                                + GlobalConstants.DATABASE_TABLE);
                 }
 
             }// TODO else let the handler know
             Log.d(LOG_TAG, "Finished Parsing Keywords ...");
         }
         catch (IOException e) {
-            responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_ERROR);
+            responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             error = true;
             Log.d(LOG_TAG, "IOException: " + e);
         }
         catch (IllegalStateException e) {
-            responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_ERROR);
+            responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             error = true;
             Log.d(LOG_TAG, "IllegalStateException: " + e);
         }
         catch (SAXException e) {
-            responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_ERROR);
+            responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             error = true;
             Log.d(LOG_TAG, "SAXException: " + e);
         }
         catch (ParserConfigurationException e) {
-            responseHandler.sendEmptyMessage(Global.KEYWORD_PARSE_ERROR);
+            responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             error = true;
             Log.d(LOG_TAG, "ParserConfigurationException: " + e);
         }
@@ -166,11 +166,11 @@ public class KeywordParser implements Runnable {
      */
     private String getInactiveTable() {
         // choose an empty or invalidated table
-        if (this.storage.tableExistsAndIsValid(Global.DATABASE_TABLE)) {
-            return Global.DATABASE_TABLE2;
+        if (this.storage.tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE)) {
+            return GlobalConstants.DATABASE_TABLE2;
         }
         else {
-            return Global.DATABASE_TABLE;
+            return GlobalConstants.DATABASE_TABLE;
         }
     }
 

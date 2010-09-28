@@ -199,7 +199,7 @@ public class InboxAdapter {
             int submissionTimeColumn = cursor.getColumnIndexOrThrow(KEY_DATE);
             int farmerIdColumn = cursor.getColumnIndexOrThrow(KEY_NAME);
 
-            String location = Global.location;
+            String location = GlobalConstants.location;
             if (!isLog) {
                 // temporary workaround - we should be storing location in the local searches as well
                 int locationColumn = cursor.getColumnIndexOrThrow(KEY_LOCATION);

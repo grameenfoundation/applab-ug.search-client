@@ -3,7 +3,7 @@
 <resources>
 <string name="app_name">CKW Search</string>
 <string name="app_version">2.8</string>
-<string name="release_date">September 15, 2010</string>
+<string name="release_date">September 27, 2010</string>
 <string name="info">Grameen Foundation, Applab Uganda\nckw@applab.org</string>
 <string name="inbox_title">Recent Searches</string>
 <string name="server_url">Server URL</string>
@@ -14,8 +14,7 @@
 <string name="search_path">mobile/oktopus/search.php</string>
 <string name="update_path">mobile/ckwsearch.php</string>
 <string name="server">http://ckwapps.applab.org</string>
-<string name="main_menu_details">Enter farmer\'s name or ID in the box below:</string>
-<string name="main_menu_message">Welcome!</string>
+<string name="main_menu_details">Enter farmer\'s ID in the box below:</string>
 <string name="connection_error">Unable to establish a connection</string>
 <string name="incomplete_keyword_response_error">Failed to get all keywords</string>
 <string name="keyword_parse_error">Failed to process keywords</string>
@@ -32,7 +31,7 @@
 <string name="record_deleted">The result has been deleted</string>
 <string name="record_notdeleted">Result already deleted</string>
 <string name="end_of_search">You have reached the end of your search.\nPress Send to access the requested information.</string>
-<string name="empty_text">Farmer\'s name or ID cannot be empty!</string>
+<string name="empty_text">Farmer\'s ID cannot be empty!</string>
 <string name="confirm_id">Farmer\'s name or ID:</string>
 <string name="invalid_text">Invalid character.</string>
 <string name="empty_select">Select a keyword.</string>

@@ -92,11 +92,11 @@ public class Storage {
             values.clear();
             // Invalidate other table. Set valididty to 0
             values.put(KEY_VALIDITY, 0);
-            if (table.contentEquals(Global.DATABASE_TABLE)) {
-                database.update(Global.DATABASE_TABLE2, values, null, null);
+            if (table.contentEquals(GlobalConstants.DATABASE_TABLE)) {
+                database.update(GlobalConstants.DATABASE_TABLE2, values, null, null);
             }
             else {
-                database.update(Global.DATABASE_TABLE, values, null, null);
+                database.update(GlobalConstants.DATABASE_TABLE, values, null, null);
             }
             database.setTransactionSuccessful();
             updated = true;
@@ -135,7 +135,7 @@ public class Storage {
     public Cursor selectMenuOptions(String table, String optionColumn,
                                     String condition) {
         return database.query(true, table, new String[] { optionColumn }, condition,
-                null, null, null, null, null);
+                null, null, null, KEY_ROWID, null);
     }
 
     /**
@@ -170,9 +170,9 @@ public class Storage {
         @Override
         public void onCreate(SQLiteDatabase database) {
             // Create keywords table 1
-            database.execSQL(generateCreateTableSqlCommand(Global.DATABASE_TABLE));
+            database.execSQL(generateCreateTableSqlCommand(GlobalConstants.DATABASE_TABLE));
             // Create keywords table 2
-            database.execSQL(generateCreateTableSqlCommand(Global.DATABASE_TABLE2));
+            database.execSQL(generateCreateTableSqlCommand(GlobalConstants.DATABASE_TABLE2));
         }
 
         @Override
@@ -180,8 +180,8 @@ public class Storage {
             Log.w("StorageAdapter", "***Upgrading database from version*** "
                     + oldVersion + " to " + newVersion
                     + ", which will destroy all old data");
-            database.execSQL("DROP TABLE IF EXISTS " + Global.DATABASE_TABLE);
-            database.execSQL("DROP TABLE IF EXISTS " + Global.DATABASE_TABLE2);
+            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.DATABASE_TABLE);
+            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.DATABASE_TABLE2);
             onCreate(database);
         }
     }
