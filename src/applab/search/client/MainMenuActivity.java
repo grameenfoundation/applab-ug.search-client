@@ -139,9 +139,10 @@ public class MainMenuActivity extends BaseSearchActivity {
             case FORGOT_ID_CODE:
                 if (resultCode == RESULT_OK) {
                     if (data != null) {
-                        String farmerId = data.getDataString();
+                        final String farmerId = data.getStringExtra("data");
                         BrowserResultDialog.show(this, "Selected ID: " + farmerId, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
+                                GlobalConstants.intervieweeName = farmerId;
                                 switchToActivity(SearchActivity.class);
                                 dialog.cancel();
                             }
