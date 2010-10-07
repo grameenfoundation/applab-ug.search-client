@@ -87,7 +87,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         int maxFarmerNameLength = 30;
         String farmerName = GlobalConstants.intervieweeName;
 
-        if (farmerName != null && farmerName.length() > 0 && this.getLocalClassName().compareTo("MainMenuActivity") != 0) {
+        if (farmerName != null && farmerName.length() > 0 && showFarmerId()) {
             title += " | ";
             if (farmerName.length() > maxFarmerNameLength) {
                 farmerName = farmerName.substring(0, maxFarmerNameLength) + "...";
@@ -135,6 +135,13 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         return false;
     }
 
+    /**
+     * override if you do not want to show the farmer ID in the activity title bar
+     * @return
+     */
+        protected boolean showFarmerId() {
+            return true;
+       }
     // helper methods for Android menu management
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

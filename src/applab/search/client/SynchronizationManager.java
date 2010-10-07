@@ -24,13 +24,14 @@ import applab.client.HttpHelpers;
  * TODO: move the general scheduling algorithm into shared code and leverage it
  */
 public class SynchronizationManager {
-    // by default we will synchronize once an hour
-    private static final int SYNCHRONIZATION_INTERVAL = 60 * 60 * 1000;
+    // by default we will synchronize once daily
+    private static final int SYNCHRONIZATION_INTERVAL = 24 * 60 * 60 * 1000;
 
     private static SynchronizationManager singleton = new SynchronizationManager();
 
     private Timer timer;
     private boolean isSynchronizing;
+    private static Boolean synchronizeNow; // This tells us to start sync
     private Handler completionCallback;
     private Context currentContext;
     private Handler progressMessageHandler;
@@ -75,7 +76,7 @@ public class SynchronizationManager {
      */
     private static void synchronize(Context context, Handler completionCallback, boolean isModal) {
         boolean attachToUi = false;
-        boolean synchronizeNow = isModal;
+        synchronizeNow = isModal;
 
         synchronized (SynchronizationManager.singleton) {
             // if we don't have a timer, set that up
@@ -84,7 +85,7 @@ public class SynchronizationManager {
             // Now check if we are in the middle of a synchronization episode
             // and if so, we should attach to the UI
             // TODO: check isRunning instead?
-            if (SynchronizationManager.singleton.isSynchronizing) {
+            if (SynchronizationManager.isSynchronizing()) {
                 attachToUi = true;
             }
             else {
@@ -94,15 +95,10 @@ public class SynchronizationManager {
                     synchronizeNow = true;
                 }
 
-                // only set our boolean under the lock. The actual synchronization work
-                // will occur outside of the lock
-                if (synchronizeNow) {
-                    SynchronizationManager.singleton.isSynchronizing = true;
-                }
             }
         }
 
-        if (attachToUi) {
+        if (attachToUi) {            
             SynchronizationManager.singleton.attachActivity(context, completionCallback);
         }
         else if (synchronizeNow) {
@@ -132,8 +128,11 @@ public class SynchronizationManager {
             this.timer = new Timer();
             // TODO: should we kick off a synchronization episode immediately? If so, change the first parameter here
             // and modify the caller appropriately
-            this.timer.scheduleAtFixedRate(new BackgroundSynchronizationTask(this, false),
-                    SYNCHRONIZATION_INTERVAL, SYNCHRONIZATION_INTERVAL);
+            /**
+             * TURNED OFF BACKGROUND SYNCHRONIZATION for 2.8.3 release
+             * Need to properly test this before turning it back on.
+             */
+           // this.timer.scheduleAtFixedRate(new BackgroundSynchronizationTask(this, false), SYNCHRONIZATION_INTERVAL, SYNCHRONIZATION_INTERVAL);
             scheduledTimer = true;
         }
 
@@ -275,6 +274,7 @@ public class SynchronizationManager {
      * Called by our background or timer thread to perform the actual synchronization tasks from a separate thread.
      */
     private void performBackgroundSynchronization() {
+        SynchronizationManager.singleton.isSynchronizing = true;
         InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
         inboxAdapter.open();
 
@@ -339,7 +339,7 @@ public class SynchronizationManager {
         // PulseDataCollector.downloadTabUpdates into our CommonClient library
         // HttpPost httpPost = HttpHelpers.createPost(baseServerUrl + "search/getKeywords");
 
-        String newKeywords = HttpHelpers.fetchContent(baseServerUrl + this.currentContext.getString(R.string.update_path));
+        String newKeywords = HttpHelpers.fetchContent(baseServerUrl + ApplabActivity.getGlobalContext().getString(R.string.update_path));
 
         // Check if we downloaded successfully
         int connectionResult = GlobalConstants.KEYWORD_DOWNLOAD_FAILURE;
@@ -366,16 +366,16 @@ public class SynchronizationManager {
      * concurrently with our timer firing. In that case we will let the timer fail gracefully
      */
     private boolean tryStartSynchronization() {
-        if (this.isSynchronizing) {
+        if (isSynchronizing()) {
             return false;
         }
 
         synchronized (this) {
-            if (this.isSynchronizing) {
+            if (isSynchronizing()) {
                 return false;
             }
 
-            this.isSynchronizing = true;
+            synchronizeNow = true;
             return true;
         }
     }
@@ -406,7 +406,7 @@ public class SynchronizationManager {
 
             // first determine if there is already a synchronization episode in-progress
             if (this.hasLock) {
-                assert (this.synchronizationManager.isSynchronizing) : "if we have the lock, isSynchronizing must be true";
+                assert (SynchronizationManager.isSynchronizing()) : "if we have the lock, isSynchronizing must be true";
                 doSynchronization = true;
             }
             else {
@@ -414,7 +414,7 @@ public class SynchronizationManager {
             }
 
             // and if not, start the heavy lifting from our background thread
-            if (doSynchronization) {
+            if (doSynchronization) {                
                 this.synchronizationManager.performBackgroundSynchronization();
             }
         }

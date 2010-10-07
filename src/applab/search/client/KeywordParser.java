@@ -65,14 +65,12 @@ public class KeywordParser implements Runnable {
     @Override
     public void run() {
         boolean error = false;
-        double percent = 0.0;
-        double total;
+
         try {
             Document xmlDocument = XmlHelpers.parseXml(this.keywords);
             NodeList nodes = xmlDocument.getElementsByTagName("Keyword");
             int nodeCount = nodes.getLength();
             Log.d(LOG_TAG, "Total nodes: " + nodeCount);
-            total = (double)nodeCount;
             Bundle b = new Bundle();
 
             // Show parse dialog (send signal with total node count)
@@ -87,7 +85,7 @@ public class KeywordParser implements Runnable {
             dbTable = getInactiveTable();
             Log.d(LOG_TAG, "Using TABLE: " + dbTable);
             insertValues = new ContentValues();
-
+            android.util.Log.e("BG","Start parse");
             // iterate through nodes
             for (int i = 0; i < nodeCount; i++) {
                 Element element = (Element)nodes.item(i);
@@ -97,11 +95,9 @@ public class KeywordParser implements Runnable {
                 // For now if keywords are not passed in we're not updating
                 // on progress
                 if (keywords != null) {
-                    if (i > 0) {
-                        percent = ((double)i / total) * 100.0;
-                    }
+
                     Message msg1 = progressHandler.obtainMessage();
-                    b.putInt("node", (int)percent);
+                    b.putInt("node", i);
                     msg1.setData(b);
                     progressHandler.sendMessage(msg1);
                 }

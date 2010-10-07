@@ -200,19 +200,19 @@ public class MainMenuActivity extends BaseSearchActivity {
      * @param classId
      */
     private void onButtonClick(Class<?> classId) {
+        final Intent nextActivity = new Intent(getApplicationContext(), classId);
+        nextActivity.putExtra("block", false);
         String farmerName = farmerNameEditBox.getText().toString().replace(" ", "");
         if (farmerName.length() > 0) {
             if (checkId(farmerName)) {
-                GlobalConstants.intervieweeName = farmerName;
-                Intent nextActivity = new Intent(getApplicationContext(), classId);
-                nextActivity.putExtra("block", false);
+                GlobalConstants.intervieweeName = farmerName;                
                 switchToActivity(nextActivity);
             }
             else {
                 showTestSearchDialog(new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         GlobalConstants.intervieweeName = "TEST";
-                        switchToActivity(SearchActivity.class);
+                        switchToActivity(nextActivity);
                         dialog.cancel();
                     }
                 }, new DialogInterface.OnClickListener() {
@@ -227,6 +227,11 @@ public class MainMenuActivity extends BaseSearchActivity {
         }
     }
 
+    @Override
+       protected boolean showFarmerId() {
+           return false;
+       }
+    
     @Override
     protected void onKeywordUpdateComplete() {
         super.onKeywordUpdateComplete();

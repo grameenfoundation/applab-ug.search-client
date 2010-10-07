@@ -100,7 +100,7 @@ public class ProgressDialogManager {
         if (ProgressDialogManager.progressDialog != null) {
             ProgressDialogManager.progressDialog.cancel();
             ProgressDialogManager.progressDialog = null;
-        }
+        }        
     }
 
     public static void setProgress(int level) {
