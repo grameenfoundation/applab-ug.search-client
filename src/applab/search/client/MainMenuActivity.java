@@ -12,6 +12,10 @@ the License.
 
 package applab.search.client;
 
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Set;
+
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -25,6 +29,7 @@ import android.widget.EditText;
 import applab.client.BrowserActivity;
 import applab.client.BrowserResultDialog;
 import applab.client.Handset;
+import applab.client.HttpHelpers;
 
 /**
  * The Search application home screen
@@ -180,8 +185,25 @@ public class MainMenuActivity extends BaseSearchActivity {
                 String serverUrl = Settings.getServerUrl();
                 serverUrl = serverUrl.substring(0, serverUrl.length()
                         - 1);
+                
+                // Add common Headers to the parameter string
+                HashMap<String, String> commonHeaders = HttpHelpers.getCommonHeaders();
+                String commonParameters = "";
+                Set<String> keys = commonHeaders.keySet();
+                Boolean isFirst = true;
+                for(String key :keys) {
+                    if(isFirst){
+                        commonParameters += "?";
+                        isFirst = false;
+                    }
+                    else {
+                        commonParameters += "&";
+                    }
+                    commonParameters += key + "=" + URLEncoder.encode(commonHeaders.get(key));
+                }
+                
                 webActivity.putExtra(BrowserActivity.EXTRA_URL_INTENT,
-                        serverUrl + ":8888/services/" + urlPattern + "?handsetId=" + Handset.getImei() + "&farmerId="
+                        serverUrl + ":8888/services/" + urlPattern + commonParameters + "&farmerId="
                                 + farmerName);
                 startActivityForResult(webActivity, requestCode);
             }
