@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Handler;
 import android.os.Message;
-import applab.client.Handset;
 import applab.client.HttpHelpers;
 
 /**
@@ -152,7 +151,7 @@ public class SearchRequest {
                         sendFailureMessage(submissionHandler);
                     }
                 };
-                ErrorDialogManager.show(R.string.connection_error, null, onClickRetry, "Retry", onClickCancel, "Cancel");
+                ErrorDialogManager.show(R.string.connection_error_message, null, onClickRetry, "Retry", onClickCancel, "Cancel");
                 break;
         }
 

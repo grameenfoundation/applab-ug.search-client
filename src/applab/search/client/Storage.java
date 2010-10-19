@@ -24,10 +24,15 @@ import android.util.Log;
  * An adapter for the search keywords database
  */
 public class Storage {
-    private static final String KEY_ROWID = "_id";
+    public static final String KEY_ROWID = "_id";
+    public static final String KEY_VALIDITY = "validity";
+    public static final String KEY_ORDER = "ordering";
+    public static final String KEY_CATEGORY = "category";
+    public static final String KEY_CONTENT = "content";
+    public static final String KEY_UPDATED = "updated";
+    public static final String KEY_ATTRIBUTION = "attribution";
     private static final String DATABASE_NAME = "search";
-    private static final String KEY_VALIDITY = "validity";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
     private static final int SEQUENCES = 32;
 
     private DatabaseHelper databaseHelper;
@@ -67,57 +72,14 @@ public class Storage {
     private static String generateCreateTableSqlCommand(String table) {
         StringBuilder sqlCommand = new StringBuilder();
         sqlCommand.append("create table " + table);
-        sqlCommand.append(" (_id integer primary key autoincrement, validity SMALLINT DEFAULT 0");
+        sqlCommand.append(" (_id INTEGER PRIMARY KEY, " + KEY_VALIDITY + " SMALLINT DEFAULT 0, " + KEY_ORDER + " SMALLINT DEFAULT 0, "
+                + KEY_CONTENT + " TEXT DEFAULT 'Content Unavailable', " + KEY_CATEGORY + " VARCHAR DEFAULT NULL, " + KEY_ATTRIBUTION
+                + " VARCHAR DEFAULT NULL, " + KEY_UPDATED + " VARCHAR DEFAULT NULL");
         for (int i = 0; i < SEQUENCES; i++) {
             sqlCommand.append(", col" + i + " VARCHAR DEFAULT NULL");
         }
         sqlCommand.append(" );");
         return sqlCommand.toString();
-    }
-
-    /**
-     * sets data in a table as valid
-     * 
-     * @param table
-     *            the table to verify
-     * @return true on success, false otherwise
-     */
-    public boolean validateTable(String table) {
-        boolean updated = false;
-        ContentValues values = new ContentValues();
-        values.put(KEY_VALIDITY, 1);
-        database.beginTransaction();
-        try {
-            database.update(table, values, null, null);
-            values.clear();
-            // Invalidate other table. Set valididty to 0
-            values.put(KEY_VALIDITY, 0);
-            if (table.contentEquals(GlobalConstants.DATABASE_TABLE)) {
-                database.update(GlobalConstants.DATABASE_TABLE2, values, null, null);
-            }
-            else {
-                database.update(GlobalConstants.DATABASE_TABLE, values, null, null);
-            }
-            database.setTransactionSuccessful();
-            updated = true;
-        }
-        finally {
-            database.endTransaction();
-        }
-        return updated;
-    }
-
-    /**
-     * saves keyword
-     * 
-     * @param table
-     *            the table to save to
-     * @param content
-     *            the content value pair
-     * @return the table row ID
-     */
-    public long insertKeyword(String table, ContentValues content) {
-        return database.insert(table, null, content);
     }
 
     /**
@@ -132,10 +94,17 @@ public class Storage {
      *            the conditional SQL string
      * @return A cursor pointing before the first element of the result set.
      */
-    public Cursor selectMenuOptions(String table, String optionColumn,
-                                    String condition) {
+    public Cursor selectMenuOptions(String table, String optionColumn, String condition) {
         return database.query(true, table, new String[] { optionColumn }, condition,
-                null, null, null, KEY_ROWID, null);
+                null, null, null, KEY_ORDER + " DESC", null);
+    }
+
+    public boolean deleteEntry(String table, String id) {
+        return database.delete(table, KEY_ROWID + "=" + id, null) > 0;
+    }
+
+    public boolean insertContent(String table, ContentValues values) {
+        return database.replace(table, null, values) > 0;
     }
 
     /**
@@ -151,12 +120,15 @@ public class Storage {
      * checks if the given table exists and has valid data.
      */
     public boolean tableExistsAndIsValid(String table) {
-        Cursor cursor = database.query(table, new String[] { KEY_ROWID, KEY_VALIDITY }, null,
+        Cursor cursor = database.query(table, new String[] { KEY_ROWID, KEY_CATEGORY }, null,
                 null, null, null, null, "1");
         boolean isValid = false;
         if (cursor.moveToFirst()) {
-            int columnIndex = cursor.getColumnIndexOrThrow(KEY_VALIDITY);
-            isValid = cursor.getInt(columnIndex) > 0;
+            // simple validation: check if a category is not null
+            int columnIndex = cursor.getColumnIndexOrThrow(KEY_CATEGORY);
+            if (cursor.getString(columnIndex) != null) {
+                return true;
+            }
         }
         cursor.close();
         return isValid;
@@ -169,10 +141,8 @@ public class Storage {
 
         @Override
         public void onCreate(SQLiteDatabase database) {
-            // Create keywords table 1
+            // Create keywords table
             database.execSQL(generateCreateTableSqlCommand(GlobalConstants.DATABASE_TABLE));
-            // Create keywords table 2
-            database.execSQL(generateCreateTableSqlCommand(GlobalConstants.DATABASE_TABLE2));
         }
 
         @Override

@@ -26,9 +26,9 @@ import android.view.View.OnClickListener;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
+import applab.client.ApplabActivity;
 import applab.client.BrowserActivity;
 import applab.client.BrowserResultDialog;
-import applab.client.Handset;
 import applab.client.HttpHelpers;
 
 /**
@@ -51,8 +51,10 @@ public class MainMenuActivity extends BaseSearchActivity {
         super.onCreate(savedInstanceState);
         // Request to display an icon in the title bar. Must be done in onCreate()
         requestWindowFeature(Window.FEATURE_RIGHT_ICON);
+        //Set application version information
+        ApplabActivity.setAppVersion(getString(R.string.app_version));
     }
-
+    
     @Override
     public void onResume() {
         // First run parent code

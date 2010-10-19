@@ -1,8 +1,24 @@
+/**
+ * Copyright (C) 2010 Grameen Foundation
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+ */
 package applab.search.client;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import org.apache.http.entity.AbstractHttpEntity;
+import org.apache.http.entity.StringEntity;
 
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,6 +28,8 @@ import android.os.Message;
 import android.widget.Toast;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
+import applab.client.PropertyStorage;
+import applab.client.XmlEntityBuilder;
 
 /**
  * The SynchronizationManager is responsible for all the complexity involved in scheduling timers, background threads,
@@ -28,7 +46,9 @@ public class SynchronizationManager {
     private static final int SYNCHRONIZATION_INTERVAL = 24 * 60 * 60 * 1000;
 
     private static SynchronizationManager singleton = new SynchronizationManager();
-
+    private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
+    private final static String REQUEST_ELEMENT_NAME = "GetKeywordsRequest";
+    private final static String VERSION_ELEMENT_NAME = "localKeywordsVersion";
     private Timer timer;
     private boolean isSynchronizing;
     private static Boolean synchronizeNow; // This tells us to start sync
@@ -98,7 +118,7 @@ public class SynchronizationManager {
             }
         }
 
-        if (attachToUi) {            
+        if (attachToUi) {
             SynchronizationManager.singleton.attachActivity(context, completionCallback);
         }
         else if (synchronizeNow) {
@@ -129,10 +149,11 @@ public class SynchronizationManager {
             // TODO: should we kick off a synchronization episode immediately? If so, change the first parameter here
             // and modify the caller appropriately
             /**
-             * TURNED OFF BACKGROUND SYNCHRONIZATION for 2.8.3 release
-             * Need to properly test this before turning it back on.
+             * TURNED OFF BACKGROUND SYNCHRONIZATION for 2.8.3 release Need to properly test this before turning it back
+             * on.
              */
-           // this.timer.scheduleAtFixedRate(new BackgroundSynchronizationTask(this, false), SYNCHRONIZATION_INTERVAL, SYNCHRONIZATION_INTERVAL);
+            // this.timer.scheduleAtFixedRate(new BackgroundSynchronizationTask(this, false), SYNCHRONIZATION_INTERVAL,
+            // SYNCHRONIZATION_INTERVAL);
             scheduledTimer = true;
         }
 
@@ -231,7 +252,7 @@ public class SynchronizationManager {
                 ProgressDialogManager.displayProgressDialog(GlobalConstants.UPDATE_DIALOG, this.currentContext);
                 break;
             case GlobalConstants.CONNECTION_ERROR:
-                showErrorDialog(R.string.connection_error);
+                showErrorDialog(R.string.connection_error_message);
                 break;
             case GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS:
                 // TODO: do we want to update the progress dialog here?
@@ -252,7 +273,8 @@ public class SynchronizationManager {
                 Toast updateToast = Toast.makeText(this.currentContext, this.currentContext.getString(R.string.refreshed),
                         Toast.LENGTH_LONG);
                 updateToast.show();
-
+                // TODO: Decide whether to check for image updates here right after the keyword update and before
+                // releasing the synchronization lock.
                 // in the error case, this is updated on click of the error dialog "OK" button. On success
                 // it should hit this path
                 SynchronizationManager.completeSynchronization();
@@ -287,15 +309,45 @@ public class SynchronizationManager {
         // a looper to setup the message pump (by default, background threads
         // don't have a message pump)
         Looper.prepare();
-        String newKeywords = downloadKeywords(Settings.getServerUrl());
-        if (newKeywords != null && newKeywords.trim().endsWith("</Keywords>")) {
-            parseKeywords(newKeywords);
+        String url = Settings.getNewServerUrl() + ApplabActivity.getGlobalContext().getString(R.string.update_path);
+        String keywordUpdates = null;
+        try {
+            sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING);
+            keywordUpdates = HttpHelpers.postXmlRequest(url, (StringEntity)getRequestEntity());
+            sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
+
+            if (keywordUpdates != null && keywordUpdates.trim().endsWith("</GetKeywordsResponse>")) {
+                parseKeywords(keywordUpdates);
+            }
+            else {
+                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
+            }
+        }
+        catch (IOException e) {
+            sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
 
         // TODO: Looper.loop is problematic here. This should be restructured
         Looper.loop();
         Looper looper = Looper.getMainLooper();
         looper.quit();
+    }
+
+    /**
+     * Sets the version in the update request entity
+     * 
+     * @return XML request entity
+     * @throws UnsupportedEncodingException
+     */
+    static AbstractHttpEntity getRequestEntity() throws UnsupportedEncodingException {
+        String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, "2010-07-20 18:34:36");
+        XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
+        xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
+        xmlRequest.writeStartElement(VERSION_ELEMENT_NAME);
+        xmlRequest.writeText(keywordsVersion);
+        xmlRequest.writeEndElement();
+        xmlRequest.writeEndElement();
+        return xmlRequest.getEntity();
     }
 
     /**
@@ -325,39 +377,11 @@ public class SynchronizationManager {
         }
     }
 
-    /**
-     * Get any updated keywords from the server. Our protocol allows for incremental updates, to the server will only
-     * return items that are "new" from the perspective of the client.
-     * 
-     * NOTE: for now we are using the legacy API where we get _all_ keywords every time
-     */
-    private String downloadKeywords(String baseServerUrl) {
-        // notify the UI that we're starting a download
-        sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING);
-
-        // TODO: replace this get with a post call, factor out HttpPost code from
-        // PulseDataCollector.downloadTabUpdates into our CommonClient library
-        // HttpPost httpPost = HttpHelpers.createPost(baseServerUrl + "search/getKeywords");
-
-        String newKeywords = HttpHelpers.fetchContent(baseServerUrl + ApplabActivity.getGlobalContext().getString(R.string.update_path));
-
-        // Check if we downloaded successfully
-        int connectionResult = GlobalConstants.KEYWORD_DOWNLOAD_FAILURE;
-        if (newKeywords != null && newKeywords.trim().endsWith("</Keywords>")) {
-            connectionResult = GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS;
-        }
-
-        // and notify again that we've completed (either with success or failure
-        sendInternalMessage(connectionResult);
-        return newKeywords;
-    }
-
     private void parseKeywords(String newKeywordsXml) {
         // Call KeywordParser to parse the keywords result and store the contents in our
         // local database
         // TODO: integrate this code into our synchronization manager?
-        KeywordParser keywordParser = new KeywordParser(this.currentContext,
-                this.progressMessageHandler, this.internalMessageHandler, newKeywordsXml);
+        KeywordParser keywordParser = new KeywordParser(this.progressMessageHandler, this.internalMessageHandler, newKeywordsXml);
         keywordParser.run();
     }
 
@@ -397,7 +421,6 @@ public class SynchronizationManager {
                                              boolean hasLock) {
             this.synchronizationManager = synchronizationManager;
             this.hasLock = hasLock;
-
         }
 
         @Override
@@ -414,8 +437,9 @@ public class SynchronizationManager {
             }
 
             // and if not, start the heavy lifting from our background thread
-            if (doSynchronization) {                
+            if (doSynchronization) {
                 this.synchronizationManager.performBackgroundSynchronization();
+                ImageManager.updateLocalImages();
             }
         }
     }

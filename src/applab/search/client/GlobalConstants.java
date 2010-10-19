@@ -27,6 +27,8 @@ public class GlobalConstants {
     public static final int PARSE_DIALOG = 2;
     public static final int SETUP_DIALOG = 3;
 
+    public static final String KEYWORDS_VERSION_KEY = "keywordsVersion";
+
     /** keywords table 1 */
     public static final String DATABASE_TABLE = "keywords";
 

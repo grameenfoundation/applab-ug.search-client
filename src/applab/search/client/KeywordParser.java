@@ -16,19 +16,19 @@ import java.io.IOException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.w3c.dom.CharacterData;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import android.content.ContentValues;
-import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import applab.client.ApplabActivity;
+import applab.client.PropertyStorage;
 import applab.client.XmlHelpers;
 
 /**
@@ -38,25 +38,32 @@ import applab.client.XmlHelpers;
 public class KeywordParser implements Runnable {
     /** for debugging purposes in adb logcat */
     private static final String LOG_TAG = "KeywordParser";
-    private Context applicationContext;
+    private static final String ADD_TAG = "add";
+    private static final String REMOVE_TAG = "remove";
+    private static final String VERSION_TAG = "version";
+    private static final String ITEM_ORDER = "order";
+    private static final String ITEM_KEYWORD = "keyword";
+    private static final String ITEM_UPDATED = "updated";
+    private static final String ITEM_ATTRIBUTION = "attribution";
+    private static final String ITEM_CATEGORY = "category";
+    private static final String ITEM_ID = "id";
+    private static int progressLevel = 0;
     private Storage storage;
 
     /** handler to which progress updates are sent */
     private Handler progressHandler;
-
-    private ContentValues insertValues;
-
-    /** table to update */
-    private String dbTable;
 
     private String keywords;
 
     /** handler to which responses are sent */
     private Handler responseHandler;
 
-    public KeywordParser(Context applicationContext, Handler progressHandler,
+    private Bundle bundle;
+    private NodeList nodesToAdd;
+    private NodeList nodesToRemove;
+
+    public KeywordParser(Handler progressHandler,
                          Handler responseHandler, String newKeywords) {
-        this.applicationContext = applicationContext;
         this.keywords = newKeywords;
         this.responseHandler = responseHandler;
         this.progressHandler = progressHandler;
@@ -64,141 +71,141 @@ public class KeywordParser implements Runnable {
 
     @Override
     public void run() {
-        boolean error = false;
-
         try {
             Document xmlDocument = XmlHelpers.parseXml(this.keywords);
-            NodeList nodes = xmlDocument.getElementsByTagName("Keyword");
-            int nodeCount = nodes.getLength();
+            this.nodesToAdd = xmlDocument.getElementsByTagName(ADD_TAG);
+            this.nodesToRemove = xmlDocument.getElementsByTagName(REMOVE_TAG);
+            int nodeCount = nodesToAdd.getLength() + nodesToRemove.getLength();
             Log.d(LOG_TAG, "Total nodes: " + nodeCount);
-            Bundle b = new Bundle();
-
+            this.bundle = new Bundle();
             // Show parse dialog (send signal with total node count)
-            Message msg = responseHandler.obtainMessage();
-            b.putInt("nodeCount", nodeCount);
-            msg.what = GlobalConstants.KEYWORD_PARSE_GOT_NODE_TOTAL;
-            msg.setData(b);
-            responseHandler.sendMessage(msg);
-
-            storage = new Storage(applicationContext);
-            storage.open();
-            dbTable = getInactiveTable();
-            Log.d(LOG_TAG, "Using TABLE: " + dbTable);
-            insertValues = new ContentValues();
-            android.util.Log.e("BG","Start parse");
-            // iterate through nodes
-            for (int i = 0; i < nodeCount; i++) {
-                Element element = (Element)nodes.item(i);
-                NodeList word = element.getElementsByTagName("Keyword");
-                Element line = (Element)word.item(0);
-                store(getCharacterDataFromElement(line).split(" "));
-                // For now if keywords are not passed in we're not updating
-                // on progress
-                if (keywords != null) {
-
-                    Message msg1 = progressHandler.obtainMessage();
-                    b.putInt("node", i);
-                    msg1.setData(b);
-                    progressHandler.sendMessage(msg1);
-                }
-            }
-
-            // mark this table as valid
-            if (storage.validateTable(dbTable)) {
-                if (dbTable.contentEquals(GlobalConstants.DATABASE_TABLE)) {
-                    // discard data in the other table
-                    storage.deleteAll(GlobalConstants.DATABASE_TABLE2);
-                    // Notify handler: database initialization complete
-                    responseHandler
-                                .sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_SUCCESS);
-                    Log.d(LOG_TAG, "DELETED TABLE: "
-                                + GlobalConstants.DATABASE_TABLE2);
-                }
-                else {
-                    // discard data in the other table
-                    storage.deleteAll(GlobalConstants.DATABASE_TABLE);
-                    responseHandler
-                                .sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_SUCCESS);
-                    Log.d(LOG_TAG, "DELETED TABLE: "
-                                + GlobalConstants.DATABASE_TABLE);
-                }
-
-            }// TODO else let the handler know
+            Message message = responseHandler.obtainMessage();
+            this.bundle.putInt("nodeCount", nodeCount);
+            message.what = GlobalConstants.KEYWORD_PARSE_GOT_NODE_TOTAL;
+            message.setData(bundle);
+            this.responseHandler.sendMessage(message);
+            this.storage = new Storage(ApplabActivity.getGlobalContext());
+            this.storage.open();
+            processRemovals(this.nodesToRemove);
+            processAdditions(this.nodesToAdd);
+            // Save keywords version
+            KeywordParser.storeKeywordsVersion(xmlDocument);
+            // let UI handler know
             Log.d(LOG_TAG, "Finished Parsing Keywords ...");
+            this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_SUCCESS);
         }
         catch (IOException e) {
-            responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
-            error = true;
+            this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             Log.d(LOG_TAG, "IOException: " + e);
         }
         catch (IllegalStateException e) {
-            responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
-            error = true;
+            this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             Log.d(LOG_TAG, "IllegalStateException: " + e);
         }
         catch (SAXException e) {
-            responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
-            error = true;
+            this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             Log.d(LOG_TAG, "SAXException: " + e);
         }
         catch (ParserConfigurationException e) {
-            responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
-            error = true;
+            this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             Log.d(LOG_TAG, "ParserConfigurationException: " + e);
         }
         finally {
-            if (error) {
-                Log.d(LOG_TAG, "ROLL BACK");
-                storage.deleteAll(dbTable);
+            this.storage.close();
+        }
+    }
+
+    public void processRemovals(NodeList nodeList) {
+
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            NamedNodeMap attributes = nodeList.item(i).getAttributes();
+
+            String rowId = attributes.getNamedItem(ITEM_ID).getNodeValue();
+            if (rowId != null && !storage.deleteEntry(GlobalConstants.DATABASE_TABLE, rowId)) {
+                Log.e(LOG_TAG, "Failed to remove item. ID= " + rowId);
             }
-            storage.close();
+            incrementProgressLevel();
+        }
+    }
+
+    public void processAdditions(NodeList nodeList) {
+        ContentValues addValues = new ContentValues();
+
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            String rowId = null;
+            String order = null;
+            String category = null;
+            String attribution = null;
+            String updated = null;
+            String keyword = null;
+            String content = nodeList.item(i).getFirstChild().getNodeValue();
+            NamedNodeMap attributes = nodeList.item(i).getAttributes();
+
+            Node node = attributes.getNamedItem(ITEM_ID);
+            if (node != null) {
+                rowId = node.getNodeValue();
+            }
+            node = attributes.getNamedItem(ITEM_ORDER);
+            if (node != null) {
+                order = node.getNodeValue();
+            }
+            node = attributes.getNamedItem(ITEM_KEYWORD);
+            if (node != null) {
+                keyword = node.getNodeValue();
+            }
+            node = attributes.getNamedItem(ITEM_ATTRIBUTION);
+            if (node != null) {
+                attribution = node.getNodeValue();
+            }
+            node = attributes.getNamedItem(ITEM_UPDATED);
+            if (node != null) {
+                updated = node.getNodeValue();
+            }
+            node = attributes.getNamedItem(ITEM_CATEGORY);
+            if (node != null) {
+                category = node.getNodeValue();
+            }
+
+            // Split keyword
+            String[] keywords = keyword.split(" ");
+            for (int j = 0; j < keywords.length; j++) {
+                addValues.put("col" + Integer.toString(j), keywords[j].replace("_", " "));
+            }
+            addValues.put(ITEM_ATTRIBUTION, attribution);
+            addValues.put(ITEM_UPDATED, updated);
+            addValues.put(Storage.KEY_ROWID, rowId);
+            addValues.put(Storage.KEY_ORDER, order);
+            addValues.put(Storage.KEY_CATEGORY, category.replace("_", " "));
+            addValues.put(Storage.KEY_CONTENT, content);
+
+            storage.insertContent(GlobalConstants.DATABASE_TABLE, addValues);
+
+            incrementProgressLevel();
         }
     }
 
     /**
-     * select a non active table to update
-     * 
-     * @return the name of the table to update
+     * Call this each time to increment the progress bar by one level
      */
-    private String getInactiveTable() {
-        // choose an empty or invalidated table
-        if (this.storage.tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE)) {
-            return GlobalConstants.DATABASE_TABLE2;
-        }
-        else {
-            return GlobalConstants.DATABASE_TABLE;
-        }
+    private void incrementProgressLevel() {
+        Message message = progressHandler.obtainMessage();
+        bundle.putInt("node", ++progressLevel);
+        message.setData(bundle);
+        progressHandler.sendMessage(message);
     }
 
     /**
-     * insert data into table
+     * Record last update version in preferences
      * 
-     * @param values
-     *            a content value pair
+     * @param document
      */
-    private void store(String[] values) {
-        for (int i = 0; i < values.length; i++) {
-            insertValues.put("col" + Integer.toString(i), values[i].replace("_", " "));
+    static void storeKeywordsVersion(Document document) {
+        NodeList nodeList = document.getElementsByTagName(VERSION_TAG);
+        if (nodeList.getLength() > 0) {
+            Node node = nodeList.item(0).getFirstChild();
+            String version = node.getNodeValue();
+            PropertyStorage.getLocal().setValue(GlobalConstants.KEYWORDS_VERSION_KEY, version);
         }
-        storage.insertKeyword(dbTable, insertValues);
-        insertValues.clear();
-    }// TODO store() should indicate whether insert was successful. On failure
-
-    // mark as dirty.
-
-    /**
-     * obtains characters in a keyword tag
-     * 
-     * @param e
-     *            The document element interface.
-     * @return keywords string
-     */
-    private String getCharacterDataFromElement(Element e) {
-        Node child = e.getFirstChild();
-        if (child instanceof CharacterData) {
-            CharacterData cd = (CharacterData)child;
-            return cd.getData();
-        }
-        return null;// TODO Malformed XML error
     }
+
 }

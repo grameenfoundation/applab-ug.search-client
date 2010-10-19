@@ -22,16 +22,6 @@ public class StorageManager {
         return singleton.privateHasKeywords();
     }
 
-    public static String getActiveTable() {
-        String table = GlobalConstants.DATABASE_TABLE;
-        // Check if other table qualifies otherwise return above table
-        if (singleton.getLegacyStorage().tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE2)) {
-            table = GlobalConstants.DATABASE_TABLE2;
-        }
-
-        return table;
-    }
-
     private Storage getLegacyStorage() {
         if (this.legacyStorage == null) {
             this.legacyStorage = new Storage(ApplabActivity.getGlobalContext());
@@ -45,8 +35,7 @@ public class StorageManager {
         // once we have valid data, that never changes, but we can
         // switch from invalid to valid at any time
         if (!this.hasKeywords) {
-            this.hasKeywords = getLegacyStorage().tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE)
-                    || getLegacyStorage().tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE2);
+            this.hasKeywords = getLegacyStorage().tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE);
         }
 
         return this.hasKeywords;

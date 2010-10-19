@@ -68,9 +68,6 @@ public class SearchActivity extends BaseSearchActivity {
     /** holds selected keywords */
     private ArrayList<String> selectedKeywords;
 
-    /** the active search keywords database table */
-    private String activeDatabaseTable;
-
     /** holds the selected radio button ID */
     private int radioId;
 
@@ -99,7 +96,6 @@ public class SearchActivity extends BaseSearchActivity {
             }
         }
         setContentView(R.layout.main);
-        this.activeDatabaseTable = StorageManager.getActiveTable();
         this.keywordChoices = (RadioGroup)findViewById(R.id.radio_group);
         this.keywordChoices.bringToFront();
         this.nextButtonSmall = (Button)findViewById(R.id.next_button);
@@ -131,11 +127,14 @@ public class SearchActivity extends BaseSearchActivity {
                 }
                 this.searchPath.setText(query);
             }
+            else {
+                this.sequence = -1;
+            }
 
-            buildRadioList();
+            buildKeywordsMenu();
         }
 
-        if (this.sequence > 0) {
+        if (this.sequence > 1) {
             this.startLayout.setVisibility(View.GONE);
         }
         else {
@@ -152,7 +151,7 @@ public class SearchActivity extends BaseSearchActivity {
                     selectedKeywords.add(new String(choice));
                     searchPath.setText(getKeywordDisplay());
                     ++sequence;
-                    buildRadioList();
+                    buildKeywordsMenu();
                     startLayout.setVisibility(View.GONE);
                     layout.setVisibility(View.VISIBLE);
                 }
@@ -182,7 +181,7 @@ public class SearchActivity extends BaseSearchActivity {
 
                     searchPath.setText(query);
                     ++sequence;
-                    buildRadioList();
+                    buildKeywordsMenu();
                 }
                 else {
                     if (!endOfKeywordSequence) {
@@ -216,7 +215,7 @@ public class SearchActivity extends BaseSearchActivity {
                     selectedKeywords.remove(selectedKeywords.size() - 1);
                     keywordChoices.clearCheck();
                     keywordChoices.removeAllViews();
-                    buildRadioList();
+                    buildKeywordsMenu();
                     String query = "";
                     for (int i = 0; i < selectedKeywords.size(); i++) {
                         query = query.concat(" >" + selectedKeywords.get(i));
@@ -312,25 +311,34 @@ public class SearchActivity extends BaseSearchActivity {
         switchToActivity(searchResultActivity);
     }
 
+    private String getSearchTrail() {
+        String path = "";
+        for (String keywordSegment : this.selectedKeywords) {
+            path = path.concat(keywordSegment + " ");
+        }
+        // convert to lower case and replace spaces with under scores
+        return path.toLowerCase().replace(" ", "_");
+    }
+
     /**
-     * Builds search sequences.
+     * Builds search menus.
      */
-    private void buildRadioList() {
+    private void buildKeywordsMenu() {
         this.searchDatabase.open();
         RadioButton radioButton;
         String radioButtonText;
+        String path = getSearchTrail();
         int radioButtonId = 1;
-        if (sequence == 0) {
-            Cursor searchCursor = searchDatabase.selectMenuOptions(
-                    activeDatabaseTable, "col" + Integer.toString(sequence), null);
-            startManagingCursor(searchCursor);
 
+        if (sequence == -1) {
+            Cursor searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, Storage.KEY_CATEGORY, null);
             while (searchCursor.moveToNext()) {
-                int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
+                int option = searchCursor.getColumnIndexOrThrow(Storage.KEY_CATEGORY);
                 radioButton = new RadioButton(this);
                 radioButton.setId(radioButtonId++);
                 radioButtonText = searchCursor.getString(option);
                 radioButton.setText(radioButtonText);
+                trySetImage(radioButton, path + radioButtonText.trim().toLowerCase().replace(" ", "_"));
                 if (radioButtonText.compareTo(lastSelection) == 0) {
                     radioButton.setChecked(true);
                     radioButton.setSelected(true);
@@ -344,15 +352,15 @@ public class SearchActivity extends BaseSearchActivity {
             searchCursor.close();
         }
         else {
-            String condition = "col0='" + selectedKeywords.get(0) + "'";
+            String condition = Storage.KEY_CATEGORY + "='" + selectedKeywords.get(0) + "'";
 
             for (int keywordIndex = 1; keywordIndex < selectedKeywords.size(); keywordIndex++) {
                 String keywordSegment = selectedKeywords.get(keywordIndex);
-                condition = condition.concat(" AND col" + keywordIndex + "='" + keywordSegment + "'");
+                condition = condition.concat(" AND col" + (keywordIndex - 1) + "='" + keywordSegment + "'");
             }
 
-            Cursor searchCursor = searchDatabase.selectMenuOptions(
-                    activeDatabaseTable, "col" + Integer.toString(sequence), condition);
+            Cursor searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, "col" + Integer.toString(sequence),
+                    condition);
             boolean remove = false;
             while (searchCursor.moveToNext()) {
                 int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
@@ -373,6 +381,7 @@ public class SearchActivity extends BaseSearchActivity {
                 radioButton.setId(radioButtonId++);
                 radioButtonText = searchCursor.getString(option);
                 radioButton.setText(radioButtonText);
+                trySetImage(radioButton, path + radioButtonText.trim().toLowerCase().replace(" ", "_"));
                 if (radioButtonText.compareTo(lastSelection) == 0) {
                     radioButton.setChecked(true);
                     radioButton.setSelected(true);
@@ -385,6 +394,12 @@ public class SearchActivity extends BaseSearchActivity {
             searchCursor.close();
         }
         this.searchDatabase.close();
+    }
+
+    private void trySetImage(RadioButton radioButton, String imagePath) {
+        if (ImageFilesUtility.imageExists(imagePath)) {
+            radioButton.setCompoundDrawablesWithIntrinsicBounds(null, null, null, ImageFilesUtility.getImageAsDrawable(imagePath));
+        }
     }
 
     @Override
@@ -403,11 +418,10 @@ public class SearchActivity extends BaseSearchActivity {
             this.selectedKeywords.clear();
         }
         searchPath.setText("Search: ");
-        this.sequence = 0;
-        this.activeDatabaseTable = StorageManager.getActiveTable();
+        this.sequence = -1;
         this.keywordChoices.clearCheck();
         this.keywordChoices.removeAllViews();
-        buildRadioList();
+        buildKeywordsMenu();
         this.layout.setVisibility(View.GONE);
         this.startLayout.setVisibility(View.VISIBLE);
         showToast(R.string.refreshed, Toast.LENGTH_LONG);
