@@ -49,6 +49,8 @@ public class MainMenuActivity extends BaseSearchActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Set the app version
+        ApplabActivity.setAppVersion(this.getString(R.string.app_version));
         // Request to display an icon in the title bar. Must be done in onCreate()
         requestWindowFeature(Window.FEATURE_RIGHT_ICON);
         //Set application version information
