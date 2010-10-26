@@ -11,7 +11,13 @@ the License.
  */
 package applab.search.client;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Timer;
@@ -19,6 +25,7 @@ import java.util.TimerTask;
 
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.StringEntity;
+import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
 import android.content.DialogInterface;
@@ -294,8 +301,10 @@ public class SynchronizationManager {
 
     /**
      * Called by our background or timer thread to perform the actual synchronization tasks from a separate thread.
+     * 
+     * @throws XmlPullParserException
      */
-    private void performBackgroundSynchronization() {
+    private void performBackgroundSynchronization() throws XmlPullParserException {
         SynchronizationManager.singleton.isSynchronizing = true;
         InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
         inboxAdapter.open();
@@ -310,17 +319,32 @@ public class SynchronizationManager {
         // don't have a message pump)
         Looper.prepare();
         String url = Settings.getNewServerUrl() + ApplabActivity.getGlobalContext().getString(R.string.update_path);
-        String keywordUpdates = null;
+
+        InputStream keywordStream;
         try {
             sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING);
-            keywordUpdates = HttpHelpers.postXmlRequest(url, (StringEntity)getRequestEntity());
-            sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
+            // keywordUpdates = HttpHelpers.postXmlRequest(url, (StringEntity)getRequestEntity());
+            keywordStream = HttpHelpers.postXmlRequestAndGetStream(url, (StringEntity)getRequestEntity());
 
-            if (keywordUpdates != null && keywordUpdates.trim().endsWith("</GetKeywordsResponse>")) {
-                parseKeywords(keywordUpdates);
+            // Write the keywords to disk, and then open a FileStream
+            String filePath = ApplabActivity.getGlobalContext().getCacheDir() + "/keywords.tmp";
+            Boolean downloadSuccessful = writeKeywordsToTempFile(keywordStream, filePath);
+            keywordStream.close();
+            File file = new File(filePath);
+            FileInputStream inputStream = new FileInputStream(file);
+
+            // if (keywordUpdates != null && keywordUpdates.trim().endsWith("</GetKeywordsResponse>")) {
+            if (downloadSuccessful && inputStream != null) {
+                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
+                parseKeywords(inputStream);
             }
             else {
                 sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
+            }
+
+            if (inputStream != null) {
+                inputStream.close();
+                file.delete();
             }
         }
         catch (IOException e) {
@@ -331,6 +355,27 @@ public class SynchronizationManager {
         Looper.loop();
         Looper looper = Looper.getMainLooper();
         looper.quit();
+    }
+
+    private Boolean writeKeywordsToTempFile(InputStream keywordStream, String filePath) throws IOException {
+        Boolean downloadSuccessful = false;
+        File tempFile = new File(filePath);
+        FileOutputStream stream = new FileOutputStream(tempFile);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(keywordStream));
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            stream.write(line.getBytes());
+
+            // Check if we downloaded successfully
+            if (downloadSuccessful == false && line.toLowerCase().contains("</GetKeywordsResponse>".toLowerCase())) {
+                downloadSuccessful = true;
+            }
+        }
+        stream.close();
+        reader.close();
+
+        return downloadSuccessful;
     }
 
     /**
@@ -377,11 +422,11 @@ public class SynchronizationManager {
         }
     }
 
-    private void parseKeywords(String newKeywordsXml) {
+    private void parseKeywords(InputStream keywordStream) throws XmlPullParserException {
         // Call KeywordParser to parse the keywords result and store the contents in our
         // local database
         // TODO: integrate this code into our synchronization manager?
-        KeywordParser keywordParser = new KeywordParser(this.progressMessageHandler, this.internalMessageHandler, newKeywordsXml);
+        KeywordParser keywordParser = new KeywordParser(this.progressMessageHandler, this.internalMessageHandler, keywordStream);
         keywordParser.run();
     }
 
@@ -438,7 +483,13 @@ public class SynchronizationManager {
 
             // and if not, start the heavy lifting from our background thread
             if (doSynchronization) {
-                this.synchronizationManager.performBackgroundSynchronization();
+                try {
+                    this.synchronizationManager.performBackgroundSynchronization();
+                }
+                catch (XmlPullParserException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
                 ImageManager.updateLocalImages();
             }
         }
