@@ -64,9 +64,8 @@ public class ImageFilesUtility {
         }
     }
 
-    public static boolean deleteFile(String path) {
+    public static boolean deleteFile(File file) {
         if (storageReady()) {
-            File file = new File(path);
             return file.delete();
         }
         else {
@@ -177,13 +176,8 @@ public class ImageFilesUtility {
             }
             // Ensure all the bytes have been read in
             if (offset < bytes.length) {
-                try {
-                    throw new IOException("Could not completely read file " + file.getName());
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                    return null;
-                }
+                Log.e(LOG_TAG, "Could not completely read file " + file.getName());
+                return null;
             }
             return bytes;
         }

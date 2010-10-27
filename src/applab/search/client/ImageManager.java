@@ -32,17 +32,22 @@ import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
 
 public class ImageManager {
-   
+
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
     private final static String REQUEST_ELEMENT_NAME = "GetImagesRequest";
     private static final String IMAGE_PATH = "search/getImages";
     private final static String IMAGE_ELEMENT_NAME = "image";
 
-    static String getImageXml() {
+    /**
+     * Submits an image update request and retrieves XML containing image data from remote server
+     * 
+     * @return
+     */
+    public static String getImageXml() {
 
-        String baseServerUrl = Settings.getNewServerUrl();        
+        String baseServerUrl = Settings.getNewServerUrl();
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
-        xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);        
+        xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
         xmlRequest.writeEndElement();
         String response = null;
         try {
@@ -57,72 +62,67 @@ public class ImageManager {
         return response;
     }
 
-    static void updateLocalImages() {
+    public static void updateLocalImages() {
+        // Get local list
+        HashMap<String, File> localImageList = getLocalImageList();
         // Get remote list
         String xml = getImageXml();
-        // Get local list
-        HashMap<String, String> localImageList = getLocalHashList();
+        if (xml == null) {
+            return;
+        }
         try {
-            if (xml != null) {
-                Document document = XmlHelpers.parseXml(xml);
-                NodeList nodeList = document.getElementsByTagName(IMAGE_ELEMENT_NAME);
-                for (int i = 0; i < nodeList.getLength(); i++) {
-                    NamedNodeMap nodeMap = nodeList.item(i).getAttributes();
-                    String sha1hash = nodeMap.getNamedItem("sha1hash").getNodeValue().toLowerCase();
-                    String source = nodeMap.getNamedItem("src").getNodeValue();
-                    String fileName = nodeMap.getNamedItem("name").getNodeValue();
-                    if (!localImageList.containsKey(sha1hash)) {
-                        // Retrieve remote file
-                        try {
-                            Log.i("ImageManager", "Fetching: " + source);
-                            InputStream inputStream = HttpHelpers.getResource(source);
-                            ImageFilesUtility.writeFile(fileName, inputStream);
-                        }
-                        catch (IOException e) {
-                            Log.e("ImageManager", "Error while fetching resource: " + e);
-                            continue;
-                        }
+            Document document = XmlHelpers.parseXml(xml);
+            NodeList nodeList = document.getElementsByTagName(IMAGE_ELEMENT_NAME);
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                NamedNodeMap nodeMap = nodeList.item(i).getAttributes();
+                String sha1hash = nodeMap.getNamedItem("sha1hash").getNodeValue().toLowerCase();
+                String source = nodeMap.getNamedItem("src").getNodeValue();
+                String fileName = nodeMap.getNamedItem("name").getNodeValue();
+                if (!localImageList.containsKey(sha1hash)) {
+                    // Retrieve remote file
+                    try {
+                        InputStream inputStream = HttpHelpers.getResource(source);
+                        ImageFilesUtility.writeFile(fileName, inputStream);
                     }
-                    else {
-                        // Remove processed item
-                        localImageList.remove(sha1hash);
+                    catch (IOException e) {
+                        Log.e("ImageManager", "Error while fetching resource: " + e);
+                        continue;
                     }
                 }
-                // Delete local files not on remote list
-                for (Entry<String, String> local : localImageList.entrySet()) {
-                    String filePath = local.getValue();
-                    String sha1Hash = local.getKey();
-                    File file = new File(filePath);
-                    //Confirm this is the file we intend to delete
-                    if (ImageFilesUtility.getSHA1Hash(file).equalsIgnoreCase(sha1Hash)) {
-                        android.util.Log.i("ImageManager", "Deleting file: " + filePath);
-                        ImageFilesUtility.deleteFile(filePath);
-                    }
+                else {
+                    // Remove processed item
+                    localImageList.remove(sha1hash);
+                }
+            }
+            // Delete local files not on remote list
+            for (Entry<String, File> local : localImageList.entrySet()) {
+                File file = local.getValue();
+                String sha1Hash = local.getKey();
+                // Confirm this is the file we intend to delete
+                if (ImageFilesUtility.getSHA1Hash(file).equalsIgnoreCase(sha1Hash)) {
+                    ImageFilesUtility.deleteFile(file);
                 }
             }
         }
         catch (SAXException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Log.e("ImageManager", "Error while parsing XML: " + e);
         }
         catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Log.e("ImageManager", "Error while parsing XML: " + e);
         }
         catch (ParserConfigurationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Log.e("ImageManager", "Error while parsing XML: " + e);
         }
     }
 
-    static HashMap<String, String> getLocalHashList() {
+    public static HashMap<String, File> getLocalImageList() {
         // Key: SHA1, Value: absolute file path
-        HashMap<String, String> hashPathPairs = new HashMap<String, String>();
+        HashMap<String, File> hashPathPairs = new HashMap<String, File>();
         ArrayList<String> files = ImageFilesUtility.getFilesAsArrayList();
         for (String path : files) {
             File file = new File(path);
             String sha1Hash = ImageFilesUtility.getSHA1Hash(file);
-            hashPathPairs.put(sha1Hash, path);
+            hashPathPairs.put(sha1Hash, file);
         }
         return hashPathPairs;
     }
