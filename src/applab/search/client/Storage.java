@@ -127,7 +127,7 @@ public class Storage {
             // simple validation: check if a category is not null
             int columnIndex = cursor.getColumnIndexOrThrow(KEY_CATEGORY);
             if (cursor.getString(columnIndex) != null) {
-                return true;
+                isValid = true;
             }
         }
         cursor.close();
