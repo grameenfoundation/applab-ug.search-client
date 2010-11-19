@@ -28,6 +28,8 @@ public class GlobalConstants {
     public static final int SETUP_DIALOG = 3;
 
     public static final String KEYWORDS_VERSION_KEY = "keywordsVersion";
+    
+    public static final String FARMER_REG_FORM_HASH = "farmerRegistrationFormHash";
 
     /** keywords table 1 */
     public static final String DATABASE_TABLE = "keywords";

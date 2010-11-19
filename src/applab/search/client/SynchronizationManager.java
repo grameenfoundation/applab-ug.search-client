@@ -37,6 +37,7 @@ import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
 import applab.client.PropertyStorage;
 import applab.client.XmlEntityBuilder;
+import applab.client.controller.FarmerRegistrationController;
 
 /**
  * The SynchronizationManager is responsible for all the complexity involved in scheduling timers, background threads,
@@ -311,6 +312,11 @@ public class SynchronizationManager {
 
         submitPendingUsageLogs(inboxAdapter);
         submitIncompleteSearches(inboxAdapter);
+
+        String serverUrl = Settings.getServerUrl();
+        FarmerRegistrationController farmerRegController = new FarmerRegistrationController();
+        farmerRegController.postFarmerRegistrationData(serverUrl);
+        farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
 
         inboxAdapter.close();
 

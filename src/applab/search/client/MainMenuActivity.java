@@ -12,24 +12,20 @@ the License.
 
 package applab.search.client;
 
-import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Set;
-
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.view.Menu;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.Window;
+import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import applab.client.ApplabActivity;
 import applab.client.BrowserActivity;
 import applab.client.BrowserResultDialog;
-import applab.client.HttpHelpers;
+import applab.client.controller.FarmerRegistrationController;
 
 /**
  * The Search application home screen
@@ -46,6 +42,12 @@ public class MainMenuActivity extends BaseSearchActivity {
     private Button aginfoButton;
     private EditText farmerNameEditBox;
 
+    private FarmerRegistrationController farmerRegController;
+
+    public MainMenuActivity() {
+        this.farmerRegController = new FarmerRegistrationController();
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,10 +55,10 @@ public class MainMenuActivity extends BaseSearchActivity {
         ApplabActivity.setAppVersion(this.getString(R.string.app_version));
         // Request to display an icon in the title bar. Must be done in onCreate()
         requestWindowFeature(Window.FEATURE_RIGHT_ICON);
-        //Set application version information
+        // Set application version information
         ApplabActivity.setAppVersion(getString(R.string.app_version));
     }
-    
+
     @Override
     public void onResume() {
         // First run parent code
@@ -111,6 +113,7 @@ public class MainMenuActivity extends BaseSearchActivity {
                 onButtonClick(InboxListActivity.class);
             }
         });
+
     }
 
     @Override
@@ -119,7 +122,13 @@ public class MainMenuActivity extends BaseSearchActivity {
         switch (requestCode) {
             case REGISTRATION_CODE:
                 if (resultCode == RESULT_OK) {
-                    BrowserResultDialog.show(this, "Registration successful.", new DialogInterface.OnClickListener() {
+
+                    String message = "Registration successful.";
+                    long result = this.farmerRegController.saveNewFarmerRegistration(data.getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT));
+                    if (result < 0)
+                        message = "Failed to save farmer registration record.";
+
+                    BrowserResultDialog.show(this, message, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
                             switchToActivity(SearchActivity.class);
                             dialog.cancel();
@@ -186,30 +195,14 @@ public class MainMenuActivity extends BaseSearchActivity {
                 GlobalConstants.intervieweeName = farmerName;
                 Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
 
-                String serverUrl = Settings.getServerUrl();
-                serverUrl = serverUrl.substring(0, serverUrl.length()
-                        - 1);
-                
-                // Add common Headers to the parameter string
-                HashMap<String, String> commonHeaders = HttpHelpers.getCommonHeaders();
-                String commonParameters = "";
-                Set<String> keys = commonHeaders.keySet();
-                Boolean isFirst = true;
-                for(String key :keys) {
-                    if(isFirst){
-                        commonParameters += "?";
-                        isFirst = false;
-                    }
-                    else {
-                        commonParameters += "&";
-                    }
-                    commonParameters += key + "=" + URLEncoder.encode(commonHeaders.get(key));
+                String html = this.farmerRegController.getFormHtml(farmerName, Settings.getServerUrl());
+                if (html != null) {
+                    webActivity.putExtra(BrowserActivity.EXTRA_HTML_INTENT, html);
+                    startActivityForResult(webActivity, requestCode);
                 }
-                
-                webActivity.putExtra(BrowserActivity.EXTRA_URL_INTENT,
-                        serverUrl + ":8888/services/" + urlPattern + commonParameters + "&farmerId="
-                                + farmerName);
-                startActivityForResult(webActivity, requestCode);
+                else {
+                    showToast("Failed to get the farmer registration form. Please try again.");
+                }
             }
             else {
                 showToast("Invalid Farmer ID.");
@@ -231,7 +224,7 @@ public class MainMenuActivity extends BaseSearchActivity {
         String farmerName = farmerNameEditBox.getText().toString().replace(" ", "");
         if (farmerName.length() > 0) {
             if (checkId(farmerName)) {
-                GlobalConstants.intervieweeName = farmerName;                
+                GlobalConstants.intervieweeName = farmerName;
                 switchToActivity(nextActivity);
             }
             else {
@@ -254,10 +247,10 @@ public class MainMenuActivity extends BaseSearchActivity {
     }
 
     @Override
-       protected boolean showFarmerId() {
-           return false;
-       }
-    
+    protected boolean showFarmerId() {
+        return false;
+    }
+
     @Override
     protected void onKeywordUpdateComplete() {
         super.onKeywordUpdateComplete();
