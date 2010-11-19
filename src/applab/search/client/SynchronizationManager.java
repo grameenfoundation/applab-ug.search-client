@@ -11,13 +11,10 @@ the License.
  */
 package applab.search.client;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Timer;
@@ -37,6 +34,7 @@ import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
 import applab.client.PropertyStorage;
 import applab.client.XmlEntityBuilder;
+import applab.client.XmlHelpers;
 import applab.client.controller.FarmerRegistrationController;
 
 /**
@@ -51,7 +49,8 @@ import applab.client.controller.FarmerRegistrationController;
  */
 public class SynchronizationManager {
     // by default we will synchronize once daily
-    private static final int SYNCHRONIZATION_INTERVAL = 24 * 60 * 60 * 1000;
+    //private static final int SYNCHRONIZATION_INTERVAL = 24 * 60 * 60 * 1000;
+    private static final int SYNCHRONIZATION_INTERVAL = 60;
 
     private static SynchronizationManager singleton = new SynchronizationManager();
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
@@ -160,8 +159,8 @@ public class SynchronizationManager {
              * TURNED OFF BACKGROUND SYNCHRONIZATION for 2.8.3 release Need to properly test this before turning it back
              * on.
              */
-            // this.timer.scheduleAtFixedRate(new BackgroundSynchronizationTask(this, false), SYNCHRONIZATION_INTERVAL,
-            // SYNCHRONIZATION_INTERVAL);
+            //this.timer.scheduleAtFixedRate(new BackgroundSynchronizationTask(this, false), SYNCHRONIZATION_INTERVAL,
+            //        SYNCHRONIZATION_INTERVAL);
             scheduledTimer = true;
         }
 
@@ -299,47 +298,59 @@ public class SynchronizationManager {
             this.completionCallback.sendEmptyMessage(message.what);
         }
     }
-
+    
     /**
      * Called by our background or timer thread to perform the actual synchronization tasks from a separate thread.
      * 
      * @throws XmlPullParserException
      */
     private void performBackgroundSynchronization() throws XmlPullParserException {
+        // we may want to associate UI with this task, so create
+        // a looper to setup the message pump (by default, background threads
+        // don't have a message pump)
+        Looper.prepare();
+        
+        sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up immediately
         SynchronizationManager.singleton.isSynchronizing = true;
         InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
         inboxAdapter.open();
 
         submitPendingUsageLogs(inboxAdapter);
         submitIncompleteSearches(inboxAdapter);
-
-        String serverUrl = Settings.getServerUrl();
+		
+		String serverUrl = Settings.getServerUrl();
         FarmerRegistrationController farmerRegController = new FarmerRegistrationController();
         farmerRegController.postFarmerRegistrationData(serverUrl);
         farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
 
         inboxAdapter.close();
+        ImageManager.updateLocalImages();
+        
+        updateKeywords();
 
-        // we may want to associate UI with this task, so create
-        // a looper to setup the message pump (by default, background threads
-        // don't have a message pump)
-        Looper.prepare();
+        // TODO: Looper.loop is problematic here. This should be restructured
+        Looper.loop();
+        Looper looper = Looper.getMainLooper();
+        looper.quit();
+    }
+
+    /**
+     * @throws XmlPullParserException
+     */
+    public void updateKeywords() throws XmlPullParserException {
         String url = Settings.getNewServerUrl() + ApplabActivity.getGlobalContext().getString(R.string.update_path);
 
         InputStream keywordStream;
         try {
-            sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING);
-            // keywordUpdates = HttpHelpers.postXmlRequest(url, (StringEntity)getRequestEntity());
             keywordStream = HttpHelpers.postXmlRequestAndGetStream(url, (StringEntity)getRequestEntity());
 
             // Write the keywords to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir() + "/keywords.tmp";
-            Boolean downloadSuccessful = writeKeywordsToTempFile(keywordStream, filePath);
+            Boolean downloadSuccessful = XmlHelpers.writeXmlToTempFile(keywordStream, filePath, "</GetKeywordsResponse>"); 
             keywordStream.close();
             File file = new File(filePath);
             FileInputStream inputStream = new FileInputStream(file);
-
-            // if (keywordUpdates != null && keywordUpdates.trim().endsWith("</GetKeywordsResponse>")) {
+            
             if (downloadSuccessful && inputStream != null) {
                 sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
                 parseKeywords(inputStream);
@@ -356,32 +367,6 @@ public class SynchronizationManager {
         catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
-
-        // TODO: Looper.loop is problematic here. This should be restructured
-        Looper.loop();
-        Looper looper = Looper.getMainLooper();
-        looper.quit();
-    }
-
-    private Boolean writeKeywordsToTempFile(InputStream keywordStream, String filePath) throws IOException {
-        Boolean downloadSuccessful = false;
-        File tempFile = new File(filePath);
-        FileOutputStream stream = new FileOutputStream(tempFile);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(keywordStream));
-
-        String line;
-        while ((line = reader.readLine()) != null) {
-            stream.write(line.getBytes());
-
-            // Check if we downloaded successfully
-            if (downloadSuccessful == false && line.toLowerCase().contains("</GetKeywordsResponse>".toLowerCase())) {
-                downloadSuccessful = true;
-            }
-        }
-        stream.close();
-        reader.close();
-
-        return downloadSuccessful;
     }
 
     /**
@@ -473,7 +458,7 @@ public class SynchronizationManager {
             this.synchronizationManager = synchronizationManager;
             this.hasLock = hasLock;
         }
-
+        
         @Override
         public void run() {
             boolean doSynchronization;
@@ -496,7 +481,6 @@ public class SynchronizationManager {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-                ImageManager.updateLocalImages();
             }
         }
     }

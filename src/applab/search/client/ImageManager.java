@@ -12,6 +12,7 @@ the License.
 package applab.search.client;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -19,14 +20,14 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
 import org.apache.http.entity.StringEntity;
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import android.util.Log;
+import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
 import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
@@ -36,71 +37,69 @@ public class ImageManager {
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
     private final static String REQUEST_ELEMENT_NAME = "GetImagesRequest";
     private static final String IMAGE_PATH = "search/getImages";
-    private final static String IMAGE_ELEMENT_NAME = "image";
+    final static String IMAGE_ELEMENT_NAME = "image";
 
     /**
      * Submits an image update request and retrieves XML containing image data from remote server
      * 
      * @return
      */
-    public static String getImageXml() {
+    public static InputStream getImageXml() {
 
         String baseServerUrl = Settings.getNewServerUrl();
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
         xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
         xmlRequest.writeEndElement();
-        String response = null;
+        InputStream response = null;
         try {
-            response = HttpHelpers.postXmlRequest(baseServerUrl + IMAGE_PATH, (StringEntity)xmlRequest.getEntity());
-            if (!response.trim().endsWith("</GetImagesResponse>")) {
+            response = HttpHelpers.postXmlRequestAndGetStream(baseServerUrl + IMAGE_PATH, (StringEntity)xmlRequest.getEntity());
+            // Write to disk as temp file and use filestream to process
+            String filePath = ApplabActivity.getGlobalContext().getCacheDir() + "/keywords.tmp";
+            Boolean downloadSuccessful = XmlHelpers.writeXmlToTempFile(response, filePath, "</GetImagesResponse>"); 
+            response.close();
+                        
+            if (!downloadSuccessful) {
                 return null;
             }
+            
+            File file = new File(filePath);
+            FileInputStream inputStream = new FileInputStream(file);
+            return inputStream;
         }
         catch (IOException e) {
             return null;
         }
-        return response;
     }
 
     public static void updateLocalImages() {
+        // Get remote list
+        InputStream xmlStream = getImageXml();
+        
         // Get local list
         HashMap<String, File> localImageList = getLocalImageList();
-        // Get remote list
-        String xml = getImageXml();
-        if (xml == null) {
+        
+        // Init Sax Parser & XML Handler
+        SAXParser xmlParser;
+        ImageXmlParseHandler xmlHandler = new ImageXmlParseHandler();
+        xmlHandler.setLocalImageList(localImageList);
+        
+        if (xmlStream == null) {
             return;
         }
         try {
-            Document document = XmlHelpers.parseXml(xml);
-            NodeList nodeList = document.getElementsByTagName(IMAGE_ELEMENT_NAME);
-            for (int i = 0; i < nodeList.getLength(); i++) {
-                NamedNodeMap nodeMap = nodeList.item(i).getAttributes();
-                String sha1hash = nodeMap.getNamedItem("sha1hash").getNodeValue().toLowerCase();
-                String source = nodeMap.getNamedItem("src").getNodeValue();
-                String fileName = nodeMap.getNamedItem("name").getNodeValue();
-                if (!localImageList.containsKey(sha1hash)) {
-                    // Retrieve remote file
-                    try {
-                        InputStream inputStream = HttpHelpers.getResource(source);
-                        ImageFilesUtility.writeFile(fileName, inputStream);
+            if (xmlStream != null) {
+                xmlParser = SAXParserFactory.newInstance().newSAXParser();
+                xmlParser.reset();
+                xmlParser.parse(xmlStream, xmlHandler);
+              
+                // Delete local files not on remote list
+                for (Entry<String, File> local : localImageList.entrySet()) {
+                    File file = local.getValue();
+                    String sha1Hash = local.getKey();
+                    // Confirm this is the file we intend to delete
+                    if (ImageFilesUtility.getSHA1Hash(file).equalsIgnoreCase(sha1Hash)) {
+                        ImageFilesUtility.deleteFile(file);
                     }
-                    catch (IOException e) {
-                        Log.e("ImageManager", "Error while fetching resource: " + e);
-                        continue;
-                    }
-                }
-                else {
-                    // Remove processed item
-                    localImageList.remove(sha1hash);
-                }
-            }
-            // Delete local files not on remote list
-            for (Entry<String, File> local : localImageList.entrySet()) {
-                File file = local.getValue();
-                String sha1Hash = local.getKey();
-                // Confirm this is the file we intend to delete
-                if (ImageFilesUtility.getSHA1Hash(file).equalsIgnoreCase(sha1Hash)) {
-                    ImageFilesUtility.deleteFile(file);
                 }
             }
         }

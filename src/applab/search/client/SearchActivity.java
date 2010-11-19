@@ -12,16 +12,12 @@ the License.
 
 package applab.search.client;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.HashMap;
 
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
@@ -70,13 +66,7 @@ public class SearchActivity extends BaseSearchActivity {
 
     /** holds the selected radio button ID */
     private int radioId;
-
-    /** when set true search query can be submitted */
-    private boolean canSubmitQuery;
-
-    /** set true when there are no more keywords in a given sequence */
-    private boolean endOfKeywordSequence;
-
+    
     /** search sequence number */
     private int sequence;
 
@@ -84,6 +74,8 @@ public class SearchActivity extends BaseSearchActivity {
     private boolean configurationChanged;
 
     private String lastSelection = "";
+
+    private String currentCondition;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -119,8 +111,6 @@ public class SearchActivity extends BaseSearchActivity {
             if (instanceState != null) {
                 this.sequence = instanceState.currentKeywordSegmentIndex;
                 this.selectedKeywords = instanceState.keywords;
-                this.canSubmitQuery = instanceState.canSubmitQuery;
-                this.endOfKeywordSequence = instanceState.endOfKeywordSequence;
                 String query = "";
                 for (String keywordSegment : this.selectedKeywords) {
                     query = query.concat(" >" + keywordSegment);
@@ -149,7 +139,7 @@ public class SearchActivity extends BaseSearchActivity {
                     RadioButton rb = (RadioButton)findViewById(radioId);
                     String choice = rb.getText().toString();
                     selectedKeywords.add(new String(choice));
-                    searchPath.setText(getKeywordDisplay());
+                    searchPath.setText(getSearchPath());
                     ++sequence;
                     buildKeywordsMenu();
                     startLayout.setVisibility(View.GONE);
@@ -169,7 +159,7 @@ public class SearchActivity extends BaseSearchActivity {
             public void onClick(View v) {
                 radioId = keywordChoices.getCheckedRadioButtonId();
 
-                if (radioId != -1 && !endOfKeywordSequence) {
+                if (radioId != -1) {
                     RadioButton rb = (RadioButton)findViewById(radioId);
                     String choice = rb.getText().toString();
                     String query = "";
@@ -184,17 +174,7 @@ public class SearchActivity extends BaseSearchActivity {
                     buildKeywordsMenu();
                 }
                 else {
-                    if (!endOfKeywordSequence) {
-                        showToast(R.string.empty_select);
-                    }
-                }
-
-                if (canSubmitQuery) {
-                    submitSearch();
-                    canSubmitQuery = false;
-                }
-                if (endOfKeywordSequence) {
-                    canSubmitQuery = true;
+                    showToast(R.string.empty_select);
                 }
             }
 
@@ -202,35 +182,42 @@ public class SearchActivity extends BaseSearchActivity {
 
         backButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                endOfKeywordSequence = false;
-                canSubmitQuery = false;
-                if (selectedKeywords.size() > 0) {
-                    nextButtonSmall.setText(getString(R.string.next_button));
-                    if (selectedKeywords.size() == 1) {
-                        layout.setVisibility(View.GONE);
-                        startLayout.setVisibility(View.VISIBLE);
-                    }
-                    --sequence;
-                    lastSelection = selectedKeywords.get(selectedKeywords.size() - 1);
-                    selectedKeywords.remove(selectedKeywords.size() - 1);
-                    keywordChoices.clearCheck();
-                    keywordChoices.removeAllViews();
-                    buildKeywordsMenu();
-                    String query = "";
-                    for (int i = 0; i < selectedKeywords.size(); i++) {
-                        query = query.concat(" >" + selectedKeywords.get(i));
-                    }
-                    searchPath.setText(query);
-                }
+                resetSelectionInfo();
+                goBack();
             }
         });
 
     }
 
+    private void resetSelectionInfo() {
+        if (selectedKeywords.size() > 0) {
+            nextButtonSmall.setText(getString(R.string.next_button));
+            if (selectedKeywords.size() == 1) {
+                layout.setVisibility(View.GONE);
+                startLayout.setVisibility(View.VISIBLE);
+            }
+            --sequence;
+            lastSelection = selectedKeywords.get(selectedKeywords.size() - 1);
+            selectedKeywords.remove(selectedKeywords.size() - 1);
+            
+        }
+    }
+    
+    private void goBack() {
+        keywordChoices.clearCheck();
+        keywordChoices.removeAllViews();
+        buildKeywordsMenu();
+        String query = "";
+        for (int i = 0; i < selectedKeywords.size(); i++) {
+            query = query.concat(" >" + selectedKeywords.get(i));
+        }
+        searchPath.setText(query);
+    }
+    
     /**
-     * returns the category + full set of keyword segments, each delimited by '> '
+     * returns the category + full set of keyword segments, optionally each delimited by '> '
      */
-    private String getKeywordDisplay() {
+    private String getSearchPath(String delimeter) {
         StringBuilder keywordDisplay = new StringBuilder();
         boolean isFirstSegment = true;
         for (String keywordSegment : this.selectedKeywords) {
@@ -238,7 +225,7 @@ public class SearchActivity extends BaseSearchActivity {
                 isFirstSegment = false;
             }
             else {
-                keywordDisplay.append(" >");
+                keywordDisplay.append(delimeter);
             }
             keywordDisplay.append(keywordSegment);
         }
@@ -246,72 +233,26 @@ public class SearchActivity extends BaseSearchActivity {
         return keywordDisplay.toString();
     }
 
-    /**
-     * Called when we wish to submit a search
-     */
-    private void submitSearch() {
-        // TODO: check if we're synchronizing first?
-        /*
-         * if (SearchActivity.isUpdatingKeywords) { SearchActivity.networkThread = new Thread(
-         * SearchActivity.keywordDownloader); SearchActivity.networkThread.start();
-         * showProgressDialog(Global.UPDATE_DIALOG); }
-         */
-
-        StringBuilder keyword = new StringBuilder();
-        // we need to start at index 1 since the category determines "selectedKeywords[0]"
-        for (int i = 1; i < selectedKeywords.size(); i++) {
-            keyword.append(selectedKeywords.get(i) + " ");
-        }
-
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        SearchRequest request = new SearchRequest(keyword.toString(),
-                    GlobalConstants.intervieweeName, dateFormat.format(new Date()));
-
-        request.submitInBackground(this, new Handler() {
-            @Override
-            public void handleMessage(Message message) {
-                onSearchSubmission(message);
-            }
-        });
+    private String getSearchPath() {
+        return getSearchPath(" >");
     }
-
-    private void onSearchSubmission(Message message) {
-        switch (message.what) {
-            case SearchRequest.SEARCH_SUBMISSION_SUCCESS:
-                // the search results are stored in the message object
-                SearchRequest searchRequest = (SearchRequest)message.obj;
-                showSearchResults(searchRequest);
-                break;
-            case SearchRequest.SEARCH_SUBMISSION_FAILURE:
-                // for the error-out case, store the result in our inbox to send later
-                // TODO: we shouldn't ever need these to appear in the UI!
-                SearchRequest incompleteSearchRequest = (SearchRequest)message.obj;
-                showSearchResults(incompleteSearchRequest);
-                break;
-        }
-    }
-
-    private void showSearchResults(SearchRequest searchRequest) {
+    
+    private void showSearchResults(String farmerId, String location, String content) {
         Intent searchResultActivity = new Intent(getApplicationContext(), DisplaySearchResultsActivity.class);
-        searchResultActivity.putExtra("search", getKeywordDisplay());
-        searchResultActivity.putExtra("name", searchRequest.getFarmerId());
-        searchResultActivity.putExtra("location", searchRequest.getLocation());
+        searchResultActivity.putExtra("searchTitle", getSearchPath());
+        searchResultActivity.putExtra("name", farmerId);
+        searchResultActivity.putExtra("location", location);
+        searchResultActivity.putExtra("request", getSearchPath(" "));
 
-        String searchResult = searchRequest.getResult();
         // was this a successful search?
-        if (searchResult != null && searchResult.length() > 0) {
-            searchResultActivity.putExtra("content", searchResult);
+        if (content != null && content.length() > 0) {
+            searchResultActivity.putExtra("content", content);
         }
-        else {
-            // TODO: clean up the extras taxonomy
-            searchResultActivity.putExtra("send", true);
-            searchResultActivity.putExtra("request", searchRequest.getKeyword());
-        }
-
+        
         switchToActivity(searchResultActivity);
     }
-
-    private String getSearchTrail() {
+    
+    private String getImagePath() {
         String path = "";
         for (String keywordSegment : this.selectedKeywords) {
             path = path.concat(keywordSegment + " ");
@@ -325,75 +266,106 @@ public class SearchActivity extends BaseSearchActivity {
      */
     private void buildKeywordsMenu() {
         this.searchDatabase.open();
-        RadioButton radioButton;
-        String radioButtonText;
-        String path = getSearchTrail();
+        Cursor searchCursor = null;
+        String imagePath = getImagePath();
         int radioButtonId = 1;
 
-        if (sequence == -1) {
-            Cursor searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, Storage.KEY_CATEGORY, null);
-            while (searchCursor.moveToNext()) {
-                int option = searchCursor.getColumnIndexOrThrow(Storage.KEY_CATEGORY);
-                radioButton = new RadioButton(this);
-                radioButton.setId(radioButtonId++);
-                radioButtonText = searchCursor.getString(option);
-                radioButton.setText(radioButtonText);
-                trySetImage(radioButton, path + radioButtonText.trim().toLowerCase().replace(" ", "_"));
-                if (radioButtonText.compareTo(lastSelection) == 0) {
-                    radioButton.setChecked(true);
-                    radioButton.setSelected(true);
+        try {
+            if (sequence == -1) {
+                searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, Storage.KEY_CATEGORY, null);
+                while (searchCursor.moveToNext()) {
+                    int option = searchCursor.getColumnIndexOrThrow(Storage.KEY_CATEGORY);
+                    addRadioButton(imagePath, radioButtonId, searchCursor, option);
+                    radioButtonId++;
                 }
-                radioButton.setTextColor(-16777216);
-                radioButton.setTextSize(21);
-                radioButton.setPadding(40, 1, 1, 1);
-                this.keywordChoices.addView(radioButton);
-            }
 
-            searchCursor.close();
+                searchCursor.close();
+            }
+            else {
+                String condition = Storage.KEY_CATEGORY + "='" + selectedKeywords.get(0) + "'";
+
+                for (int keywordIndex = 1; keywordIndex < selectedKeywords.size(); keywordIndex++) {
+                    String keywordSegment = selectedKeywords.get(keywordIndex);
+                    condition = condition.concat(" AND col" + (keywordIndex - 1) + "='" + keywordSegment + "'");
+                }
+
+                searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, "col" + Integer.toString(sequence),
+                        condition);
+
+                // Save the current Sequence and current Condition in case this is the last menu, in which case we'll have to use the previous "state" to get content
+                currentCondition = condition;
+                
+                Boolean isFirst = true;
+                while (searchCursor.moveToNext()) {
+                    int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
+                    if (searchCursor.getString(option) == null) {
+                        // We're at the end of the keyword sequence, so we just launch the results and exit
+                        launchResultsDisplay(currentCondition);
+                        resetSelectionInfo();
+                    }
+                    else {
+                        if (isFirst) {
+                            this.keywordChoices.clearCheck();
+                            this.keywordChoices.removeAllViews();
+                            isFirst = false;
+                        }
+                        radioButtonId = addRadioButton(imagePath, radioButtonId, searchCursor, option);
+                    }
+                }
+            }
         }
-        else {
-            String condition = Storage.KEY_CATEGORY + "='" + selectedKeywords.get(0) + "'";
-
-            for (int keywordIndex = 1; keywordIndex < selectedKeywords.size(); keywordIndex++) {
-                String keywordSegment = selectedKeywords.get(keywordIndex);
-                condition = condition.concat(" AND col" + (keywordIndex - 1) + "='" + keywordSegment + "'");
+        finally{
+            if(searchCursor != null) {
+                searchCursor.close();
             }
-
-            Cursor searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, "col" + Integer.toString(sequence),
-                    condition);
-            boolean remove = false;
-            while (searchCursor.moveToNext()) {
-                int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
-                if (searchCursor.getString(option) == null) {
-                    this.endOfKeywordSequence = true;
-                    this.nextButtonSmall.setText(getString(R.string.send_button));
-                    Toast toast = Toast.makeText(getApplicationContext(), getString(R.string.end_of_search), Toast.LENGTH_LONG);
-                    toast.setGravity(Gravity.CENTER, 0, 0);
-                    toast.show();
-                    break;
-                }
-                if (!remove) {
-                    this.keywordChoices.clearCheck();
-                    this.keywordChoices.removeAllViews();
-                    remove = true;
-                }
-                radioButton = new RadioButton(this);
-                radioButton.setId(radioButtonId++);
-                radioButtonText = searchCursor.getString(option);
-                radioButton.setText(radioButtonText);
-                trySetImage(radioButton, path + radioButtonText.trim().toLowerCase().replace(" ", "_"));
-                if (radioButtonText.compareTo(lastSelection) == 0) {
-                    radioButton.setChecked(true);
-                    radioButton.setSelected(true);
-                }
-                radioButton.setTextColor(-16777216);
-                radioButton.setTextSize(21);
-                radioButton.setPadding(40, 1, 1, 1);
-                this.keywordChoices.addView(radioButton);
-            }
-            searchCursor.close();
+            this.searchDatabase.close();
         }
-        this.searchDatabase.close();
+    }
+
+    /**
+     * @param imagePath
+     * @param radioButtonId
+     * @param searchCursor
+     * @param option
+     * @return
+     */
+    public int addRadioButton(String imagePath, int radioButtonId, Cursor searchCursor, int option) {
+        RadioButton radioButton;
+        String radioButtonText;
+        radioButton = new RadioButton(this);
+        radioButton.setId(radioButtonId++);
+        radioButtonText = searchCursor.getString(option);
+        radioButton.setText(radioButtonText);
+        trySetImage(radioButton, imagePath + radioButtonText.trim().toLowerCase().replace(" ", "_"));
+        if (radioButtonText.compareTo(lastSelection) == 0) {
+            radioButton.setChecked(true);
+            radioButton.setSelected(true);
+        }
+        radioButton.setTextColor(-16777216);
+        radioButton.setTextSize(21);
+        radioButton.setPadding(40, 1, 1, 1);
+        this.keywordChoices.addView(radioButton);
+        return radioButtonId;
+    }
+
+    private void launchResultsDisplay(String condition) {
+        // Get the content of the prev. sequence.
+        HashMap<String, String> results = searchDatabase.selectContent(GlobalConstants.DATABASE_TABLE, condition); 
+        
+        String content = results.get("content");
+        String attribution = results.get("attribution");
+        String updated = results.get("updated");
+        
+        if(attribution != null && attribution.length() > 0) {
+            content += "\n\nAttribution: " + attribution;
+        }
+       
+        if(updated != null && updated.length() > 0) {
+            content += "\n\nUpdated: " + updated;
+        }
+        
+        // TODO: Need to add location at some point
+        showSearchResults(GlobalConstants.intervieweeName, null, content);
     }
 
     private void trySetImage(RadioButton radioButton, String imagePath) {
@@ -432,8 +404,6 @@ public class SearchActivity extends BaseSearchActivity {
         ActivityState instanceState = new ActivityState();
         instanceState.currentKeywordSegmentIndex = sequence;
         instanceState.keywords = selectedKeywords;
-        instanceState.canSubmitQuery = this.canSubmitQuery;
-        instanceState.endOfKeywordSequence = this.endOfKeywordSequence;
         return instanceState;
     }
 
@@ -443,8 +413,6 @@ public class SearchActivity extends BaseSearchActivity {
     private class ActivityState {
         int currentKeywordSegmentIndex;
         ArrayList<String> keywords;
-        boolean endOfKeywordSequence;
-        boolean canSubmitQuery;
     }
 
     // Remove unnecessary menu items for this activity
@@ -454,6 +422,7 @@ public class SearchActivity extends BaseSearchActivity {
         menu.removeItem(GlobalConstants.SETTINGS_ID);
         menu.removeItem(GlobalConstants.DELETE_ID);
         menu.removeItem(GlobalConstants.ABOUT_ID);
+        menu.removeItem(GlobalConstants.REFRESH_ID); // Do not show the update keywords option on search activity
         return result;
     }
 }

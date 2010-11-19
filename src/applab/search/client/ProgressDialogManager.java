@@ -60,6 +60,7 @@ public class ProgressDialogManager {
                     dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
                     dialog.setIndeterminate(true);
                     dialog.setCancelable(false);
+                    setMax(100);
                     break;
                 case GlobalConstants.CONNECT_DIALOG:
                     dialog.setMessage(context.getString(R.string.progress_msg));

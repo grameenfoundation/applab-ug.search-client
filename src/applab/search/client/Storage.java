@@ -12,6 +12,8 @@ the License.
 
 package applab.search.client;
 
+import java.util.HashMap;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -99,6 +101,35 @@ public class Storage {
                 null, null, null, KEY_ORDER + " DESC", null);
     }
 
+    public HashMap<String, String> selectContent(String table, String condition) {
+        Cursor cursor = null;
+        HashMap<String, String> results = new HashMap<String, String>();
+        try {
+            cursor = database.query(true, table, new String[] {"content", "attribution", "updated"}, condition,
+                    null, null, null, KEY_ORDER + " DESC", null);
+            cursor.moveToFirst();
+            Integer contentIndex = cursor.getColumnIndexOrThrow("content");            
+            String content = cursor.getString(contentIndex);
+            
+            Integer attributionIndex = cursor.getColumnIndexOrThrow("attribution");
+            String attribution = cursor.getString(attributionIndex);
+            
+            Integer updatedIndex = cursor.getColumnIndexOrThrow("updated");
+            String updated = cursor.getString(updatedIndex);
+            
+            results.put("content", content);
+            results.put("attribution", attribution);
+            results.put("updated", updated);
+            
+            return results;
+        }
+        finally {
+            if(cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+    
     public boolean deleteEntry(String table, String id) {
         return database.delete(table, KEY_ROWID + "=" + id, null) > 0;
     }

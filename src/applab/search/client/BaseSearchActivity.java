@@ -190,7 +190,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
 
                 return true;
             case GlobalConstants.EXIT_ID:
-                finish();
+                ApplabActivity.exit();
                 return true;
             case GlobalConstants.SETTINGS_ID:
                 // At the moment switchToActivity will make it impossible to leave the settings activity

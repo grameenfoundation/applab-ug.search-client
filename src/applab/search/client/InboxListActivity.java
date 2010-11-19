@@ -173,7 +173,7 @@ public class InboxListActivity extends BaseSearchActivity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 dialog.cancel();
-                                switchToActivity(MainMenuActivity.class);
+                                finish();
                             }
                         }).setView(farmerNameEditBox);
         AlertDialog alert = builder.create();

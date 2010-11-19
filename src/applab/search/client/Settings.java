@@ -15,9 +15,6 @@ package applab.search.client;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import applab.client.ApplabActivity;
-import applab.search.client.R;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -28,6 +25,7 @@ import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+import applab.client.ApplabActivity;
 
 public class Settings extends PreferenceActivity implements OnSharedPreferenceChangeListener {
     private static String KEY_SERVER = "server";

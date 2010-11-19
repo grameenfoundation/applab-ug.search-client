@@ -52,7 +52,7 @@ public class KeywordParser {
     private static final String VERSION_ATTRIBUTE_NAME = "version";
     private static final String TOTAL_ATTRIBUTE_NAME = "total";
     private final static String NAMESPACE = "http://schemas.applab.org/2010/07/search";
-    private static int progressLevel = 0;
+    private int progressLevel = 0;
     private Storage storage;
 
     /** handler to which progress updates are sent */
@@ -234,8 +234,12 @@ public class KeywordParser {
                         message.what = GlobalConstants.KEYWORD_PARSE_GOT_NODE_TOTAL;
                         message.setData(bundle);
                         responseHandler.sendMessage(message);
-                        storage = new Storage(ApplabActivity.getGlobalContext());
-                        storage.open();
+                        
+                        // If this is the first node, we open the storage
+                        if(storage == null) {
+                            storage = new Storage(ApplabActivity.getGlobalContext());
+                            storage.open();
+                        }
                     }
                 }
                 else if (ADD_TAG.equals(localName)) {

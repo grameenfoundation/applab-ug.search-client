@@ -12,8 +12,6 @@ the License.
 
 package applab.search.client;
 
-import applab.client.AboutDialog;
-import applab.search.client.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -31,6 +29,7 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import applab.client.AboutDialog;
 
 public class LocationActivity extends Activity implements LocationListener {
     private LocationManager lm;

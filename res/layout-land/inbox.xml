@@ -57,25 +57,27 @@
 		android:orientation="horizontal" android:layout_width="fill_parent"
 		android:layout_height="wrap_content" android:layout_alignParentBottom="true"
 		android:gravity="center"  android:background="@drawable/gray">
-
-		<Button android:id="@+id/delete_button" android:textColor="@drawable/black"
-			android:textSize="21px" android:layout_width="145dp"
-			android:layout_height="wrap_content" android:text="@string/delete_button"
+		
+		<Button android:id="@+id/back_button" android:textColor="@drawable/black"
+			android:textSize="21px" android:layout_width="215dp"
+			android:layout_height="wrap_content" android:text="@string/back_button"
 			android:layout_alignLeft="@+id/contentview"
 			android:layout_alignParentBottom="true" />
-
-		<Button android:id="@+id/send_button" android:textColor="@drawable/black"
+			
+		<!--
+			<Button android:id="@+id/send_button" android:textColor="@drawable/black"
 			android:textSize="21px" android:layout_width="145dp"
 			android:layout_height="wrap_content" android:text="@string/send_button"
 			android:layout_toRightOf="@+id/delete_button"
 			android:layout_alignParentBottom="true" />
-
-		<Button android:id="@+id/back_button" android:textColor="@drawable/black"
-			android:textSize="21px" android:layout_width="145dp"
-			android:layout_height="wrap_content" android:text="@string/back_button"
+		-->
+		
+		<Button android:id="@+id/delete_button" android:textColor="@drawable/black"
+			android:textSize="21px" android:layout_width="215dp"
+			android:layout_height="wrap_content" android:text="@string/delete_button"
 			android:layout_alignRight="@+id/contentview"
 			android:layout_alignParentBottom="true" />
-
+			
 	</LinearLayout>
 
 </RelativeLayout>
