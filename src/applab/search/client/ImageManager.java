@@ -55,13 +55,13 @@ public class ImageManager {
             response = HttpHelpers.postXmlRequestAndGetStream(baseServerUrl + IMAGE_PATH, (StringEntity)xmlRequest.getEntity());
             // Write to disk as temp file and use filestream to process
             String filePath = ApplabActivity.getGlobalContext().getCacheDir() + "/keywords.tmp";
-            Boolean downloadSuccessful = XmlHelpers.writeXmlToTempFile(response, filePath, "</GetImagesResponse>"); 
+            Boolean downloadSuccessful = XmlHelpers.writeXmlToTempFile(response, filePath, "</GetImagesResponse>");
             response.close();
-                        
+
             if (!downloadSuccessful) {
                 return null;
             }
-            
+
             File file = new File(filePath);
             FileInputStream inputStream = new FileInputStream(file);
             return inputStream;
@@ -74,15 +74,15 @@ public class ImageManager {
     public static void updateLocalImages() {
         // Get remote list
         InputStream xmlStream = getImageXml();
-        
+
         // Get local list
         HashMap<String, File> localImageList = getLocalImageList();
-        
+
         // Init Sax Parser & XML Handler
         SAXParser xmlParser;
         ImageXmlParseHandler xmlHandler = new ImageXmlParseHandler();
         xmlHandler.setLocalImageList(localImageList);
-        
+
         if (xmlStream == null) {
             return;
         }
@@ -91,7 +91,7 @@ public class ImageManager {
                 xmlParser = SAXParserFactory.newInstance().newSAXParser();
                 xmlParser.reset();
                 xmlParser.parse(xmlStream, xmlHandler);
-              
+
                 // Delete local files not on remote list
                 for (Entry<String, File> local : localImageList.entrySet()) {
                     File file = local.getValue();
@@ -118,11 +118,14 @@ public class ImageManager {
         // Key: SHA1, Value: absolute file path
         HashMap<String, File> hashPathPairs = new HashMap<String, File>();
         ArrayList<String> files = ImageFilesUtility.getFilesAsArrayList();
-        for (String path : files) {
-            File file = new File(path);
-            String sha1Hash = ImageFilesUtility.getSHA1Hash(file);
-            hashPathPairs.put(sha1Hash, file);
+        if (files != null) {
+            for (String path : files) {
+                File file = new File(path);
+                String sha1Hash = ImageFilesUtility.getSHA1Hash(file);
+                hashPathPairs.put(sha1Hash, file);
+            }
         }
+
         return hashPathPairs;
     }
 }
