@@ -12,9 +12,13 @@ the License.
 
 package applab.search.client;
 
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.text.InputFilter;
 import android.view.Menu;
 import android.view.View;
@@ -31,7 +35,7 @@ import applab.client.controller.FarmerRegistrationController;
  * The Search application home screen
  * 
  */
-public class MainMenuActivity extends BaseSearchActivity {
+public class MainMenuActivity extends BaseSearchActivity implements Runnable {
     private static final int REGISTRATION_CODE = 2;
     private static final int FORGOT_ID_CODE = 3;
     private static final int AGINFO_CODE = 1;
@@ -43,6 +47,11 @@ public class MainMenuActivity extends BaseSearchActivity {
     private EditText farmerNameEditBox;
 
     private FarmerRegistrationController farmerRegController;
+
+    private int requestCode;
+    private ProgressDialog progressDialog;
+    private String errorMessage;
+    private static final int PROGRESS_DIALOG = 1;
 
     public MainMenuActivity() {
         this.farmerRegController = new FarmerRegistrationController();
@@ -124,7 +133,8 @@ public class MainMenuActivity extends BaseSearchActivity {
                 if (resultCode == RESULT_OK) {
 
                     String message = "Registration successful.";
-                    long result = this.farmerRegController.saveNewFarmerRegistration(data.getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT));
+                    long result = this.farmerRegController
+                    .saveNewFarmerRegistration(data.getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT));
                     if (result < 0)
                         message = "Failed to save farmer registration record.";
 
@@ -193,16 +203,11 @@ public class MainMenuActivity extends BaseSearchActivity {
             if (urlPattern.contentEquals("findFarmerId") || checkId(farmerName)) {
                 // Set the farmer ID
                 GlobalConstants.intervieweeName = farmerName;
-                Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
 
-                String html = this.farmerRegController.getFormHtml(farmerName, Settings.getServerUrl());
-                if (html != null) {
-                    webActivity.putExtra(BrowserActivity.EXTRA_HTML_INTENT, html);
-                    startActivityForResult(webActivity, requestCode);
-                }
-                else {
-                    showToast("Failed to get the farmer registration form. Please try again.");
-                }
+                showDialog(PROGRESS_DIALOG);
+
+                this.requestCode = requestCode;
+                new Thread(this).start();
             }
             else {
                 showToast("Invalid Farmer ID.");
@@ -269,5 +274,49 @@ public class MainMenuActivity extends BaseSearchActivity {
         menu.removeItem(GlobalConstants.DELETE_ID);
         menu.removeItem(GlobalConstants.INBOX_ID);
         return result;
+    }
+
+    public void run() {
+
+        if (requestCode == REGISTRATION_CODE) {
+
+            errorMessage = null;
+
+            String html = this.farmerRegController.getFormHtml(GlobalConstants.intervieweeName, Settings.getServerUrl());
+
+            if (html != null) {
+                Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
+                webActivity.putExtra(BrowserActivity.EXTRA_HTML_INTENT, html);
+                startActivityForResult(webActivity, requestCode);
+            }
+            else {
+                errorMessage = "Failed to get the farmer registration form. Please try again.";
+            }
+
+            // Dismiss the progress window.
+            handler.sendEmptyMessage(0);
+        }
+    }
+
+    private Handler handler = new Handler() {
+
+        @Override
+        public void handleMessage(Message msg) {
+            dismissDialog(PROGRESS_DIALOG);
+
+            if (errorMessage != null)
+                showToast(errorMessage);
+        }
+    };
+    
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setTitle(getTitle());
+        progressDialog.setMessage("Loading Form. Please wait ...");
+        progressDialog.setIndeterminate(true);
+        progressDialog.setCancelable(false);
+        
+        return progressDialog;
     }
 }
