@@ -18,20 +18,7 @@ import applab.client.ApplabActivity;
  * Base class for all Search activities, consolidates code around synchronization, menus, progress dialogs, etc.
  * 
  */
-public abstract class BaseSearchActivity extends ApplabActivity {
-    /**
-     * Used to participate in the synchronization lifecycle events
-     */
-    private Handler keywordSynchronizationCallback = new Handler() {
-        @Override
-        public void handleMessage(Message message) {
-            switch (message.what) {
-                case GlobalConstants.KEYWORD_PARSE_SUCCESS:
-                    onKeywordUpdateComplete();
-                    break;
-            }
-        }
-    };
+public abstract class BaseSearchActivity extends ApplabActivity { 
 
     protected BaseSearchActivity() {
         super();
@@ -66,10 +53,6 @@ public abstract class BaseSearchActivity extends ApplabActivity {
      */
     @Override
     protected void onResume() {
-        // Check if we're in the middle of synchronizing keywords, and if we should be
-        // displaying a progress meter or not (i.e. was this a background synchronization?)
-        // TODO: how do we detect when we had a progress dialog up before and so should still be modal?
-        SynchronizationManager.onActivityResume(this, keywordSynchronizationCallback);
 
         // TODO: Check if we need to reload activity content (e.g if it was saved on screen orientation change)
 
@@ -159,8 +142,8 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         return result;
     }
 
-    private void refreshKeywords() {
-        SynchronizationManager.synchronize(this, keywordSynchronizationCallback);
+    protected void refreshKeywords() {
+        
     }
 
     @Override

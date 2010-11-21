@@ -108,7 +108,8 @@ public class KeywordParser {
             }
             else if (keywordVersion != "") {
                 KeywordParser.storeKeywordsVersion(keywordVersion);
-
+                Log.d(LOG_TAG, "Stored version: " + keywordVersion);
+                
                 // let UI handler know
                 Log.d(LOG_TAG, "Finished Parsing Keywords ... Added: " + addedNodes + ", Deleted: " + deletedNodes);
                 this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_SUCCESS);
@@ -166,6 +167,7 @@ public class KeywordParser {
     private void incrementProgressLevel() {
         Message message = progressHandler.obtainMessage();
         bundle.putInt("node", ++progressLevel);
+        Log.d(LOG_TAG, "Processed : " + progressLevel + " of " + nodeCount);
         message.setData(bundle);
         progressHandler.sendMessage(message);
     }
@@ -226,6 +228,8 @@ public class KeywordParser {
                     if (keywordVersion != "" && nodeCount > 0) {
                         nodeCount += 1; // Add one for the start document node
                         Log.d(LOG_TAG, "Total nodes: " + nodeCount);
+                        Log.d(LOG_TAG, "Keyword version: " + keywordVersion);
+                        
                         bundle = new Bundle();
 
                         // Show parse dialog (send signal with total node count)

@@ -35,8 +35,8 @@ import android.util.Log;
  */
 public class ImageFilesUtility {
     private static final String ROOT = "/sdcard/ckwsearch/";
-    private static final String FORMAT = ".jpg";
     private static final String LOG_TAG = "ImageFilesUtility";
+    private static String[] SUPPORTED_FORMATS = {".jpg", ".jpeg"};
 
     private static boolean storageReady() {
         String cardstatus = Environment.getExternalStorageState();
@@ -93,7 +93,7 @@ public class ImageFilesUtility {
         if (!storageReady()) {
             return null;
         }
-        fileName = ROOT + fileName + FORMAT;
+        fileName = getFullPath(fileName);
         Bitmap bitmap = BitmapFactory.decodeFile(fileName);
         return new BitmapDrawable(bitmap);
     }
@@ -119,15 +119,27 @@ public class ImageFilesUtility {
     }
 
     public static boolean imageExists(String fileName) {
-        fileName = ROOT + fileName + FORMAT;
-        File file = new File(fileName);
         if (!storageReady()) {
             return false;
         }
-        if (file.exists()) {
-            return true;
+        
+        fileName = getFullPath(fileName);
+        if(fileName == null) {
+            return false;
         }
-        return false;
+        return true;
+    }
+
+    private static String getFullPath(String fileName) {
+        for(String format : SUPPORTED_FORMATS ) {
+            String path = ROOT + fileName + format;
+            File file = new File(path);
+            
+            if (file.exists()) {
+                return path;
+            }
+        }
+        return null;
     }
 
     public static String getSHA1Hash(File file) {

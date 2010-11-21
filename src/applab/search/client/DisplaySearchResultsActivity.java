@@ -209,7 +209,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
         ContentValues log = new ContentValues();
         log.put(InboxAdapter.KEY_REQUEST, request.replace(">", ""));
         log.put(InboxAdapter.KEY_DATE, dateFormat.format(new Date()));
-        log.put(InboxAdapter.KEY_NAME, GlobalConstants.intervieweeName);
+        log.put(InboxAdapter.KEY_NAME, this.farmerId);
         return inboxDatabase.insertLog(InboxAdapter.ACCESS_LOG_DATABASE_TABLE, log);
     }
 

@@ -41,6 +41,12 @@ public class SearchRequest {
     public SearchRequest(String keyword, String farmerId, String submissionTime, String location,
                          boolean isLogRequest) {
         this.keyword = keyword;
+        
+        // TODO: Why do we get a null farmer Id sometimes?
+        if(farmerId == null) {
+            farmerId = "";
+        }
+        
         this.farmerId = farmerId;
         this.submissionTime = submissionTime;
         if (location == null || location.length() == 0) {

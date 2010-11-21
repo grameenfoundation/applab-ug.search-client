@@ -58,6 +58,20 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
     private String errorMessage;
     private static final int PROGRESS_DIALOG = 1;
 
+    /**
+     * Used to participate in the synchronization lifecycle events
+     */
+    private Handler keywordSynchronizationCallback = new Handler() {
+        @Override
+        public void handleMessage(Message message) {
+            switch (message.what) {
+                case GlobalConstants.KEYWORD_PARSE_SUCCESS:
+                    onKeywordUpdateComplete();
+                    break;
+            }
+        }
+    };
+    
     public MainMenuActivity() {
         this.farmerRegController = new FarmerRegistrationController();
     }
@@ -77,6 +91,12 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
     public void onResume() {
         // First run parent code
         super.onResume();
+        
+        // Check if we're in the middle of synchronizing keywords, and if we should be
+        // displaying a progress meter or not (i.e. was this a background synchronization?)
+        // TODO: how do we detect when we had a progress dialog up before and so should still be modal?
+        SynchronizationManager.onActivityResume(this, keywordSynchronizationCallback);
+        
         setContentView(R.layout.launch_menu);
         setFeatureDrawableResource(Window.FEATURE_RIGHT_ICON, R.drawable.search_title);
 
@@ -130,6 +150,12 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
 
     }
 
+    @Override
+    protected void refreshKeywords() {
+        super.refreshKeywords();
+        SynchronizationManager.synchronize(this, keywordSynchronizationCallback);
+    }
+    
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 

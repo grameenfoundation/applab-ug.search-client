@@ -29,6 +29,7 @@ import android.content.DialogInterface;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.widget.Toast;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
@@ -48,9 +49,9 @@ import applab.client.controller.FarmerRegistrationController;
  * TODO: move the general scheduling algorithm into shared code and leverage it
  */
 public class SynchronizationManager {
-    // by default we will synchronize once daily
-    //private static final int SYNCHRONIZATION_INTERVAL = 24 * 60 * 60 * 1000;
-    private static final int SYNCHRONIZATION_INTERVAL = 60;
+    // by default we will synchronize twice daily
+    private static final int SYNCHRONIZATION_INTERVAL = 12 * 60 * 60 * 1000;
+    //private static final int SYNCHRONIZATION_INTERVAL = 30 * 1000;
 
     private static SynchronizationManager singleton = new SynchronizationManager();
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
@@ -66,6 +67,8 @@ public class SynchronizationManager {
 
     // used for getting messages from the download and parsing threads
     private Handler internalMessageHandler;
+
+    private Boolean launchedFromTimer = false;
 
     private SynchronizationManager() {
     }
@@ -83,10 +86,17 @@ public class SynchronizationManager {
     }
 
     /**
+     * Kick off timed synchronization
+     */
+    public static void synchronizeFromTimer(Context context, Handler completionCallback) {
+        synchronize(context, completionCallback, false, true);
+    }
+    
+    /**
      * Kick off an immediate synchronization, usually from the refresh menu
      */
     public static void synchronize(Context context, Handler completionCallback) {
-        synchronize(context, completionCallback, true);
+        synchronize(context, completionCallback, true, false);
     }
 
     /**
@@ -94,16 +104,16 @@ public class SynchronizationManager {
      * of a synchronization episode that we attach to any outstanding UI.
      */
     public static void onActivityResume(Context context, Handler completionCallback) {
-        synchronize(context, completionCallback, false);
+        synchronize(context, completionCallback, false, false);
     }
 
     /**
      * Check if it's okay to proceed with a synchronization episode. isModal determines if this is a foreground or
      * background synchronization.
      */
-    private static void synchronize(Context context, Handler completionCallback, boolean isModal) {
+    private static void synchronize(Context context, Handler completionCallback, boolean isModal, boolean launchedFromTimer) {
         boolean attachToUi = false;
-        synchronizeNow = isModal;
+        synchronizeNow = isModal || launchedFromTimer;
 
         synchronized (SynchronizationManager.singleton) {
             // if we don't have a timer, set that up
@@ -125,6 +135,8 @@ public class SynchronizationManager {
             }
         }
 
+        SynchronizationManager.singleton.launchedFromTimer = launchedFromTimer;
+        
         if (attachToUi) {
             SynchronizationManager.singleton.attachActivity(context, completionCallback);
         }
@@ -141,6 +153,7 @@ public class SynchronizationManager {
     public static void completeSynchronization() {
         synchronized (SynchronizationManager.singleton) {
             SynchronizationManager.singleton.isSynchronizing = false;
+            SynchronizationManager.singleton.launchedFromTimer = false; // Reset this
         }
     }
 
@@ -159,8 +172,8 @@ public class SynchronizationManager {
              * TURNED OFF BACKGROUND SYNCHRONIZATION for 2.8.3 release Need to properly test this before turning it back
              * on.
              */
-            //this.timer.scheduleAtFixedRate(new BackgroundSynchronizationTask(this, false), SYNCHRONIZATION_INTERVAL,
-            //        SYNCHRONIZATION_INTERVAL);
+            this.timer.scheduleAtFixedRate(new TimedSynchronizationTask(), SYNCHRONIZATION_INTERVAL,
+                    SYNCHRONIZATION_INTERVAL);
             scheduledTimer = true;
         }
 
@@ -171,17 +184,32 @@ public class SynchronizationManager {
      * By the time this method is called, we know that no synchronization is in progress, so it's our job to kick it off
      */
     private void startSynchronization(Context context, Handler completionCallback) {
-        this.completionCallback = completionCallback;
         this.currentContext = context;
-        this.progressMessageHandler = createProgressMessageHandler();
-        this.internalMessageHandler = new Handler() {
-            @Override
-            public void handleMessage(Message message) {
-                handleBackgroundThreadMessage(message);
-            }
-        };
-        this.backgroundThread = new Thread(new BackgroundSynchronizationTask(this, true));
-        this.backgroundThread.start();
+        if(!this.launchedFromTimer) {
+            this.completionCallback = completionCallback;
+            this.progressMessageHandler = createProgressMessageHandler();
+            
+            this.internalMessageHandler = new Handler() {
+                @Override
+                public void handleMessage(Message message) {
+                    handleBackgroundThreadMessage(message);
+                }
+            };
+        }
+        else {
+            this.completionCallback = null;
+            this.progressMessageHandler = completionCallback;
+            this.internalMessageHandler = completionCallback;
+        }
+        
+        BackgroundSynchronizationTask task = new BackgroundSynchronizationTask(this, true);
+        if(this.launchedFromTimer) {
+            task.run();
+        }
+        else {
+            this.backgroundThread = new Thread(task);
+            this.backgroundThread.start();
+        }
     }
 
     /**
@@ -256,7 +284,9 @@ public class SynchronizationManager {
                 // TODO: Can we do this on the UI thread before we offload the process into the background?
                 // it would cleanup the code, allow us to easily thread in Global.SETUP_DIALOG when Storage is empty,
                 // and avoid a few extra thread switches
-                ProgressDialogManager.displayProgressDialog(GlobalConstants.UPDATE_DIALOG, this.currentContext);
+                if(!this.launchedFromTimer) {
+                    ProgressDialogManager.displayProgressDialog(GlobalConstants.UPDATE_DIALOG, this.currentContext);
+                }
                 break;
             case GlobalConstants.CONNECTION_ERROR:
                 showErrorDialog(R.string.connection_error_message);
@@ -305,10 +335,18 @@ public class SynchronizationManager {
      * @throws XmlPullParserException
      */
     private void performBackgroundSynchronization() throws XmlPullParserException {
-        // we may want to associate UI with this task, so create
-        // a looper to setup the message pump (by default, background threads
-        // don't have a message pump)
-        Looper.prepare();
+        Boolean setupLooper = true;
+        if(this.launchedFromTimer) {
+            setupLooper = false;
+        }
+        
+        if(setupLooper) {
+            // we may want to associate UI with this task, so create
+            // a looper to setup the message pump (by default, background threads
+            // don't have a message pump)
+            
+            Looper.prepare();
+        }
         
         sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up immediately
         SynchronizationManager.singleton.isSynchronizing = true;
@@ -328,10 +366,12 @@ public class SynchronizationManager {
         
         updateKeywords();
 
-        // TODO: Looper.loop is problematic here. This should be restructured
-        Looper.loop();
-        Looper looper = Looper.getMainLooper();
-        looper.quit();
+        if(setupLooper) {
+            // TODO: Looper.loop is problematic here. This should be restructured
+            Looper.loop();
+            Looper looper = Looper.getMainLooper();
+            looper.quit();
+        }
     }
 
     /**
@@ -439,6 +479,25 @@ public class SynchronizationManager {
             return true;
         }
     }
+    
+    private class TimedSynchronizationTask extends TimerTask {
+        private static final String LOG_TAG = "TimedSynchronizationTask";
+        /**
+         * Used to participate in the synchronization lifecycle events
+         */
+        private Handler keywordSynchronizationCallback = new Handler() {
+            @Override
+            public void handleMessage(Message message) {
+                SynchronizationManager.singleton.handleBackgroundThreadMessage(message);
+            }
+        };
+        
+        @Override
+        public void run() {
+            Log.d(LOG_TAG, "Timer: launching background sync");
+            SynchronizationManager.synchronizeFromTimer(ApplabActivity.getGlobalContext(), keywordSynchronizationCallback);
+        }
+    }
 
     /**
      * handler that we use to schedule synchronization tasks on a separate thread
@@ -447,12 +506,12 @@ public class SynchronizationManager {
      * message pump
      * 
      */
-    private class BackgroundSynchronizationTask extends TimerTask {
+    private class BackgroundSynchronizationTask implements Runnable {
         private SynchronizationManager synchronizationManager;
 
         // true if we already have the synchronization lock
         private boolean hasLock;
-
+        
         public BackgroundSynchronizationTask(SynchronizationManager synchronizationManager,
                                              boolean hasLock) {
             this.synchronizationManager = synchronizationManager;

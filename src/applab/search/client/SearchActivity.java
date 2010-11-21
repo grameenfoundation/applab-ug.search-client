@@ -70,9 +70,6 @@ public class SearchActivity extends BaseSearchActivity {
     /** search sequence number */
     private int sequence;
 
-    /** true if there has been a configuration change */
-    private boolean configurationChanged;
-
     private String lastSelection = "";
 
     private String currentCondition;
@@ -81,12 +78,7 @@ public class SearchActivity extends BaseSearchActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.searchDatabase = new Storage(this);
-        if (savedInstanceState != null) {
-            configurationChanged = savedInstanceState.getBoolean("changed");
-            if (configurationChanged) {
-                Log.w(LOG_TAG, "Activity RESTART");
-            }
-        }
+        
         setContentView(R.layout.main);
         this.keywordChoices = (RadioGroup)findViewById(R.id.radio_group);
         this.keywordChoices.bringToFront();
