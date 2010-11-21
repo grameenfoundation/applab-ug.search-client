@@ -172,7 +172,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
             case FORGOT_ID_CODE:
                 if (resultCode == RESULT_OK) {
                     if (data != null) {
-                        final String farmerId = data.getStringExtra("data");
+                        final String farmerId = data.getStringExtra(BrowserActivity.EXTRA_DATA_INTENT);
                         BrowserResultDialog.show(this, "Selected ID: " + farmerId, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 GlobalConstants.intervieweeName = farmerId;

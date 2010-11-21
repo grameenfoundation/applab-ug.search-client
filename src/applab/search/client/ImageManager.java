@@ -125,7 +125,7 @@ public class ImageManager {
                 hashPathPairs.put(sha1Hash, file);
             }
         }
-
+        
         return hashPathPairs;
     }
 }
