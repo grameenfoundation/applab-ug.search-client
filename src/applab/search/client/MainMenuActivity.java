@@ -12,6 +12,10 @@ the License.
 
 package applab.search.client;
 
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Set;
+
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
@@ -29,6 +33,7 @@ import android.widget.EditText;
 import applab.client.ApplabActivity;
 import applab.client.BrowserActivity;
 import applab.client.BrowserResultDialog;
+import applab.client.HttpHelpers;
 import applab.client.controller.FarmerRegistrationController;
 
 /**
@@ -186,6 +191,9 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
             default:
                 break;
         }
+        
+        //restore the farmer id as previously typed in by the user.
+        farmerNameEditBox.setText(GlobalConstants.intervieweeName);
     }
 
     /**
@@ -204,10 +212,39 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                 // Set the farmer ID
                 GlobalConstants.intervieweeName = farmerName;
 
-                showDialog(PROGRESS_DIALOG);
+                if(requestCode == REGISTRATION_CODE){
+                    showDialog(PROGRESS_DIALOG);
+                    this.requestCode = requestCode;
+                    new Thread(this).start();
+                }
+                else{
+                    Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
 
-                this.requestCode = requestCode;
-                new Thread(this).start();
+                    String serverUrl = Settings.getServerUrl();
+                    serverUrl = serverUrl.substring(0, serverUrl.length()
+                            - 1);
+                    
+                    // Add common Headers to the parameter string
+                    HashMap<String, String> commonHeaders = HttpHelpers.getCommonHeaders();
+                    String commonParameters = "";
+                    Set<String> keys = commonHeaders.keySet();
+                    Boolean isFirst = true;
+                    for(String key :keys) {
+                        if(isFirst){
+                            commonParameters += "?";
+                            isFirst = false;
+                        }
+                        else {
+                            commonParameters += "&";
+                        }
+                        commonParameters += key + "=" + URLEncoder.encode(commonHeaders.get(key));
+                    }
+                    
+                    webActivity.putExtra(BrowserActivity.EXTRA_URL_INTENT,
+                            serverUrl + ":8888/services/" + urlPattern + commonParameters + "&farmerId="
+                                    + farmerName);
+                    startActivityForResult(webActivity, requestCode);
+                }
             }
             else {
                 showToast("Invalid Farmer ID.");
@@ -308,7 +345,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                 showToast(errorMessage);
         }
     };
-    
+
     @Override
     protected Dialog onCreateDialog(int id) {
         progressDialog = new ProgressDialog(this);
@@ -316,7 +353,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
         progressDialog.setMessage("Loading Form. Please wait ...");
         progressDialog.setIndeterminate(true);
         progressDialog.setCancelable(false);
-        
+
         return progressDialog;
     }
 }
