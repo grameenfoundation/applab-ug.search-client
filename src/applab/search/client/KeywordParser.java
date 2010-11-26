@@ -268,6 +268,11 @@ public class KeywordParser {
         @Override
         public void endElement(String namespaceUri, String localName, String qName) throws SAXException {
             if (NAMESPACE.equals(namespaceUri)) {
+                if(ADD_TAG.equals(localName) && this.contentRow != null) {
+                    contentRow.save();
+                    contentRow = null; // Set to null for next row
+                    addedNodes++;
+                }
                 if (ADD_TAG.equals(localName) || REMOVE_TAG.equals(localName)) {
                     // Use this to increment progress
                     incrementProgressLevel();
@@ -279,9 +284,6 @@ public class KeywordParser {
         public void characters(char[] data, int start, int length) throws SAXException {
             if (this.contentRow != null) {
                 contentRow.setContent(String.copyValueOf(data, start, length));
-                contentRow.save();
-                contentRow = null; // Set to null for next row
-                addedNodes++;
             }
         }
     }
@@ -293,7 +295,7 @@ public class KeywordParser {
         String attribution = null;
         String updated = null;
         String keyword = null;
-        String content = null;
+        String content = "";
         String category = null;
 
         public void save() {
@@ -317,7 +319,7 @@ public class KeywordParser {
         }
 
         public void setContent(String content) {
-            this.content = content;
+            this.content += content;
         }
 
         public void setRowId(String id) {

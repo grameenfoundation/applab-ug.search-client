@@ -51,6 +51,7 @@ import applab.client.controller.FarmerRegistrationController;
 public class SynchronizationManager {
     // by default we will synchronize twice daily
     private static final int SYNCHRONIZATION_INTERVAL = 12 * 60 * 60 * 1000;
+    private static final int SYNCHRONIZATION_START_INTERVAL = 5 * 60 * 1000; // We run 5 minutes after the app is started
     //private static final int SYNCHRONIZATION_INTERVAL = 30 * 1000;
 
     private static SynchronizationManager singleton = new SynchronizationManager();
@@ -172,7 +173,7 @@ public class SynchronizationManager {
              * TURNED OFF BACKGROUND SYNCHRONIZATION for 2.8.3 release Need to properly test this before turning it back
              * on.
              */
-            this.timer.scheduleAtFixedRate(new TimedSynchronizationTask(), SYNCHRONIZATION_INTERVAL,
+            this.timer.scheduleAtFixedRate(new TimedSynchronizationTask(), SYNCHRONIZATION_START_INTERVAL,
                     SYNCHRONIZATION_INTERVAL);
             scheduledTimer = true;
         }

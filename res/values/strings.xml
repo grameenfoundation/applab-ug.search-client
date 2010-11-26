@@ -2,9 +2,9 @@
 
 <resources>
 <string name="app_name">CKW Search</string>
-<string name="app_version">2.10</string>
-<integer name="app_version_code">20101121</integer> <!-- This is pulled into the manifest. It must be an integer and must increment for each new version (best way is to use the release date in YYYYMMDD format) -->
-<string name="release_date">November 21, 2010</string>
+<string name="app_version">2.10.2</string>
+<integer name="app_version_code">20101126</integer> <!-- This is pulled into the manifest. It must be an integer and must increment for each new version (best way is to use the release date in YYYYMMDD format) -->
+<string name="release_date">November 26, 2010</string>
 <string name="info">Grameen Foundation, Applab Uganda\nckw@applab.org</string>
 <string name="inbox_title">Recent Searches</string>
 <string name="server_url">Server URL</string>

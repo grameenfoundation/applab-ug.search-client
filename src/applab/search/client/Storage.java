@@ -97,8 +97,9 @@ public class Storage {
      * @return A cursor pointing before the first element of the result set.
      */
     public Cursor selectMenuOptions(String table, String optionColumn, String condition) {
+        // database.rawQuery("SELECT DISTINCT(" + optionColumn + ") FROM " + table + " WHERE ", selectionArgs)
         return database.query(true, table, new String[] { optionColumn }, condition,
-                null, null, null, KEY_ORDER + " DESC", null);
+                null, null, null, " MAX(" + KEY_ORDER + ") DESC, " + optionColumn + " ASC", null);
     }
 
     public HashMap<String, String> selectContent(String table, String condition) {
@@ -106,7 +107,7 @@ public class Storage {
         HashMap<String, String> results = new HashMap<String, String>();
         try {
             cursor = database.query(true, table, new String[] {"content", "attribution", "updated"}, condition,
-                    null, null, null, KEY_ORDER + " DESC", null);
+                    null, null, null, null, null);
             cursor.moveToFirst();
             Integer contentIndex = cursor.getColumnIndexOrThrow("content");            
             String content = cursor.getString(contentIndex);
