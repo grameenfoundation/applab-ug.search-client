@@ -18,13 +18,38 @@
 <activity android:name=".AboutActivity" android:label="@string/about_activity" android:configChanges="orientation|keyboardHidden"/>
 <activity android:name=".LocationActivity" android:label="@string/gps_activity" android:configChanges="orientation|keyboardHidden"/>
 <activity android:name=".Settings" android:label="@string/settings_activity" android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden"/>
+  
+<!--  Hook for being notified when the OS boots -->  
+<receiver android:name="applab.client.service.BootCompletedReceiver">
+	<intent-filter>
+		<action android:name="android.intent.action.BOOT_COMPLETED">
+		</action>
+		<category android:name="android.intent.category.HOME">
+		</category>
+	</intent-filter>
+</receiver>
+
+<!--  Tell android that we have a service to run -->
+<service android:name="applab.client.service.ApplabService">
+	<intent-filter>
+		<action android:name="applab.client.service.ApplabService">
+		</action>
+	</intent-filter>
+</service>
+    
     </application>
-    <uses-sdk android:minSdkVersion="3" />
+    
+    <uses-sdk android:minSdkVersion="3" android:targetSdkVersion="4"/>
+    
     <uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.READ_PHONE_STATE"/>
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/> 
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-<uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
-<uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"/>
-<uses-permission android:name="android.permission.CONTROL_LOCATION_UPDATES"/>
-</manifest> 
+	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+	<uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
+	<uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"/>
+	<uses-permission android:name="android.permission.CONTROL_LOCATION_UPDATES"/>
+	
+  <!--  We start our service when the OS boots -->
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+  
+</manifest>
