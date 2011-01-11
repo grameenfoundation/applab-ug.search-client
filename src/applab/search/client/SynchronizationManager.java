@@ -36,7 +36,7 @@ import applab.client.HttpHelpers;
 import applab.client.PropertyStorage;
 import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
-import applab.client.controller.FarmerRegistrationController;
+import applab.client.farmerregistration.FarmerRegistrationController;
 
 /**
  * The SynchronizationManager is responsible for all the complexity involved in scheduling timers, background threads,
@@ -496,7 +496,14 @@ public class SynchronizationManager {
         @Override
         public void run() {
             Log.d(LOG_TAG, "Timer: launching background sync");
-            SynchronizationManager.synchronizeFromTimer(ApplabActivity.getGlobalContext(), keywordSynchronizationCallback);
+            
+            try {
+                SynchronizationManager.synchronizeFromTimer(ApplabActivity.getGlobalContext(), keywordSynchronizationCallback);
+            }
+            catch (Exception ex) {
+                Log.e(LOG_TAG, "Unexpected failure during background syncronization", ex);
+                ProgressDialogManager.tryDestroyProgressDialog();
+            }
         }
     }
 

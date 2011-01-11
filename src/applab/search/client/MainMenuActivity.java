@@ -12,10 +12,6 @@ the License.
 
 package applab.search.client;
 
-import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Set;
-
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
@@ -34,7 +30,10 @@ import applab.client.ApplabActivity;
 import applab.client.BrowserActivity;
 import applab.client.BrowserResultDialog;
 import applab.client.HttpHelpers;
-import applab.client.controller.FarmerRegistrationController;
+import applab.client.dataconnection.DataConnectionManager;
+import applab.client.farmerregistration.FarmerRegistrationAdapter;
+import applab.client.farmerregistration.FarmerRegistrationController;
+import applab.client.location.GpsManager;
 
 /**
  * The Search application home screen
@@ -71,7 +70,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
             }
         }
     };
-    
+
     public MainMenuActivity() {
         this.farmerRegController = new FarmerRegistrationController();
     }
@@ -79,24 +78,23 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Set the app version
-        ApplabActivity.setAppVersion(this.getString(R.string.app_version));
+
+        ApplabActivity.setAppVersion(getString(R.string.app_version));
+
         // Request to display an icon in the title bar. Must be done in onCreate()
         requestWindowFeature(Window.FEATURE_RIGHT_ICON);
-        // Set application version information
-        ApplabActivity.setAppVersion(getString(R.string.app_version));
     }
 
     @Override
     public void onResume() {
         // First run parent code
         super.onResume();
-        
+
         // Check if we're in the middle of synchronizing keywords, and if we should be
         // displaying a progress meter or not (i.e. was this a background synchronization?)
         // TODO: how do we detect when we had a progress dialog up before and so should still be modal?
         SynchronizationManager.onActivityResume(this, keywordSynchronizationCallback);
-        
+
         setContentView(R.layout.launch_menu);
         setFeatureDrawableResource(Window.FEATURE_RIGHT_ICON, R.drawable.search_title);
 
@@ -137,6 +135,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
         this.nextButton.setText("Start New Search");
         this.nextButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
+                GpsManager.getInstance().update();
                 onButtonClick(SearchActivity.class);
             }
 
@@ -155,7 +154,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
         super.refreshKeywords();
         SynchronizationManager.synchronize(this, keywordSynchronizationCallback);
     }
-    
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
@@ -163,11 +162,14 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
             case REGISTRATION_CODE:
                 if (resultCode == RESULT_OK) {
 
+                    Bundle bundle = data.getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT);
+                    bundle.putString(FarmerRegistrationAdapter.KEY_LOCATION, GpsManager.getInstance().getLocationAsString());
+
                     String message = "Registration successful.";
-                    long result = this.farmerRegController
-                    .saveNewFarmerRegistration(data.getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT));
-                    if (result < 0)
+                    long result = this.farmerRegController.saveNewFarmerRegistration(bundle);
+                    if (result < 0) {
                         message = "Failed to save farmer registration record.";
+                    }
 
                     BrowserResultDialog.show(this, message, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
@@ -182,6 +184,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                     // Show error dialog
                     BrowserResultDialog.show(this, "Unable to register farmer. \nCheck the ID or try again later.");
                 }
+
                 break;
             case AGINFO_CODE:
                 if (resultCode == RESULT_OK) {
@@ -217,8 +220,8 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
             default:
                 break;
         }
-        
-        //restore the farmer id as previously typed in by the user.
+
+        // restore the farmer id as previously typed in by the user.
         farmerNameEditBox.setText(GlobalConstants.intervieweeName);
     }
 
@@ -238,36 +241,23 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                 // Set the farmer ID
                 GlobalConstants.intervieweeName = farmerName;
 
-                if(requestCode == REGISTRATION_CODE){
+                // Start GPS search for: Farmer Registration, Ag Info Subscription, Forgot Farmer ID Search
+                GpsManager.getInstance().update();
+
+                if (requestCode == REGISTRATION_CODE) {
                     showDialog(PROGRESS_DIALOG);
                     this.requestCode = requestCode;
                     new Thread(this).start();
                 }
-                else{
+                else {
                     Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
 
                     String serverUrl = Settings.getServerUrl();
                     serverUrl = serverUrl.substring(0, serverUrl.length()
                             - 1);
-                    
-                    // Add common Headers to the parameter string
-                    HashMap<String, String> commonHeaders = HttpHelpers.getCommonHeaders();
-                    String commonParameters = "";
-                    Set<String> keys = commonHeaders.keySet();
-                    Boolean isFirst = true;
-                    for(String key :keys) {
-                        if(isFirst){
-                            commonParameters += "?";
-                            isFirst = false;
-                        }
-                        else {
-                            commonParameters += "&";
-                        }
-                        commonParameters += key + "=" + URLEncoder.encode(commonHeaders.get(key));
-                    }
-                    
+
                     webActivity.putExtra(BrowserActivity.EXTRA_URL_INTENT,
-                            serverUrl + ":8888/services/" + urlPattern + commonParameters + "&farmerId="
+                            serverUrl + ":8888/services/" + urlPattern + HttpHelpers.getCommonParameters() + "&farmerId="
                                     + farmerName);
                     startActivityForResult(webActivity, requestCode);
                 }
@@ -367,8 +357,9 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
         public void handleMessage(Message msg) {
             dismissDialog(PROGRESS_DIALOG);
 
-            if (errorMessage != null)
+            if (errorMessage != null) {
                 showToast(errorMessage);
+            }
         }
     };
 
@@ -381,5 +372,18 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
         progressDialog.setCancelable(false);
 
         return progressDialog;
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        // We need to display only one settings screen at a time.
+        // So if no settings screen shown for GPS, try show that of mobile data, if disabled.
+        // Every time a settings screen is closed, Activity:onStart() will be called and hence
+        // help us ensure that we display all the settings screen we need, but one a time.
+        if (!GpsManager.getInstance().onStart(this)) {
+            DataConnectionManager.getInstance().onStart(this);
+        }
     }
 }

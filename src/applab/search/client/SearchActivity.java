@@ -30,6 +30,7 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import applab.client.location.GpsManager;
 
 /**
  * Responsible for constructing, displaying keyword option sequences, and submitting search queries.
@@ -357,7 +358,7 @@ public class SearchActivity extends BaseSearchActivity {
         }
         
         // TODO: Need to add location at some point
-        showSearchResults(GlobalConstants.intervieweeName, null, content);
+        showSearchResults(GlobalConstants.intervieweeName, GpsManager.getInstance().getLocationAsString(), content);
     }
 
     private void trySetImage(RadioButton radioButton, String imagePath) {
