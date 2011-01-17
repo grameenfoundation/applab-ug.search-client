@@ -19,7 +19,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
@@ -37,8 +36,6 @@ import applab.client.location.GpsManager;
  * 
  */
 public class SearchActivity extends BaseSearchActivity {
-    /** for debugging purposes in adb logcat */
-    private static final String LOG_TAG = "Radio";
 
     /** database where search keywords are stored */
     private Storage searchDatabase;
