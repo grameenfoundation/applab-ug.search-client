@@ -100,7 +100,10 @@ public class KeywordParser {
         try {
             addedNodes = 0;
             deletedNodes = 0;
-            this.xmlParser.reset();
+            
+            // This line was causing problems on android 2.2 (IDEOS)
+            // this.xmlParser.reset();
+            
             xmlParser.parse(this.keywordStream, this.keywordHandler);
 
             if (nodeCount == null || keywordVersion == null) {

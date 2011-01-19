@@ -89,7 +89,10 @@ public class ImageManager {
         try {
             if (xmlStream != null) {
                 xmlParser = SAXParserFactory.newInstance().newSAXParser();
-                xmlParser.reset();
+                
+                // This line was causing problems on android 2.2 (IDEOS)
+                // xmlParser.reset();
+                
                 xmlParser.parse(xmlStream, xmlHandler);
 
                 // Delete local files not on remote list
