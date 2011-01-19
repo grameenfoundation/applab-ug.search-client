@@ -351,20 +351,24 @@ public class SynchronizationManager {
         
         sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up immediately
         SynchronizationManager.singleton.isSynchronizing = true;
-        InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
-        inboxAdapter.open();
-
-        submitPendingUsageLogs(inboxAdapter);
-        submitIncompleteSearches(inboxAdapter);
-		
-		String serverUrl = Settings.getServerUrl();
+        
+        // First submit pending farmer registrations and get latest registration form
+        String serverUrl = Settings.getServerUrl();
         FarmerRegistrationController farmerRegController = new FarmerRegistrationController();
         farmerRegController.postFarmerRegistrationData(serverUrl);
         farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
-
+        
+        // Then submit pending usage logs and incomplete searches
+        InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
+        inboxAdapter.open();
+        submitPendingUsageLogs(inboxAdapter);
+        submitIncompleteSearches(inboxAdapter);
         inboxAdapter.close();
+        
+        // Then update local images
         ImageManager.updateLocalImages();
         
+        // Finally update keywords
         updateKeywords();
 
         if(setupLooper) {
