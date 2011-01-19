@@ -49,8 +49,8 @@ import applab.client.farmerregistration.FarmerRegistrationController;
  * TODO: move the general scheduling algorithm into shared code and leverage it
  */
 public class SynchronizationManager {
-    // by default we will synchronize twice daily
-    private static final int SYNCHRONIZATION_INTERVAL = 12 * 60 * 60 * 1000;
+    // by default we will synchronize once per hour
+    private static final int SYNCHRONIZATION_INTERVAL = 60 * 60 * 1000;
     private static final int SYNCHRONIZATION_START_INTERVAL = 5 * 60 * 1000; // We run 5 minutes after the app is started
     //private static final int SYNCHRONIZATION_INTERVAL = 30 * 1000;
 
