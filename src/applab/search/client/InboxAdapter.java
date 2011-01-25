@@ -157,7 +157,7 @@ public class InboxAdapter {
     public List<SearchUsage> getLocalSearches() {
         Cursor cursor = database.query(ACCESS_LOG_DATABASE_TABLE, new String[] { KEY_ROWID,
                 KEY_REQUEST, KEY_DATE, KEY_NAME }, null, null, null, null,
-                KEY_DATE + " ASC", "1");
+                KEY_DATE + " ASC");
         ArrayList<SearchUsage> pendingSearches = new ArrayList<SearchUsage>();
         if (cursor != null) {
             while (cursor.moveToNext()) {
@@ -176,7 +176,7 @@ public class InboxAdapter {
     public List<SearchUsage> getPendingSearches() {
         Cursor cursor = database.query(INBOX_DATABASE_TABLE, new String[] {
                 KEY_ROWID, KEY_REQUEST, KEY_DATE, KEY_LOCATION, KEY_NAME },
-                KEY_STATUS + "='Incomplete'", null, null, null, KEY_DATE + " ASC", "1");
+                KEY_STATUS + "='Incomplete'", null, null, null, KEY_DATE + " ASC");
         ArrayList<SearchUsage> pendingSearches = new ArrayList<SearchUsage>();
         if (cursor != null) {
             while (cursor.moveToNext()) {
