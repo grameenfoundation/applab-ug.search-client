@@ -44,14 +44,14 @@ public class InboxAdapter {
     private static final int DATABASE_VERSION = 3;// XXX release version 2.7
     private DatabaseHelper databaseHelper;
     private SQLiteDatabase database;
-    private static final String CREATE_INBOX_DATABASE_TABLE = "create table "
+    private static final String CREATE_INBOX_DATABASE_TABLE = "create table IF NOT EXISTS"
             + INBOX_DATABASE_TABLE
             + " (_id integer primary key autoincrement, " + KEY_REQUEST
             + " VARCHAR, " + KEY_TITLE + " VARCHAR, " + KEY_LOCATION
             + " VARCHAR, " + KEY_NAME + " VARCHAR, " + KEY_DATE
             + " DEFAULT CURRENT_TIMESTAMP, " + KEY_STATUS + " VARCHAR, "
             + KEY_BODY + " text not null);";
-    private static final String CREATE_ACCESS_LOG_DATABASE_TABLE = "create table "
+    private static final String CREATE_ACCESS_LOG_DATABASE_TABLE = "create table IF NOT EXISTS"
             + ACCESS_LOG_DATABASE_TABLE
             + " (_id integer primary key autoincrement, "
             + KEY_REQUEST
@@ -74,18 +74,30 @@ public class InboxAdapter {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            db.execSQL(CREATE_INBOX_DATABASE_TABLE);
-            db.execSQL(CREATE_ACCESS_LOG_DATABASE_TABLE);
+            dropTables(db);
+            createTables(db);
         }
 
         @Override
+        /* Note: We should try to alter tables, not drop them unless there's a huge change with a specific version
+         * This is coz we may have data lying around (searchlogs, farmer registrations, etc)
+         */
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            Log.w("InboxAdapter", "Upgrading database from version "
-                    + oldVersion + " to " + newVersion
-                    + ", which will destroy all old data");
-            db.execSQL("DROP TABLE IF EXISTS " + INBOX_DATABASE_TABLE);
-            db.execSQL("DROP TABLE IF EXISTS " + ACCESS_LOG_DATABASE_TABLE);
-            onCreate(db);
+            if(newVersion == 3) {
+                // Nothing's changed
+            }
+
+            createTables(db);
+        }
+        
+        private void dropTables(SQLiteDatabase db) {
+            db.execSQL("DROP IF EXISTS " + CREATE_INBOX_DATABASE_TABLE);
+            db.execSQL("DROP IF EXISTS " + CREATE_ACCESS_LOG_DATABASE_TABLE);
+        }
+        
+        private void createTables(SQLiteDatabase db) {
+            db.execSQL(INBOX_DATABASE_TABLE);
+            db.execSQL(ACCESS_LOG_DATABASE_TABLE);
         }
     }
 

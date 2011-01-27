@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import applab.client.AboutDialog;
 import applab.client.ApplabActivity;
+import applab.client.autoupdate.ApplicationUpdateManager;
 
 /**
  * Base class for all Search activities, consolidates code around synchronization, menus, progress dialogs, etc.
@@ -136,6 +137,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         menu.add(0, GlobalConstants.HOME_ID, 0, R.string.menu_home).setIcon(R.drawable.home);
         menu.add(1, GlobalConstants.RESET_ID, 0, R.string.menu_reset).setIcon(R.drawable.search);
         menu.add(0, GlobalConstants.DELETE_ID, 0, R.string.menu_delete).setIcon(R.drawable.delete);
+        menu.add(0, GlobalConstants.CHECK_FOR_UPDATES_ID, 0, R.string.menu_check_for_updates).setIcon(R.drawable.update);
 
         return result;
     }
@@ -206,6 +208,9 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                 };
 
                 ErrorDialogManager.show(R.string.delete_alert, this, okListener, null);
+                return true;
+            case GlobalConstants.CHECK_FOR_UPDATES_ID:
+                new ApplicationUpdateManager().runOnce(ApplabActivity.getGlobalContext());
                 return true;
         }
         return false;

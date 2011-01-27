@@ -12,6 +12,7 @@ public class GlobalConstants {
     public static final int EXIT_ID = Menu.FIRST + 6;
     public static final int ABOUT_ID = Menu.FIRST + 7;
     public static final int BACK_ID = Menu.FIRST;
+    public static final int CHECK_FOR_UPDATES_ID = Menu.FIRST + 8;
 
     public static final int KEYWORD_DOWNLOAD_STARTING = 0;
     public static final int CONNECTION_ERROR = 1;
