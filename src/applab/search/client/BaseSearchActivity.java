@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 import applab.client.AboutDialog;
 import applab.client.ApplabActivity;
 import applab.client.autoupdate.ApplicationUpdateManager;
@@ -210,6 +211,9 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                 ErrorDialogManager.show(R.string.delete_alert, this, okListener, null);
                 return true;
             case GlobalConstants.CHECK_FOR_UPDATES_ID:
+                Toast updateToast = Toast.makeText(ApplabActivity.getGlobalContext(), getApplicationContext().getString(R.string.background_update_confirmation),
+                        Toast.LENGTH_LONG);
+                updateToast.show();
                 new ApplicationUpdateManager().runOnce(ApplabActivity.getGlobalContext());
                 return true;
         }

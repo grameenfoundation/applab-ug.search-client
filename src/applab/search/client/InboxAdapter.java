@@ -44,14 +44,14 @@ public class InboxAdapter {
     private static final int DATABASE_VERSION = 3;// XXX release version 2.7
     private DatabaseHelper databaseHelper;
     private SQLiteDatabase database;
-    private static final String CREATE_INBOX_DATABASE_TABLE = "create table IF NOT EXISTS"
+    private static final String CREATE_INBOX_DATABASE_TABLE = "create table IF NOT EXISTS "
             + INBOX_DATABASE_TABLE
             + " (_id integer primary key autoincrement, " + KEY_REQUEST
             + " VARCHAR, " + KEY_TITLE + " VARCHAR, " + KEY_LOCATION
             + " VARCHAR, " + KEY_NAME + " VARCHAR, " + KEY_DATE
             + " DEFAULT CURRENT_TIMESTAMP, " + KEY_STATUS + " VARCHAR, "
             + KEY_BODY + " text not null);";
-    private static final String CREATE_ACCESS_LOG_DATABASE_TABLE = "create table IF NOT EXISTS"
+    private static final String CREATE_ACCESS_LOG_DATABASE_TABLE = "create table IF NOT EXISTS "
             + ACCESS_LOG_DATABASE_TABLE
             + " (_id integer primary key autoincrement, "
             + KEY_REQUEST
@@ -91,13 +91,13 @@ public class InboxAdapter {
         }
         
         private void dropTables(SQLiteDatabase db) {
-            db.execSQL("DROP IF EXISTS " + CREATE_INBOX_DATABASE_TABLE);
-            db.execSQL("DROP IF EXISTS " + CREATE_ACCESS_LOG_DATABASE_TABLE);
+            db.execSQL("DROP TABLE IF EXISTS " + INBOX_DATABASE_TABLE);
+            db.execSQL("DROP TABLE IF EXISTS " + ACCESS_LOG_DATABASE_TABLE);
         }
         
         private void createTables(SQLiteDatabase db) {
-            db.execSQL(INBOX_DATABASE_TABLE);
-            db.execSQL(ACCESS_LOG_DATABASE_TABLE);
+            db.execSQL(CREATE_INBOX_DATABASE_TABLE);
+            db.execSQL(CREATE_ACCESS_LOG_DATABASE_TABLE);
         }
     }
 
