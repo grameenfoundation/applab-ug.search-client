@@ -211,7 +211,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                 ErrorDialogManager.show(R.string.delete_alert, this, okListener, null);
                 return true;
             case GlobalConstants.CHECK_FOR_UPDATES_ID:
-                Toast updateToast = Toast.makeText(ApplabActivity.getGlobalContext(), getApplicationContext().getString(R.string.background_update_confirmation),
+                Toast updateToast = Toast.makeText(this.getApplicationContext(), getApplicationContext().getString(R.string.background_update_confirmation),
                         Toast.LENGTH_LONG);
                 updateToast.show();
                 new ApplicationUpdateManager().runOnce(ApplabActivity.getGlobalContext());
