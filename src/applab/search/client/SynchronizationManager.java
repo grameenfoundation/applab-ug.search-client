@@ -290,7 +290,9 @@ public class SynchronizationManager {
                 }
                 break;
             case GlobalConstants.CONNECTION_ERROR:
-                showErrorDialog(R.string.connection_error_message);
+                if(!this.launchedFromTimer) {
+                    showErrorDialog(R.string.connection_error_message);
+                }
                 break;
             case GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS:
                 // TODO: do we want to update the progress dialog here?
@@ -299,12 +301,15 @@ public class SynchronizationManager {
                 // the Global.KEYWORD_PARSE_GOT_NODE_TOTAL signal
                 break;
             case GlobalConstants.KEYWORD_DOWNLOAD_FAILURE:
-                // TODO: don't show an error dialog if this was a background synchronization
-                showErrorDialog(R.string.incomplete_keyword_response_error);
+                if(!this.launchedFromTimer) {
+                    showErrorDialog(R.string.incomplete_keyword_response_error);
+                }
                 break;
             case GlobalConstants.KEYWORD_PARSE_GOT_NODE_TOTAL:
                 int nodeCount = message.getData().getInt("nodeCount");
-                ProgressDialogManager.displayProgressDialog(GlobalConstants.PARSE_DIALOG, this.currentContext, nodeCount);
+                if(!this.launchedFromTimer) {
+                    ProgressDialogManager.displayProgressDialog(GlobalConstants.PARSE_DIALOG, this.currentContext, nodeCount);
+                }
                 break;
             case GlobalConstants.KEYWORD_PARSE_SUCCESS:
                 ProgressDialogManager.tryDestroyProgressDialog();
@@ -318,7 +323,9 @@ public class SynchronizationManager {
                 SynchronizationManager.completeSynchronization();
                 break;
             case GlobalConstants.KEYWORD_PARSE_ERROR:
-                showErrorDialog(R.string.keyword_parse_error);
+                if(!this.launchedFromTimer) {
+                    showErrorDialog(R.string.keyword_parse_error);
+                }
                 break;
             case GlobalConstants.DISMISS_WAIT_DIALOG:
                 ProgressDialogManager.tryDestroyProgressDialog();

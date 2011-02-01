@@ -214,7 +214,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                 Toast updateToast = Toast.makeText(this.getApplicationContext(), getApplicationContext().getString(R.string.background_update_confirmation),
                         Toast.LENGTH_LONG);
                 updateToast.show();
-                new ApplicationUpdateManager().runOnce(ApplabActivity.getGlobalContext());
+                new ApplicationUpdateManager().runOnce(this.getApplicationContext());
                 return true;
         }
         return false;
