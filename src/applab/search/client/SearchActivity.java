@@ -37,6 +37,8 @@ import applab.client.location.GpsManager;
  */
 public class SearchActivity extends BaseSearchActivity {
 
+    private static final String SEARCH_PATH_DELIMETER = " >";
+
     /** database where search keywords are stored */
     private Storage searchDatabase;
 
@@ -64,7 +66,7 @@ public class SearchActivity extends BaseSearchActivity {
 
     /** holds the selected radio button ID */
     private int radioId;
-    
+
     /** search sequence number */
     private int sequence;
 
@@ -76,7 +78,7 @@ public class SearchActivity extends BaseSearchActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.searchDatabase = new Storage(this);
-        
+
         setContentView(R.layout.main);
         this.keywordChoices = (RadioGroup)findViewById(R.id.radio_group);
         this.keywordChoices.bringToFront();
@@ -189,10 +191,10 @@ public class SearchActivity extends BaseSearchActivity {
             --sequence;
             lastSelection = selectedKeywords.get(selectedKeywords.size() - 1);
             selectedKeywords.remove(selectedKeywords.size() - 1);
-            
+
         }
     }
-    
+
     private void goBack() {
         keywordChoices.clearCheck();
         keywordChoices.removeAllViews();
@@ -203,7 +205,7 @@ public class SearchActivity extends BaseSearchActivity {
         }
         searchPath.setText(query);
     }
-    
+
     /**
      * returns the category + full set of keyword segments, optionally each delimited by '> '
      */
@@ -226,28 +228,44 @@ public class SearchActivity extends BaseSearchActivity {
     private String getSearchPath() {
         return getSearchPath(" >");
     }
-    
+
+    private String getCategoryFromSearchPath(String searchPath, String delimeter) {
+
+        String temp = "";
+        String[] searchPathArray = searchPath.split(delimeter);
+        for (int i = 0; i < searchPathArray.length; i++) {
+            temp = searchPathArray[i].trim();
+            if (temp != null && !temp.equals("")) {
+                 return temp;
+            }
+        }
+        return temp;
+    }
+
     private void showSearchResults(String farmerId, String location, String content) {
         Intent searchResultActivity = new Intent(getApplicationContext(), DisplaySearchResultsActivity.class);
-        searchResultActivity.putExtra("searchTitle", getSearchPath());
+        String searchPath = getSearchPath();
+        searchResultActivity.putExtra("searchTitle", searchPath);
         searchResultActivity.putExtra("name", farmerId);
         searchResultActivity.putExtra("location", location);
         searchResultActivity.putExtra("request", getSearchPath(" "));
+        searchResultActivity.putExtra("category", getCategoryFromSearchPath(searchPath, SEARCH_PATH_DELIMETER));
 
-        // was this a successful search?
+        // Was this a successful search?
         if (content != null && content.length() > 0) {
             searchResultActivity.putExtra("content", content);
         }
-        
+
         switchToActivity(searchResultActivity);
     }
-    
+
     private String getImagePath() {
         String path = "";
         for (String keywordSegment : this.selectedKeywords) {
             path = path.concat(keywordSegment + " ");
         }
-        // convert to lower case and replace spaces with under scores
+
+        // Convert to lower case and replace spaces with under scores
         return path.toLowerCase().replace(" ", "_");
     }
 
@@ -282,9 +300,10 @@ public class SearchActivity extends BaseSearchActivity {
                 searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, "col" + Integer.toString(sequence),
                         condition);
 
-                // Save the current Sequence and current Condition in case this is the last menu, in which case we'll have to use the previous "state" to get content
+                // Save the current Sequence and current Condition in case this is the last menu, in which case we'll
+                // have to use the previous "state" to get content
                 currentCondition = condition;
-                
+
                 Boolean isFirst = true;
                 while (searchCursor.moveToNext()) {
                     int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
@@ -304,8 +323,8 @@ public class SearchActivity extends BaseSearchActivity {
                 }
             }
         }
-        finally{
-            if(searchCursor != null) {
+        finally {
+            if (searchCursor != null) {
                 searchCursor.close();
             }
             this.searchDatabase.close();
@@ -340,21 +359,20 @@ public class SearchActivity extends BaseSearchActivity {
 
     private void launchResultsDisplay(String condition) {
         // Get the content of the prev. sequence.
-        HashMap<String, String> results = searchDatabase.selectContent(GlobalConstants.DATABASE_TABLE, condition); 
-        
+        HashMap<String, String> results = searchDatabase.selectContent(GlobalConstants.DATABASE_TABLE, condition);
+
         String content = results.get("content");
         String attribution = results.get("attribution");
         String updated = results.get("updated");
-        
-        if(attribution != null && attribution.length() > 0) {
+
+        if (attribution != null && attribution.length() > 0) {
             content += "\n\nAttribution: " + attribution;
         }
-       
-        if(updated != null && updated.length() > 0) {
+
+        if (updated != null && updated.length() > 0) {
             content += "\n\nUpdated: " + updated;
         }
-        
-        // TODO: Need to add location at some point
+
         showSearchResults(GlobalConstants.intervieweeName, GpsManager.getInstance().getLocationAsString(), content);
     }
 

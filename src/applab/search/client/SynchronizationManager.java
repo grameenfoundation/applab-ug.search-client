@@ -51,8 +51,9 @@ import applab.client.farmerregistration.FarmerRegistrationController;
 public class SynchronizationManager {
     // by default we will synchronize once per hour
     private static final int SYNCHRONIZATION_INTERVAL = 60 * 60 * 1000;
-    private static final int SYNCHRONIZATION_START_INTERVAL = 5 * 60 * 1000; // We run 5 minutes after the app is started
-    //private static final int SYNCHRONIZATION_INTERVAL = 30 * 1000;
+    private static final int SYNCHRONIZATION_START_INTERVAL = 5 * 60 * 1000; // We run 5 minutes after the app is
+                                                                             // started
+    // private static final int SYNCHRONIZATION_INTERVAL = 30 * 1000;
 
     private static SynchronizationManager singleton = new SynchronizationManager();
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
@@ -92,7 +93,7 @@ public class SynchronizationManager {
     public static void synchronizeFromTimer(Context context, Handler completionCallback) {
         synchronize(context, completionCallback, false, true);
     }
-    
+
     /**
      * Kick off an immediate synchronization, usually from the refresh menu
      */
@@ -137,7 +138,7 @@ public class SynchronizationManager {
         }
 
         SynchronizationManager.singleton.launchedFromTimer = launchedFromTimer;
-        
+
         if (attachToUi) {
             SynchronizationManager.singleton.attachActivity(context, completionCallback);
         }
@@ -186,10 +187,10 @@ public class SynchronizationManager {
      */
     private void startSynchronization(Context context, Handler completionCallback) {
         this.currentContext = context;
-        if(!this.launchedFromTimer) {
+        if (!this.launchedFromTimer) {
             this.completionCallback = completionCallback;
             this.progressMessageHandler = createProgressMessageHandler();
-            
+
             this.internalMessageHandler = new Handler() {
                 @Override
                 public void handleMessage(Message message) {
@@ -202,9 +203,9 @@ public class SynchronizationManager {
             this.progressMessageHandler = completionCallback;
             this.internalMessageHandler = completionCallback;
         }
-        
+
         BackgroundSynchronizationTask task = new BackgroundSynchronizationTask(this, true);
-        if(this.launchedFromTimer) {
+        if (this.launchedFromTimer) {
             task.run();
         }
         else {
@@ -285,12 +286,12 @@ public class SynchronizationManager {
                 // TODO: Can we do this on the UI thread before we offload the process into the background?
                 // it would cleanup the code, allow us to easily thread in Global.SETUP_DIALOG when Storage is empty,
                 // and avoid a few extra thread switches
-                if(!this.launchedFromTimer) {
+                if (!this.launchedFromTimer) {
                     ProgressDialogManager.displayProgressDialog(GlobalConstants.UPDATE_DIALOG, this.currentContext);
                 }
                 break;
             case GlobalConstants.CONNECTION_ERROR:
-                if(!this.launchedFromTimer) {
+                if (!this.launchedFromTimer) {
                     showErrorDialog(R.string.connection_error_message);
                 }
                 break;
@@ -301,13 +302,13 @@ public class SynchronizationManager {
                 // the Global.KEYWORD_PARSE_GOT_NODE_TOTAL signal
                 break;
             case GlobalConstants.KEYWORD_DOWNLOAD_FAILURE:
-                if(!this.launchedFromTimer) {
+                if (!this.launchedFromTimer) {
                     showErrorDialog(R.string.incomplete_keyword_response_error);
                 }
                 break;
             case GlobalConstants.KEYWORD_PARSE_GOT_NODE_TOTAL:
                 int nodeCount = message.getData().getInt("nodeCount");
-                if(!this.launchedFromTimer) {
+                if (!this.launchedFromTimer) {
                     ProgressDialogManager.displayProgressDialog(GlobalConstants.PARSE_DIALOG, this.currentContext, nodeCount);
                 }
                 break;
@@ -323,7 +324,7 @@ public class SynchronizationManager {
                 SynchronizationManager.completeSynchronization();
                 break;
             case GlobalConstants.KEYWORD_PARSE_ERROR:
-                if(!this.launchedFromTimer) {
+                if (!this.launchedFromTimer) {
                     showErrorDialog(R.string.keyword_parse_error);
                 }
                 break;
@@ -336,7 +337,7 @@ public class SynchronizationManager {
             this.completionCallback.sendEmptyMessage(message.what);
         }
     }
-    
+
     /**
      * Called by our background or timer thread to perform the actual synchronization tasks from a separate thread.
      * 
@@ -344,41 +345,46 @@ public class SynchronizationManager {
      */
     private void performBackgroundSynchronization() throws XmlPullParserException {
         Boolean setupLooper = true;
-        if(this.launchedFromTimer) {
+        if (this.launchedFromTimer) {
             setupLooper = false;
         }
-        
-        if(setupLooper) {
+
+        if (setupLooper) {
             // we may want to associate UI with this task, so create
             // a looper to setup the message pump (by default, background threads
             // don't have a message pump)
-            
+
             Looper.prepare();
         }
-        
-        sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up immediately
+
+        sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up
+                                                                        // immediately
         SynchronizationManager.singleton.isSynchronizing = true;
-        
+
         // First submit pending farmer registrations and get latest registration form
         String serverUrl = Settings.getServerUrl();
         FarmerRegistrationController farmerRegController = new FarmerRegistrationController();
         farmerRegController.postFarmerRegistrationData(serverUrl);
         farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
-        
+
         // Then submit pending usage logs and incomplete searches
         InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
         inboxAdapter.open();
         submitPendingUsageLogs(inboxAdapter);
-        submitIncompleteSearches(inboxAdapter);
+
+        /*
+         * Comment out the code below as we will look to remove in 3.2 TODO submitIncompleteSearches(inboxAdapter);
+         */
+
         inboxAdapter.close();
-        
+
         // Then update local images
         ImageManager.updateLocalImages();
-        
+
         // Finally update keywords
         updateKeywords();
 
-        if(setupLooper) {
+        if (setupLooper) {
             // TODO: Looper.loop is problematic here. This should be restructured
             Looper.loop();
             Looper looper = Looper.getMainLooper();
@@ -398,11 +404,11 @@ public class SynchronizationManager {
 
             // Write the keywords to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir() + "/keywords.tmp";
-            Boolean downloadSuccessful = XmlHelpers.writeXmlToTempFile(keywordStream, filePath, "</GetKeywordsResponse>"); 
+            Boolean downloadSuccessful = XmlHelpers.writeXmlToTempFile(keywordStream, filePath, "</GetKeywordsResponse>");
             keywordStream.close();
             File file = new File(filePath);
             FileInputStream inputStream = new FileInputStream(file);
-            
+
             if (downloadSuccessful && inputStream != null) {
                 sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
                 parseKeywords(inputStream);
@@ -491,7 +497,7 @@ public class SynchronizationManager {
             return true;
         }
     }
-    
+
     private class TimedSynchronizationTask extends TimerTask {
         private static final String LOG_TAG = "TimedSynchronizationTask";
         /**
@@ -503,11 +509,11 @@ public class SynchronizationManager {
                 SynchronizationManager.singleton.handleBackgroundThreadMessage(message);
             }
         };
-        
+
         @Override
         public void run() {
             Log.d(LOG_TAG, "Timer: launching background sync");
-            
+
             try {
                 SynchronizationManager.synchronizeFromTimer(ApplabActivity.getGlobalContext(), keywordSynchronizationCallback);
             }
@@ -530,13 +536,13 @@ public class SynchronizationManager {
 
         // true if we already have the synchronization lock
         private boolean hasLock;
-        
+
         public BackgroundSynchronizationTask(SynchronizationManager synchronizationManager,
                                              boolean hasLock) {
             this.synchronizationManager = synchronizationManager;
             this.hasLock = hasLock;
         }
-        
+
         @Override
         public void run() {
             boolean doSynchronization;

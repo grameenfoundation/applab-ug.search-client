@@ -38,10 +38,11 @@ public class InboxAdapter {
     public static final String KEY_ROWID = "_id";
     public static final String KEY_STATUS = "status";
     public static final String KEY_REQUEST = "request";
+    public static final String KEY_CATEGORY = "category";
     private static final String DATABASE_NAME = "resultstorage";
     public static final String INBOX_DATABASE_TABLE = "inbox";
     public static final String ACCESS_LOG_DATABASE_TABLE = "access_logs";
-    private static final int DATABASE_VERSION = 3;// XXX release version 2.7
+    private static final int DATABASE_VERSION = 4;// XXX release version 2.7
     private DatabaseHelper databaseHelper;
     private SQLiteDatabase database;
     private static final String CREATE_INBOX_DATABASE_TABLE = "create table IF NOT EXISTS "
@@ -59,7 +60,11 @@ public class InboxAdapter {
             + KEY_NAME
             + " VARCHAR, "
             + KEY_DATE
-            + " DEFAULT CURRENT_TIMESTAMP);";
+            + " DEFAULT CURRENT_TIMESTAMP,"
+            + KEY_LOCATION
+            + " VARCHAR, "
+            + KEY_CATEGORY
+            + " VARCHAR);";
 
     private final Context mContext;
 
@@ -83,8 +88,9 @@ public class InboxAdapter {
          * This is coz we may have data lying around (searchlogs, farmer registrations, etc)
          */
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            if(newVersion == 3) {
-                // Nothing's changed
+            if(newVersion == 4) {
+                db.execSQL("ALTER TABLE " + ACCESS_LOG_DATABASE_TABLE + " ADD " + KEY_LOCATION + " VARCHAR");
+                db.execSQL("ALTER TABLE " + ACCESS_LOG_DATABASE_TABLE + " ADD " + KEY_CATEGORY + " VARCHAR");
             }
 
             createTables(db);
@@ -168,7 +174,7 @@ public class InboxAdapter {
      */
     public List<SearchUsage> getLocalSearches() {
         Cursor cursor = database.query(ACCESS_LOG_DATABASE_TABLE, new String[] { KEY_ROWID,
-                KEY_REQUEST, KEY_DATE, KEY_NAME }, null, null, null, null,
+                KEY_REQUEST, KEY_DATE, KEY_NAME, KEY_LOCATION, KEY_CATEGORY }, null, null, null, null,
                 KEY_DATE + " ASC");
         ArrayList<SearchUsage> pendingSearches = new ArrayList<SearchUsage>();
         if (cursor != null) {
@@ -184,6 +190,7 @@ public class InboxAdapter {
      * retrieves all incomplete searches
      * 
      * @return a cursor pointing to the first element in the result set
+     * @deprecated will be removed in 3.2 once we have assesed usefulness.
      */
     public List<SearchUsage> getPendingSearches() {
         Cursor cursor = database.query(INBOX_DATABASE_TABLE, new String[] {
@@ -210,16 +217,15 @@ public class InboxAdapter {
             int keywordColumn = cursor.getColumnIndexOrThrow(KEY_REQUEST);
             int submissionTimeColumn = cursor.getColumnIndexOrThrow(KEY_DATE);
             int farmerIdColumn = cursor.getColumnIndexOrThrow(KEY_NAME);
+            int categoryColumn = cursor.getColumnIndexOrThrow(KEY_CATEGORY);
 
             String location = GlobalConstants.location;
-            if (!isLog) {
-                // temporary workaround - we should be storing location in the local searches as well
-                int locationColumn = cursor.getColumnIndexOrThrow(KEY_LOCATION);
-                location = cursor.getString(locationColumn);
-            }
+            int locationColumn = cursor.getColumnIndexOrThrow(KEY_LOCATION);
+            location = cursor.getString(locationColumn);
 
             this.searchRequest = new SearchRequest(cursor.getString(keywordColumn),
-                    cursor.getString(farmerIdColumn), cursor.getString(submissionTimeColumn), location, isLog);
+                    cursor.getString(farmerIdColumn), cursor.getString(submissionTimeColumn), location, isLog,
+                         cursor.getString(categoryColumn));
 
             int idColumn = cursor.getColumnIndexOrThrow(KEY_ROWID);
             this.searchTableId = cursor.getLong(idColumn);

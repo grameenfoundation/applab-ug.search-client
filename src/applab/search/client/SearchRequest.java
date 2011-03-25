@@ -28,6 +28,7 @@ public class SearchRequest {
     private String location;
     private boolean isLogRequest;
     private String result;
+    private String category;
 
     // TODO: add category as an input to SearchRequest
     public SearchRequest(String keyword, String farmerId, String submissionTime) {
@@ -40,13 +41,15 @@ public class SearchRequest {
 
     public SearchRequest(String keyword, String farmerId, String submissionTime, String location,
                          boolean isLogRequest) {
+
+        this.category = "";
         this.keyword = keyword;
-        
+
         // TODO: Why do we get a null farmer Id sometimes?
-        if(farmerId == null) {
+        if (farmerId == null) {
             farmerId = "";
         }
-        
+
         this.farmerId = farmerId;
         this.submissionTime = submissionTime;
         if (location == null || location.length() == 0) {
@@ -57,8 +60,19 @@ public class SearchRequest {
         this.isLogRequest = isLogRequest;
     }
 
+    public SearchRequest(String keyword, String farmerId, String submissionTime, String location,
+                         boolean isLogRequest, String category) {
+
+        this(keyword, farmerId, submissionTime, location, isLogRequest);
+        this.category = category;
+    }
+
     public String getKeyword() {
         return this.keyword;
+    }
+
+    public String getCategory() {
+        return this.category;
     }
 
     public String getFarmerId() {
@@ -87,9 +101,15 @@ public class SearchRequest {
             requestParameters.append("&intervieweeId=" + URLEncoder.encode(this.farmerId, "UTF-8"));
             requestParameters.append("&keyword=" + URLEncoder.encode(this.keyword, "UTF-8"));
             requestParameters.append("&location=" + URLEncoder.encode(this.location, "UTF-8"));
+
+            if (this.category != null) {
+                requestParameters.append("&category=" + URLEncoder.encode(this.category, "UTF-8"));
+            }
         }
+
         catch (UnsupportedEncodingException e) {
-            // we should never get here, but if so, report failure
+
+            // We should never get here, but if so, report failure
             return false;
         }
         if (this.isLogRequest) {
@@ -103,15 +123,17 @@ public class SearchRequest {
      * Method that can be called from the UI thread to submit this request in the background
      */
     public void submitInBackground(Context context, Handler submissionHandler) {
-        // store the caller's Handler in a member field since we can't pass state to all the UI paths
+
+        // Store the caller's Handler in a member field since we can't pass state to all the UI paths
         this.submissionHandler = submissionHandler;
 
         // TODO: in cases where we have the result locally we won't need to do these steps
 
-        // first bring up a progress dialog since we're going to hit the network
+        // First bring up a progress dialog since we're going to hit the network
         ProgressDialogManager.silentMode = false;
         ProgressDialogManager.displayProgressDialog(GlobalConstants.CONNECT_DIALOG, context);
-        // pass the results to our UI thread, embedded in the request
+
+        // Pass the results to our UI thread, embedded in the request
         final Handler internalHandler = new Handler() {
             @Override
             public void handleMessage(Message message) {

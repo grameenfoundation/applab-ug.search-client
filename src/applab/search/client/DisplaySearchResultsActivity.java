@@ -45,6 +45,9 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
     /** keywords server request */
     private String request = "";
 
+    /** stored category for this search */
+    private String category = "";
+
     /** stored location for this search */
     private String location = "";
 
@@ -89,6 +92,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
             this.request = extras.getString("request");
             this.location = extras.getString("location");
             this.fromInbox = extras.getBoolean("fromInbox", false);
+            this.category = extras.getString("category");
 
             if (!configurationChanged) {
                 DisplaySearchResultsActivity.lastRowId = extras.getLong("rowId");
@@ -210,6 +214,8 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
         log.put(InboxAdapter.KEY_REQUEST, request.replace(">", ""));
         log.put(InboxAdapter.KEY_DATE, dateFormat.format(new Date()));
         log.put(InboxAdapter.KEY_NAME, this.farmerId);
+        log.put(InboxAdapter.KEY_LOCATION, this.location);
+        log.put(InboxAdapter.KEY_CATEGORY, this.category);
         return inboxDatabase.insertLog(InboxAdapter.ACCESS_LOG_DATABASE_TABLE, log);
     }
 
