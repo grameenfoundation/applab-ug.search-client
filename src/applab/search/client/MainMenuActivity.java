@@ -43,19 +43,18 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
     private static final int REGISTRATION_CODE = 2;
     private static final int FORGOT_ID_CODE = 3;
     private static final int AGINFO_CODE = 1;
+    private static final int PROGRESS_DIALOG = 1;
+
     private Button inboxButton;
     private Button nextButton;
     private Button forgotButton;
     private Button registerButton;
     private Button aginfoButton;
     private EditText farmerNameEditBox;
-
     private FarmerRegistrationController farmerRegController;
-
     private int requestCode;
     private ProgressDialog progressDialog;
     private String errorMessage;
-    private static final int PROGRESS_DIALOG = 1;
 
     /**
      * Used to participate in the synchronization lifecycle events
@@ -79,7 +78,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        ApplabActivity.setAppVersion(getString(R.string.app_version));
+        ApplabActivity.setAppVersion(getString(R.string.app_name), getString(R.string.app_version));
 
         // Request to display an icon in the title bar. Must be done in onCreate()
         requestWindowFeature(Window.FEATURE_RIGHT_ICON);
@@ -253,8 +252,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                     Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
 
                     String serverUrl = Settings.getServerUrl();
-                    serverUrl = serverUrl.substring(0, serverUrl.length()
-                            - 1);
+                    serverUrl = serverUrl.substring(0, serverUrl.length() - 1);
 
                     webActivity.putExtra(BrowserActivity.EXTRA_URL_INTENT,
                             serverUrl + ":8888/services/" + urlPattern + HttpHelpers.getCommonParameters() + "&farmerId="
@@ -331,7 +329,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
 
     public void run() {
 
-        if (requestCode == REGISTRATION_CODE) {
+        if (this.requestCode == REGISTRATION_CODE) {
 
             errorMessage = null;
 
@@ -340,7 +338,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
             if (html != null) {
                 Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
                 webActivity.putExtra(BrowserActivity.EXTRA_HTML_INTENT, html);
-                startActivityForResult(webActivity, requestCode);
+                startActivityForResult(webActivity, this.requestCode);
             }
             else {
                 errorMessage = "Failed to get the farmer registration form. Please try again.";
