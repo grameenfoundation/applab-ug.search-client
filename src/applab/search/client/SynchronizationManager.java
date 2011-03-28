@@ -373,7 +373,8 @@ public class SynchronizationManager {
         submitPendingUsageLogs(inboxAdapter);
 
         /*
-         * Comment out the code below as we will look to remove in 3.2 TODO submitIncompleteSearches(inboxAdapter);
+         * Comment out the code below as we will look to remove in 3.2 TODO
+         * submitIncompleteSearches(inboxAdapter);
          */
 
         inboxAdapter.close();
