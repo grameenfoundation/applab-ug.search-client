@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import applab.client.HttpHelpers;
 
 /**
@@ -17,6 +18,7 @@ import applab.client.HttpHelpers;
  * 
  */
 public class SearchRequest {
+    private static final String TAG = "SearchRequest";
     // constants used for communicating with our background thread that performs search requests for submitInBackground
     public static final int SEARCH_SUBMISSION_SUCCESS = 1;
     public static final int SEARCH_SUBMISSION_FAILURE = 2;
@@ -105,17 +107,21 @@ public class SearchRequest {
             if (this.category != null) {
                 requestParameters.append("&category=" + URLEncoder.encode(this.category, "UTF-8"));
             }
+            
+            if (this.isLogRequest) {
+                requestParameters.append("&log=true");
+            }
+            this.result = HttpHelpers.fetchContent(searchUrl + requestParameters.toString());
         }
-
         catch (UnsupportedEncodingException e) {
-
             // We should never get here, but if so, report failure
             return false;
+        } 
+        catch(Exception exception)
+        {
+            exception.printStackTrace();
+            return false;
         }
-        if (this.isLogRequest) {
-            requestParameters.append("&log=true");
-        }
-        this.result = HttpHelpers.fetchContent(searchUrl + requestParameters.toString());
         return this.result != null;
     }
 

@@ -26,9 +26,10 @@ public class ImageXmlParseHandler extends DefaultHandler {
         if (NAMESPACE.equals(namespaceUri)) {
             if (ImageManager.IMAGE_ELEMENT_NAME.equals(localName)) {
                 String sha1hash = attributes.getValue("sha1hash");
+                String imageListKey = sha1hash.toLowerCase();
                 String source = attributes.getValue("src");
                 String fileName = attributes.getValue("name");
-                if (!this.localImageList.containsKey(sha1hash)) {
+                if (!this.localImageList.containsKey(imageListKey)) {
                     // Retrieve remote file
                     try {
                         Log.i("ImageManager", "Fetching: " + source);
@@ -41,7 +42,7 @@ public class ImageXmlParseHandler extends DefaultHandler {
                 }
                 else {
                     // Remove processed item
-                    this.localImageList.remove(sha1hash);
+                    this.localImageList.remove(imageListKey);
                 }
             }
         }

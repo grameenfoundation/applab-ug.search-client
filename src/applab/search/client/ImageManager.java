@@ -96,10 +96,10 @@ public class ImageManager {
                 xmlParser.parse(xmlStream, xmlHandler);
 
                 // Delete local files not on remote list
-                for (Entry<String, File> local : localImageList.entrySet()) {
-                    File file = local.getValue();
-                    String sha1Hash = local.getKey();
-                    // Confirm this is the file we intend to delete
+                for (Entry<String, File> localImage : localImageList.entrySet()) {
+                    File file = localImage.getValue();
+                    String sha1Hash = localImage.getKey();
+                    // Confirm this is the file we intend to delete (a new file with the same name may have been downloaded)
                     if (ImageFilesUtility.getSHA1Hash(file).equalsIgnoreCase(sha1Hash)) {
                         ImageFilesUtility.deleteFile(file);
                     }
@@ -125,7 +125,7 @@ public class ImageManager {
             for (String path : files) {
                 File file = new File(path);
                 String sha1Hash = ImageFilesUtility.getSHA1Hash(file);
-                hashPathPairs.put(sha1Hash, file);
+                hashPathPairs.put(sha1Hash.toLowerCase(), file);
             }
         }
         

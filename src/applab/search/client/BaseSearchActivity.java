@@ -4,6 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -19,7 +20,8 @@ import applab.client.autoupdate.ApplicationUpdateManager;
  * 
  */
 public abstract class BaseSearchActivity extends ApplabActivity { 
-
+    private static boolean serviceStarted;
+    
     protected BaseSearchActivity() {
         super();
     }
@@ -46,6 +48,12 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         super.onPause();
     }
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        tryStartService(ApplabActivity.getGlobalContext());
+    }
+    
     /**
      * Take care of some setup when resuming any activity. We use onResume() rather than onCreate() because from
      * Activity Life Cycle, onResume seems to be called just before the app loading completes, while onCreate may be
@@ -270,5 +278,14 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                 .setNegativeButton("No", noListener);
         AlertDialog alert = builder.create();
         alert.show();
+    }
+
+    public static void tryStartService(Context context) {
+        if(!serviceStarted) {
+            Intent intent = new Intent();
+            intent.setAction("applab.search.client.service.ApplabSearchService");
+            context.startService(intent);
+            serviceStarted = true;
+        }
     }
 }

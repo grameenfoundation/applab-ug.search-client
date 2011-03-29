@@ -2,9 +2,9 @@
 
 <resources>
 <string name="app_name">CKW Search</string>
-<string name="app_version">2.11.5</string>
-<integer name="app_version_code">2011020401</integer> <!-- This is pulled into the manifest. It must be an integer and must increment for each new version (best way is to use the release date in YYYYMMDDNN format (NN caters for more than one uprgade in the same day)) -->
-<string name="release_date">February 4, 2011</string>
+<string name="app_version">2.11.8</string>
+<integer name="app_version_code">2011020702</integer> <!-- This is pulled into the manifest. It must be an integer and must increment for each new version (best way is to use the release date in YYYYMMDDNN format (NN caters for more than one uprgade in the same day)) -->
+<string name="release_date">February 7, 2011</string>
 <string name="info">Grameen Foundation, Applab Uganda\nckw@applab.org</string>
 <string name="inbox_title">Recent Searches</string>
 <string name="server_url">Server URL</string>
@@ -72,5 +72,4 @@
 <string name="menu_check_for_updates">Update All Applications</string>
 <string name="background_update_confirmation">Application update has been launched. If there are new applications, you will be prompted to install them.</string>
 <string name="refresh_confirm">This action will discard your current search.\nContinue?</string>
-
 </resources>

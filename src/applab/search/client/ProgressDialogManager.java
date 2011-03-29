@@ -43,50 +43,55 @@ public class ProgressDialogManager {
     }
 
     public static void displayProgressDialog(int type, Context context, int max) {
-        if (!silentMode) {
-            Log.i(DEBUG_TAG, "Trying to destroy previous dialogs ...");
-            ProgressDialogManager.tryDestroyProgressDialog();
-            ProgressDialog dialog = ProgressDialogManager.getLastOrNewDialog(context);
-            ProgressDialogManager.currentType = type;
-            ProgressDialogManager.currentMaxVal = max;
+        try {
+            if (!silentMode) {
+                Log.i(DEBUG_TAG, "Trying to destroy previous dialogs ...");
+                ProgressDialogManager.tryDestroyProgressDialog();
+                ProgressDialog dialog = ProgressDialogManager.getLastOrNewDialog(context);
+                ProgressDialogManager.currentType = type;
+                ProgressDialogManager.currentMaxVal = max;
 
-            dialog.setMax(currentMaxVal);
+                dialog.setMax(currentMaxVal);
 
-            switch (type) {
-                case GlobalConstants.UPDATE_DIALOG:
-                    dialog.setTitle(context.getString(R.string.update_dialog_title));
-                    // TODO: MainMenuActivity used to use R.string.progress_msg here
-                    dialog.setMessage(context.getString(R.string.update_dialog_message));
-                    dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                    dialog.setIndeterminate(true);
-                    dialog.setCancelable(false);
-                    setMax(100);
-                    break;
-                case GlobalConstants.CONNECT_DIALOG:
-                    dialog.setMessage(context.getString(R.string.progress_msg));
-                    dialog.setIndeterminate(true);
-                    dialog.setCancelable(false);
-                    break;
-                case GlobalConstants.PARSE_DIALOG:
-                    dialog.setTitle(context.getString(R.string.parse_dialog_title));
-                    dialog.setMessage(context.getString(R.string.parse_msg));
-                    dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                    dialog.setIndeterminate(false);
-                    dialog.setCancelable(false);
-                    break;
-                case GlobalConstants.SETUP_DIALOG:
-                    dialog.setTitle(context.getString(R.string.progress_header));
-                    dialog.setMessage(context.getString(R.string.progress_initial));
-                    dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                    dialog.setIndeterminate(true);
-                    dialog.setCancelable(false);
-                    break;
+                switch (type) {
+                    case GlobalConstants.UPDATE_DIALOG:
+                        dialog.setTitle(context.getString(R.string.update_dialog_title));
+                        // TODO: MainMenuActivity used to use R.string.progress_msg here
+                        dialog.setMessage(context.getString(R.string.update_dialog_message));
+                        dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+                        dialog.setIndeterminate(true);
+                        dialog.setCancelable(false);
+                        setMax(100);
+                        break;
+                    case GlobalConstants.CONNECT_DIALOG:
+                        dialog.setMessage(context.getString(R.string.progress_msg));
+                        dialog.setIndeterminate(true);
+                        dialog.setCancelable(false);
+                        break;
+                    case GlobalConstants.PARSE_DIALOG:
+                        dialog.setTitle(context.getString(R.string.parse_dialog_title));
+                        dialog.setMessage(context.getString(R.string.parse_msg));
+                        dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+                        dialog.setIndeterminate(false);
+                        dialog.setCancelable(false);
+                        break;
+                    case GlobalConstants.SETUP_DIALOG:
+                        dialog.setTitle(context.getString(R.string.progress_header));
+                        dialog.setMessage(context.getString(R.string.progress_initial));
+                        dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+                        dialog.setIndeterminate(true);
+                        dialog.setCancelable(false);
+                        break;
+                }
+                Log.i(DEBUG_TAG, "Showing new dialog ...");
+                dialog.show();
             }
-            Log.i(DEBUG_TAG, "Showing new dialog ...");
-            dialog.show();
+            else {
+                Log.i(DEBUG_TAG, "Not showing dialog because we're in silent mode.");
+            }
         }
-        else {
-            Log.i(DEBUG_TAG, "Not showing dialog because we're in silent mode.");
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

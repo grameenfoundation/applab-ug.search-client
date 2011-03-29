@@ -4,8 +4,7 @@
       android:versionCode="@integer/app_version_code"
       android:versionName="@string/app_version" package="applab.search.client">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:theme="@android:style/Theme.Light" android:debuggable="true">
-        <activity android:name=".MainMenuActivity" 
-                  android:label="@string/app_name" android:configChanges="orientation|keyboardHidden">
+        <activity android:label="@string/app_name" android:configChanges="orientation|keyboardHidden" android:name="MainMenuActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -13,14 +12,13 @@
         </activity>
 <activity android:name="SearchActivity" android:configChanges="orientation|keyboardHidden"/>
 <activity android:name="applab.client.BrowserActivity" android:configChanges="orientation|keyboardHidden"/>
-<activity android:name=".DisplaySearchResultsActivity" android:configChanges="orientation|keyboardHidden"/>
-<activity android:name=".InboxListActivity" android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden"/>
-<activity android:name=".AboutActivity" android:label="@string/about_activity" android:configChanges="orientation|keyboardHidden"/>
-<activity android:name=".LocationActivity" android:label="@string/gps_activity" android:configChanges="orientation|keyboardHidden"/>
-<activity android:name=".Settings" android:label="@string/settings_activity" android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden"/>
+<activity android:configChanges="orientation|keyboardHidden" android:name="DisplaySearchResultsActivity"/>
+<activity android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden" android:name="InboxListActivity"/>
+<activity android:label="@string/gps_activity" android:configChanges="orientation|keyboardHidden" android:name="LocationActivity"/>
+<activity android:label="@string/settings_activity" android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden" android:name="Settings"/>
   
 <!--  Hook for being notified when the OS boots -->  
-<receiver android:name="applab.client.service.BootCompletedReceiver">
+<receiver android:name="applab.search.client.service.BootCompletedReceiver">
 	<intent-filter>
 		<action android:name="android.intent.action.BOOT_COMPLETED">
 		</action>
@@ -30,9 +28,9 @@
 </receiver>
 
 <!--  Tell android that we have a service to run -->
-<service android:name="applab.client.service.ApplabService">
+<service android:name="applab.search.client.service.ApplabSearchService">
 	<intent-filter>
-		<action android:name="applab.client.service.ApplabService">
+		<action android:name="applab.search.client.service.ApplabSearchService">
 		</action>
 	</intent-filter>
 </service>
@@ -51,7 +49,7 @@
 	
   <!--  We start our service when the OS boots -->
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-  
+  <uses-permission xmlns:android="http://schemas.android.com/apk/res/android" android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
   <uses-permission android:name="android.permission.WRITE_APN_SETTINGS" />
   
 </manifest>

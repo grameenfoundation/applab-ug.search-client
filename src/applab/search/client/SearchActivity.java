@@ -97,7 +97,7 @@ public class SearchActivity extends BaseSearchActivity {
         // Initialize selectedKeywords to empty array list
         this.selectedKeywords = new ArrayList<String>();
 
-        if (!SynchronizationManager.isSynchronizing()) {
+        // if (!SynchronizationManager.isSynchronizing()) {
             ActivityState instanceState = (ActivityState)getLastNonConfigurationInstance();
 
             if (instanceState != null) {
@@ -114,7 +114,7 @@ public class SearchActivity extends BaseSearchActivity {
             }
 
             buildKeywordsMenu();
-        }
+        //}
 
         if (this.sequence > 1) {
             this.startLayout.setVisibility(View.GONE);

@@ -36,6 +36,10 @@ public class Storage {
     private static final String DATABASE_NAME = "search";
     private static final int DATABASE_VERSION = 4;
     private static final int SEQUENCES = 32;
+    
+    /** keep track of batch size to enable batch inserts **/
+    private Integer currentBatchSize = 0;
+    private static final Integer MAX_BATCH_SIZE = 200; 
 
     private DatabaseHelper databaseHelper;
     private SQLiteDatabase database;
@@ -63,6 +67,10 @@ public class Storage {
      * Disconnect database
      */
     public void close() {
+        if(database.inTransaction()) {
+            database.setTransactionSuccessful();
+            database.endTransaction();
+        }
         databaseHelper.close();
     }
 
@@ -138,7 +146,54 @@ public class Storage {
     public boolean insertContent(String table, ContentValues values) {
         return database.replace(table, null, values) > 0;
     }
-
+    
+    public boolean deleteEntryInBatch(String table, String id) {
+        // Begin a transaction if we're not yet in one
+        if(!database.inTransaction()) {
+            database.beginTransaction();
+        }
+        
+        Boolean successful = deleteEntry(table, id);
+        
+        // Increment the currentBatchSize
+        currentBatchSize++;
+        
+        // Write all the previous data
+        if((currentBatchSize > MAX_BATCH_SIZE) && database.inTransaction()) {
+            database.setTransactionSuccessful();
+            database.endTransaction();
+            currentBatchSize = 0;
+        }
+        
+        return successful;
+        
+        // Note: remember to call storage.close() - it will end any pending transactions, in case there are < MAX_BATCH_SIZE values in the batch
+    }
+    
+    public boolean insertContentInBatch(String table, ContentValues values) {
+        // Begin a transaction if we're not yet in one
+        if(!database.inTransaction()) {
+            database.beginTransaction();
+        }
+        
+        // Add the current values 
+        Boolean successful = insertContent(table, values);
+        
+        // Increment the currentBatchSize
+        currentBatchSize++;
+        
+        // Write all the previous data
+        if((currentBatchSize > MAX_BATCH_SIZE) && database.inTransaction()) {
+            database.setTransactionSuccessful();
+            database.endTransaction();
+            currentBatchSize = 0;
+        }
+        
+        return successful;
+        
+        // Note: remember to call storage.close() - it will end any pending transactions, in case there are < MAX_BATCH_SIZE values in the batch 
+    }
+    
     /**
      * Remove all table rows
      * 

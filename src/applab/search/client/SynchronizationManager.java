@@ -26,6 +26,7 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.database.SQLException;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -50,16 +51,14 @@ import applab.client.farmerregistration.FarmerRegistrationController;
  */
 public class SynchronizationManager {
     // by default we will synchronize once per hour
-    private static final int SYNCHRONIZATION_INTERVAL = 60 * 60 * 1000;
-    private static final int SYNCHRONIZATION_START_INTERVAL = 5 * 60 * 1000; // We run 5 minutes after the app is
-                                                                             // started
-    // private static final int SYNCHRONIZATION_INTERVAL = 30 * 1000;
+    public static final int SYNCHRONIZATION_INTERVAL = 60 * 60 * 1000;
+    public static final int SYNCHRONIZATION_START_INTERVAL = 5 * 60 * 1000; // We run 5 minutes after the app is started
 
-    private static SynchronizationManager singleton = new SynchronizationManager();
+    public static SynchronizationManager singleton = new SynchronizationManager();
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
     private final static String REQUEST_ELEMENT_NAME = "GetKeywordsRequest";
     private final static String VERSION_ELEMENT_NAME = "localKeywordsVersion";
-    private Timer timer;
+    public Timer timer;
     private boolean isSynchronizing;
     private static Boolean synchronizeNow; // This tells us to start sync
     private Handler completionCallback;
@@ -114,18 +113,19 @@ public class SynchronizationManager {
      * background synchronization.
      */
     private static void synchronize(Context context, Handler completionCallback, boolean isModal, boolean launchedFromTimer) {
-        boolean attachToUi = false;
+        boolean processAlreadyRunning = false;
         synchronizeNow = isModal || launchedFromTimer;
 
         synchronized (SynchronizationManager.singleton) {
             // if we don't have a timer, set that up
-            SynchronizationManager.singleton.ensureTimerIsScheduled();
+            // Moving this to a service
+            // SynchronizationManager.singleton.ensureTimerIsScheduled();
 
             // Now check if we are in the middle of a synchronization episode
             // and if so, we should attach to the UI
             // TODO: check isRunning instead?
             if (SynchronizationManager.isSynchronizing()) {
-                attachToUi = true;
+                processAlreadyRunning = true;
             }
             else {
                 // check if we have any keywords cached locally. If not, we have to become
@@ -133,18 +133,25 @@ public class SynchronizationManager {
                 if (!StorageManager.hasKeywords()) {
                     synchronizeNow = true;
                 }
-
+            }
+            
+            if(synchronizeNow && (!processAlreadyRunning)) {
+                SynchronizationManager.singleton.launchedFromTimer = launchedFromTimer;
+                if (isModal) {
+                    // start a modal synchronization episode
+                    ProgressDialogManager.silentMode = false;
+                }
             }
         }
-
-        SynchronizationManager.singleton.launchedFromTimer = launchedFromTimer;
-
-        if (attachToUi) {
-            SynchronizationManager.singleton.attachActivity(context, completionCallback);
+        
+        if (processAlreadyRunning) {
+            // SynchronizationManager.singleton.attachActivity(context, completionCallback);
+            Toast notification = Toast.makeText(context,
+                    "Keywords are already being updated in the background. You will see 'Keywords Updated' when it is complete.",
+                    Toast.LENGTH_LONG);
+            notification.show();
         }
         else if (synchronizeNow) {
-            // start a modal synchronization episode
-            ProgressDialogManager.silentMode = false;
             SynchronizationManager.singleton.startSynchronization(context, completionCallback);
         }
     }
@@ -164,16 +171,12 @@ public class SynchronizationManager {
      * 
      * Returns true if we allocated the timer
      */
-    private boolean ensureTimerIsScheduled() {
+    public boolean ensureTimerIsScheduled() {
         boolean scheduledTimer = false;
         if (this.timer == null) {
             this.timer = new Timer();
             // TODO: should we kick off a synchronization episode immediately? If so, change the first parameter here
             // and modify the caller appropriately
-            /**
-             * TURNED OFF BACKGROUND SYNCHRONIZATION for 2.8.3 release Need to properly test this before turning it back
-             * on.
-             */
             this.timer.scheduleAtFixedRate(new TimedSynchronizationTask(), SYNCHRONIZATION_START_INTERVAL,
                     SYNCHRONIZATION_INTERVAL);
             scheduledTimer = true;
@@ -205,10 +208,11 @@ public class SynchronizationManager {
         }
 
         BackgroundSynchronizationTask task = new BackgroundSynchronizationTask(this, true);
-        if (this.launchedFromTimer) {
+        if(this.launchedFromTimer) {
+            // Timer already has it's own thread, so just run the task
             task.run();
-        }
-        else {
+        } else {
+            // Start a new thread
             this.backgroundThread = new Thread(task);
             this.backgroundThread.start();
         }
@@ -217,10 +221,23 @@ public class SynchronizationManager {
     /**
      * We have a new activity to attach to our progress UI and/or we have to bring up a progress dialog to link into an
      * existing synchronization
+     * 
+     * @deprecated This function is being deprecated in 3.1 due to conflicts with the background process. We now show a
+     *             toast instead
      */
     private void attachActivity(Context context, Handler completionCallback) {
         this.completionCallback = completionCallback;
         this.currentContext = context;
+
+        this.progressMessageHandler = createProgressMessageHandler();
+        this.internalMessageHandler = new Handler() {
+
+            @Override
+            public void handleMessage(Message message) {
+                handleBackgroundThreadMessage(message);
+            }
+        };
+
         ProgressDialogManager.tryDisplayProgressDialog(context);
     }
 
@@ -280,7 +297,7 @@ public class SynchronizationManager {
      * Our two background processes (downloading and parsing) communicate with us through Android messaging on the UI
      * thread (so we can react by manipulating UI)
      */
-    private void handleBackgroundThreadMessage(Message message) {
+    void handleBackgroundThreadMessage(Message message) {
         switch (message.what) {
             case GlobalConstants.KEYWORD_DOWNLOAD_STARTING:
                 // TODO: Can we do this on the UI thread before we offload the process into the background?
@@ -291,6 +308,7 @@ public class SynchronizationManager {
                 }
                 break;
             case GlobalConstants.CONNECTION_ERROR:
+                ProgressDialogManager.tryDestroyProgressDialog();
                 if (!this.launchedFromTimer) {
                     showErrorDialog(R.string.connection_error_message);
                 }
@@ -302,6 +320,8 @@ public class SynchronizationManager {
                 // the Global.KEYWORD_PARSE_GOT_NODE_TOTAL signal
                 break;
             case GlobalConstants.KEYWORD_DOWNLOAD_FAILURE:
+                ProgressDialogManager.tryDestroyProgressDialog(); // Dialog may still be launched in background process
+                                                                  // as a side-effect
                 if (!this.launchedFromTimer) {
                     showErrorDialog(R.string.incomplete_keyword_response_error);
                 }
@@ -324,6 +344,7 @@ public class SynchronizationManager {
                 SynchronizationManager.completeSynchronization();
                 break;
             case GlobalConstants.KEYWORD_PARSE_ERROR:
+                ProgressDialogManager.tryDestroyProgressDialog();
                 if (!this.launchedFromTimer) {
                     showErrorDialog(R.string.keyword_parse_error);
                 }
@@ -357,33 +378,38 @@ public class SynchronizationManager {
             Looper.prepare();
         }
 
-        sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up
-                                                                        // immediately
-        SynchronizationManager.singleton.isSynchronizing = true;
+        try {
+            sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up
+                                                                            // immediately
+            SynchronizationManager.singleton.isSynchronizing = true;
 
-        // First submit pending farmer registrations and get latest registration form
-        String serverUrl = Settings.getServerUrl();
-        FarmerRegistrationController farmerRegController = new FarmerRegistrationController();
-        farmerRegController.postFarmerRegistrationData(serverUrl);
-        farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
+            // First submit pending farmer registrations and get latest registration form
+            String serverUrl = Settings.getServerUrl();
+            FarmerRegistrationController farmerRegController = new FarmerRegistrationController();
+            farmerRegController.postFarmerRegistrationData(serverUrl);
+            farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
 
-        // Then submit pending usage logs and incomplete searches
-        InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
-        inboxAdapter.open();
-        submitPendingUsageLogs(inboxAdapter);
+            // Then submit pending usage logs and incomplete searches
+            InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
+            inboxAdapter.open();
+            submitPendingUsageLogs(inboxAdapter);
 
-        /*
-         * Comment out the code below as we will look to remove in 3.2 TODO
-         * submitIncompleteSearches(inboxAdapter);
-         */
+            /*
+             * Comment out the code below as we will look to remove in 3.2 TODO submitIncompleteSearches(inboxAdapter);
+             */
 
-        inboxAdapter.close();
+            inboxAdapter.close();
 
-        // Then update local images
-        ImageManager.updateLocalImages();
+            // Then update local images
+            ImageManager.updateLocalImages();
 
-        // Finally update keywords
-        updateKeywords();
+            // Finally update keywords
+            updateKeywords();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            completeSynchronization();
+        }
 
         if (setupLooper) {
             // TODO: Looper.loop is problematic here. This should be restructured
@@ -499,32 +525,6 @@ public class SynchronizationManager {
         }
     }
 
-    private class TimedSynchronizationTask extends TimerTask {
-        private static final String LOG_TAG = "TimedSynchronizationTask";
-        /**
-         * Used to participate in the synchronization lifecycle events
-         */
-        private Handler keywordSynchronizationCallback = new Handler() {
-            @Override
-            public void handleMessage(Message message) {
-                SynchronizationManager.singleton.handleBackgroundThreadMessage(message);
-            }
-        };
-
-        @Override
-        public void run() {
-            Log.d(LOG_TAG, "Timer: launching background sync");
-
-            try {
-                SynchronizationManager.synchronizeFromTimer(ApplabActivity.getGlobalContext(), keywordSynchronizationCallback);
-            }
-            catch (Exception ex) {
-                Log.e(LOG_TAG, "Unexpected failure during background syncronization", ex);
-                ProgressDialogManager.tryDestroyProgressDialog();
-            }
-        }
-    }
-
     /**
      * handler that we use to schedule synchronization tasks on a separate thread
      * 
@@ -562,9 +562,9 @@ public class SynchronizationManager {
                 try {
                     this.synchronizationManager.performBackgroundSynchronization();
                 }
-                catch (XmlPullParserException e) {
-                    // TODO Auto-generated catch block
+                catch (Exception e) {
                     e.printStackTrace();
+                    ProgressDialogManager.tryDestroyProgressDialog(); // Just in case it was showing
                 }
             }
         }
