@@ -3,6 +3,7 @@
 	<name>Search Client</name>
 	<comment></comment>
 	<projects>
+		<project>CommonClient</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
