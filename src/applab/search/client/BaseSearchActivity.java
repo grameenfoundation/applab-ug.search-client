@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -285,7 +286,9 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         if(!serviceStarted) {
             Intent intent = new Intent();
             intent.setAction("applab.search.client.service.ApplabSearchService");
+            Log.d("BaseSearchActivity", "Starting Applab Search Service");
             context.startService(intent);
+            Log.d("BaseSearchActivity", "Started Applab Search Service");
             serviceStarted = true;
         }
     }

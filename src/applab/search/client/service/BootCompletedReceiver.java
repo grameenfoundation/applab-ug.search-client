@@ -18,7 +18,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) 
     {
         if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
-             BaseSearchActivity.startService(context);
+             BaseSearchActivity.tryStartService(context);
         }
     }
 }

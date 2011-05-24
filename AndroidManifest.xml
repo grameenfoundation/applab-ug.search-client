@@ -2,20 +2,20 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       android:versionCode="@integer/app_version_code"
-      android:versionName="@string/app_version" package="applab.search.client">
+      android:versionName="@string/app_version" package="applab.client.search">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:theme="@android:style/Theme.Light" android:debuggable="true">
-        <activity android:label="@string/app_name" android:configChanges="orientation|keyboardHidden" android:name="MainMenuActivity">
+        <activity android:label="@string/app_name" android:configChanges="orientation|keyboardHidden" android:name="applab.search.client.MainMenuActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-<activity android:name="SearchActivity" android:configChanges="orientation|keyboardHidden"/>
+<activity android:name="applab.search.client.SearchActivity" android:configChanges="orientation|keyboardHidden"/>
 <activity android:name="applab.client.BrowserActivity" android:configChanges="orientation|keyboardHidden"/>
-<activity android:configChanges="orientation|keyboardHidden" android:name="DisplaySearchResultsActivity"/>
-<activity android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden" android:name="InboxListActivity"/>
-<activity android:label="@string/gps_activity" android:configChanges="orientation|keyboardHidden" android:name="LocationActivity"/>
-<activity android:label="@string/settings_activity" android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden" android:name="Settings"/>
+<activity android:configChanges="orientation|keyboardHidden" android:name="applab.search.client.DisplaySearchResultsActivity"/>
+<activity android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden" android:name="applab.search.client.InboxListActivity"/>
+<activity android:label="@string/gps_activity" android:configChanges="orientation|keyboardHidden" android:name="applab.search.client.LocationActivity"/>
+<activity android:label="@string/settings_activity" android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden" android:name="applab.search.client.Settings"/>
   
 <!--  Hook for being notified when the OS boots -->  
 <receiver android:name="applab.search.client.service.BootCompletedReceiver">
