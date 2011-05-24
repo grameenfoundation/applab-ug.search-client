@@ -1,6 +1,7 @@
 package applab.search.client;
 
 import android.view.Menu;
+import applab.client.search.R;
 
 public class GlobalConstants {
     public static final int HOME_ID = Menu.FIRST;

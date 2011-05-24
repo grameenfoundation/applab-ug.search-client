@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import applab.client.ApplabActivity;
+import applab.client.search.R;
 
 // TODO: consolidate this and ProgressDialogManager into a single "DialogManager" class? Move 
 // into common code?

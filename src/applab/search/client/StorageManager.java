@@ -1,6 +1,7 @@
 package applab.search.client;
 
 import applab.client.ApplabActivity;
+import applab.client.search.R;
 
 /**
  * Singleton that is responsible for managing the local storage of our data.

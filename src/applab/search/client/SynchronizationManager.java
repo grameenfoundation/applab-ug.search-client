@@ -38,6 +38,7 @@ import applab.client.PropertyStorage;
 import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
 import applab.client.farmerregistration.FarmerRegistrationController;
+import applab.client.search.R;
 
 /**
  * The SynchronizationManager is responsible for all the complexity involved in scheduling timers, background threads,

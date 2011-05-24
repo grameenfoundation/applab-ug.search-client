@@ -28,6 +28,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Environment;
 import android.util.Log;
+import applab.client.search.R;
 
 /**
  * Contains methods for managing image files on the file system. TODO: Most of the methods come from Collect code and

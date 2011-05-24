@@ -34,6 +34,7 @@ import applab.client.dataconnection.DataConnectionManager;
 import applab.client.farmerregistration.FarmerRegistrationAdapter;
 import applab.client.farmerregistration.FarmerRegistrationController;
 import applab.client.location.GpsManager;
+import applab.client.search.R;
 
 /**
  * The Search application home screen

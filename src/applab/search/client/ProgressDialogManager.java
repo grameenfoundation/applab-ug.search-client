@@ -3,6 +3,7 @@ package applab.search.client;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.util.Log;
+import applab.client.search.R;
 
 /**
  * Helper class that handles the ownership and management of the progress dialog that we use when halting user

@@ -14,6 +14,7 @@ import android.widget.Toast;
 import applab.client.AboutDialog;
 import applab.client.ApplabActivity;
 import applab.client.autoupdate.ApplicationUpdateManager;
+import applab.client.search.R;
 
 /**
  * Base class for all Search activities, consolidates code around synchronization, menus, progress dialogs, etc.

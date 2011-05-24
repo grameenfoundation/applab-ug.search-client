@@ -29,6 +29,7 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import applab.client.ApplabActivity;
+import applab.client.search.R;
 
 /**
  * Displays a list view of the contents of the inbox. This includes both recent searches, and unsent searches

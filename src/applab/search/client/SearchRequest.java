@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import applab.client.HttpHelpers;
+import applab.client.search.R;
 
 /**
  * Construct that represents a request for search data. Right now this always results in a remote PHP GET call

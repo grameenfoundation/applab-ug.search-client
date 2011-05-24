@@ -11,6 +11,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import android.util.Log;
 import applab.client.HttpHelpers;
+import applab.client.search.R;
 
 public class ImageXmlParseHandler extends DefaultHandler {
     private static final String NAMESPACE = "http://schemas.applab.org/2010/07/search";

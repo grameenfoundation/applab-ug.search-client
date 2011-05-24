@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import applab.client.ApplabActivity;
+import applab.client.search.R;
 
 public class TimedSynchronizationTask extends TimerTask {
     private static final String LOG_TAG = "TimedSynchronizationTask";

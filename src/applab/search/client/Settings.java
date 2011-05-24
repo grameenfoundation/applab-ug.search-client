@@ -26,6 +26,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 import applab.client.ApplabActivity;
+import applab.client.search.R;
 
 public class Settings extends PreferenceActivity implements OnSharedPreferenceChangeListener {
     private static String KEY_SERVER = "server";

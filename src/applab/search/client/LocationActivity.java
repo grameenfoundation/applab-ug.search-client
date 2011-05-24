@@ -30,6 +30,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import applab.client.AboutDialog;
+import applab.client.search.R;
 
 public class LocationActivity extends Activity implements LocationListener {
     private LocationManager lm;

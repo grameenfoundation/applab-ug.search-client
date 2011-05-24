@@ -30,6 +30,7 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import applab.client.location.GpsManager;
+import applab.client.search.R;
 
 /**
  * Responsible for constructing, displaying keyword option sequences, and submitting search queries.

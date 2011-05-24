@@ -31,6 +31,7 @@ import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
 import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
+import applab.client.search.R;
 
 public class ImageManager {
 

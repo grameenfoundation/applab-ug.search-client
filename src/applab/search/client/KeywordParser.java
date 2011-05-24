@@ -33,6 +33,7 @@ import android.os.Message;
 import android.util.Log;
 import applab.client.ApplabActivity;
 import applab.client.PropertyStorage;
+import applab.client.search.R;
 
 /**
  * A custom XML parser that also sorts and adds content to search sequence database.
