@@ -1,86 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-  
-<RelativeLayout
-  xmlns:android="http://schemas.android.com/apk/res/android"
-  android:id="@+id/rl"
-  android:layout_width="fill_parent"
-  android:layout_height="fill_parent"
-  android:orientation="vertical"  
-  android:background="@drawable/white">  
-  
-  <LinearLayout
-  xmlns:android="http://schemas.android.com/apk/res/android"
-  android:id="@+id/r2"
-  android:layout_width="fill_parent"
-  android:layout_height="360dp">
-  
- <ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:orientation="vertical"  
-    android:layout_height="fill_parent" >
-<RadioGroup
-  xmlns:android="http://schemas.android.com/apk/res/android"
-  android:id="@+id/radio_group"  
-  android:orientation="vertical"
-  android:layout_width="fill_parent"
-  android:layout_height="fill_parent"   
-  >  
-     
-  </RadioGroup>
-  
-  </ScrollView>
-     </LinearLayout> 
-    
-     <TextView
-     	  android:id="@+id/search"
-     	  android:layout_below = "@+id/r2"
-          android:layout_width="fill_parent"
-          android:layout_height="wrap_content"
-          android:textSize="6pt" />
-          <LinearLayout
-  xmlns:android="http://schemas.android.com/apk/res/android"
-  android:id="@+id/startLayout"
-  android:orientation="vertical"
-  android:layout_width="fill_parent"
-  android:layout_height="wrap_content"
-  android:layout_alignParentBottom="true"
-  android:background="@drawable/gray">
-  
-   <Button
-          android:id="@+id/next"
-          android:textColor="@drawable/black"
-          android:textSize="21px"
-          android:text="@string/next_button"
-          android:layout_width="250dp"
-          android:layout_height="wrap_content" 
-          android:layout_gravity="center"
-          />
-  </LinearLayout>
-<LinearLayout
-  xmlns:android="http://schemas.android.com/apk/res/android"
-  android:id="@+id/layout"
-  android:orientation="horizontal"
-  android:layout_width="fill_parent"
-  android:layout_height="wrap_content"
-  android:layout_alignParentBottom="true"
-  android:background="@drawable/gray">
-          <Button
-          android:id="@+id/back_button"
-          android:textColor="@drawable/black"
-          android:textSize="21px"
-          android:layout_width="160dp"
-          android:layout_height="wrap_content" 
-          />
-            <Button
-          android:id="@+id/next_button"
-          android:textColor="@drawable/black"
-          android:textSize="21px"
-          android:layout_width="160dp"
-          android:layout_height="wrap_content" 
-          />
-     </LinearLayout>
-  </RelativeLayout>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/rl" android:layout_above="@id/search"
+	android:layout_width="fill_parent" android:layout_height="fill_parent"
+	android:orientation="vertical" android:background="@drawable/white">
+
+	<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="fill_parent" android:orientation="vertical"
+		android:layout_height="wrap_content" android:layout_weight="0.7"
+		android:fillViewport="true">
+		<RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+			android:id="@+id/radio_group" android:orientation="vertical"
+			android:layout_width="fill_parent" android:layout_height="wrap_content">
+
+		</RadioGroup>
+	</ScrollView>
+	<TextView android:id="@+id/search" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:textSize="16dp" />
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:id="@+id/r3" android:orientation="vertical"
+		android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:layout_weight="0" android:gravity="bottom" android:background="@drawable/gray">
+
+		<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			android:layout_width="fill_parent" android:id="@+id/r4"
+			android:layout_height="wrap_content">
+			<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+				android:id="@+id/startLayout" android:orientation="vertical"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:layout_alignParentBottom="true" android:background="@drawable/gray">
+
+				<Button android:id="@+id/next" android:textColor="@drawable/black"
+					android:textSize="21dp" android:text="@string/next_button"
+					android:layout_width="250dp" android:layout_height="wrap_content"
+					android:layout_gravity="center" />
+			</LinearLayout>
+			<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+				android:id="@+id/layout" android:orientation="horizontal"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:layout_alignParentBottom="true" android:background="@drawable/gray">
+				<Button android:id="@+id/back_button" android:textColor="@drawable/black"
+					android:textSize="21dp" android:layout_width="160dp"
+					android:layout_height="wrap_content" />
+				<Button android:id="@+id/next_button" android:textColor="@drawable/black"
+					android:textSize="21dp" android:layout_width="160dp"
+					android:layout_height="wrap_content" />
+			</LinearLayout>
+		</LinearLayout>
+	</LinearLayout>
+
+</LinearLayout>
   
     
 
