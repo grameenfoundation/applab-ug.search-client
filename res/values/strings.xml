@@ -2,9 +2,9 @@
 
 <resources>
 <string name="app_name">CKW Search</string>
-<string name="app_version">3.2.0</string>
-<integer name="app_version_code">2011060200</integer> <!-- This is pulled into the manifest. It must be an integer and must increment for each new version (best way is to use the release date in YYYYMMDDNN format (NN caters for more than one uprgade in the same day)) -->
-<string name="release_date">June 02, 2011</string>
+<string name="app_version">3.3.0</string>
+<integer name="app_version_code">2011092102</integer> <!-- This is pulled into the manifest. It must be an integer and must increment for each new version (best way is to use the release date in YYYYMMDDNN format (NN caters for more than one uprgade in the same day)) -->
+<string name="release_date">September 21, 2011</string>
 <string name="info">Grameen Foundation, Applab Uganda\nckw@applab.org</string>
 <string name="inbox_title">Recent Searches</string>
 <string name="server_url">Server URL</string>
@@ -14,7 +14,7 @@
 <string name="settings_activity">Preferences</string>
 <string name="search_path">mobile/oktopus/search.php</string>
 <string name="update_path">search/getKeywords</string>
-<string name="server">http://test.applab.org</string>
+<string name="server">http://ckwapps.applab.org</string>
 <string name="main_menu_details">Enter farmer\'s ID in the box below:</string>
 <string name="connection_error">Unable to establish a connection</string>
 <string name="incomplete_keyword_response_error">Failed to get all keywords</string>
