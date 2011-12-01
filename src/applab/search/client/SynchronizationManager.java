@@ -51,8 +51,8 @@ import applab.client.search.R;
  * TODO: move the general scheduling algorithm into shared code and leverage it
  */
 public class SynchronizationManager {
-    // by default we will synchronize once per hour
-    public static final int SYNCHRONIZATION_INTERVAL = 60 * 60 * 1000;
+    // by default we will synchronize once every 12 hours
+    public static final int SYNCHRONIZATION_INTERVAL = 12 * 60 * 60 * 1000;
     public static final int SYNCHRONIZATION_START_INTERVAL = 5 * 60 * 1000; // We run 5 minutes after the app is started
 
     public static SynchronizationManager singleton = new SynchronizationManager();
