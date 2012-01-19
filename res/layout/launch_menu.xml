@@ -27,32 +27,32 @@
 			android:layout_height="fill_parent" android:orientation="vertical"
 			android:paddingTop="2px" android:paddingBottom="2px">
 
-			<Button android:id="@+id/next_button" android:textSize="21px"
+			<Button android:id="@+id/next_button" android:textSize="16px"
 				android:layout_width="fill_parent" android:layout_height="wrap_content"
 				android:padding="20px" />
 
 			<TextView android:layout_width="fill_parent"
 				android:layout_height="wrap_content" android:textSize="2pt" />
 
-			<Button android:id="@+id/inbox_button" android:textSize="21px"
+			<Button android:id="@+id/inbox_button" android:textSize="16px"
 				android:layout_width="fill_parent" android:layout_height="wrap_content"
 				android:padding="20px" />
 			<TextView android:layout_width="fill_parent"
 				android:layout_height="wrap_content" android:textSize="2pt" />
 
-			<Button android:id="@+id/aginfo_button" android:textSize="21px"
+			<Button android:id="@+id/aginfo_button" android:textSize="16px"
 				android:layout_width="fill_parent" android:layout_height="wrap_content"
 				android:padding="20px" android:text="AgInfo Subscriptions" />
 			<TextView android:layout_width="fill_parent"
 				android:layout_height="wrap_content" android:textSize="2pt" />
 
-			<Button android:id="@+id/register_button" android:textSize="21px"
+			<Button android:id="@+id/register_button" android:textSize="16px"
 				android:layout_width="fill_parent" android:layout_height="wrap_content"
 				android:padding="20px" android:text="Register New Farmer" />
 			<TextView android:layout_width="fill_parent"
 				android:layout_height="wrap_content" android:textSize="2pt" />
 
-			<Button android:id="@+id/forgot_button" android:textSize="21px"
+			<Button android:id="@+id/forgot_button" android:textSize="16px"
 				android:layout_width="fill_parent" android:layout_height="wrap_content"
 				android:padding="20px" android:text="Forgot Farmer\'s ID" />
 
