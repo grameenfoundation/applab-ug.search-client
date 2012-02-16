@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -42,7 +43,7 @@ public class ImageManager {
 
     /**
      * Submits an image update request and retrieves XML containing image data from remote server
-     * 
+     *
      * @return
      */
     public static InputStream getImageXml() {
@@ -90,10 +91,10 @@ public class ImageManager {
         try {
             if (xmlStream != null) {
                 xmlParser = SAXParserFactory.newInstance().newSAXParser();
-                
+
                 // This line was causing problems on android 2.2 (IDEOS)
                 // xmlParser.reset();
-                
+
                 xmlParser.parse(xmlStream, xmlHandler);
 
                 // Delete local files not on remote list
@@ -129,7 +130,36 @@ public class ImageManager {
                 hashPathPairs.put(sha1Hash.toLowerCase(), file);
             }
         }
-        
+
         return hashPathPairs;
+    }
+
+    public static void getImages (List<String> imageIds) {
+        if (imageIds != null) {
+            for (String imageId : imageIds) {
+                try {
+                    Log.d("Image Download", "Getting " + imageId);
+                    InputStream image = HttpHelpers.getResource(Settings.getServerUrl() + "/search/sfimages?imageId="+imageId);
+                    ImageFilesUtility.writeFile(imageId + ".jpeg", image);
+                } catch (IOException e) {
+                    Log.e("IOException", e.getMessage());
+                }
+            }
+        }
+    }
+
+    public static void deleteImages(List<String> imageIds) {
+        if (imageIds != null ) {
+            for (String imageId : imageIds) {
+                File file = new File("/sdcard/ckwsearch/", imageId + ".jpeg");
+                ImageFilesUtility.deleteFile(file);
+            }
+        }
+    }
+
+    public static void updatePhoneImages(List<String> updatedImageIds, List<String> deletedImageIds) {
+        List<String> images = new ArrayList<String>();
+        getImages(updatedImageIds);
+        getImages(deletedImageIds);
     }
 }

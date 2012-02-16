@@ -43,11 +43,11 @@ import applab.client.search.R;
 /**
  * The SynchronizationManager is responsible for all the complexity involved in scheduling timers, background threads,
  * coordinating UI, etc.
- * 
+ *
  * SynchronizationManager handles three main tasks: 1) Ensuring keywords and their associated content is up to date 2)
  * Sending any searches that failed to send in the mainline path 3) Transmitting logs of any searches that have happened
  * on our cached data so that we can track this activity for M&E purposes on our servers
- * 
+ *
  * TODO: move the general scheduling algorithm into shared code and leverage it
  */
 public class SynchronizationManager {
@@ -135,7 +135,7 @@ public class SynchronizationManager {
                     synchronizeNow = true;
                 }
             }
-            
+
             if(synchronizeNow && (!processAlreadyRunning)) {
                 SynchronizationManager.singleton.launchedFromTimer = launchedFromTimer;
                 if (isModal) {
@@ -144,7 +144,7 @@ public class SynchronizationManager {
                 }
             }
         }
-        
+
         if (processAlreadyRunning) {
             // SynchronizationManager.singleton.attachActivity(context, completionCallback);
             Toast notification = Toast.makeText(context,
@@ -169,7 +169,7 @@ public class SynchronizationManager {
 
     /**
      * Make sure our background timer is scheduled. Assumes that it's called under a lock.
-     * 
+     *
      * Returns true if we allocated the timer
      */
     public boolean ensureTimerIsScheduled() {
@@ -222,7 +222,7 @@ public class SynchronizationManager {
     /**
      * We have a new activity to attach to our progress UI and/or we have to bring up a progress dialog to link into an
      * existing synchronization
-     * 
+     *
      * @deprecated This function is being deprecated in 3.1 due to conflicts with the background process. We now show a
      *             toast instead
      */
@@ -362,7 +362,7 @@ public class SynchronizationManager {
 
     /**
      * Called by our background or timer thread to perform the actual synchronization tasks from a separate thread.
-     * 
+     *
      * @throws XmlPullParserException
      */
     private void performBackgroundSynchronization() throws XmlPullParserException {
@@ -402,7 +402,7 @@ public class SynchronizationManager {
             inboxAdapter.close();
 
             // Then update local images
-            ImageManager.updateLocalImages();
+            ImageManager.updatePhoneImages();
 
             // Finally update keywords
             updateKeywords();
@@ -457,7 +457,7 @@ public class SynchronizationManager {
 
     /**
      * Sets the version in the update request entity
-     * 
+     *
      * @return XML request entity
      * @throws UnsupportedEncodingException
      */
@@ -528,10 +528,10 @@ public class SynchronizationManager {
 
     /**
      * handler that we use to schedule synchronization tasks on a separate thread
-     * 
+     *
      * Used both on-demand and timer-based synchronization. In the on-demand case, we may interact with UI through the
      * message pump
-     * 
+     *
      */
     private class BackgroundSynchronizationTask implements Runnable {
         private SynchronizationManager synchronizationManager;

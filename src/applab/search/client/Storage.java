@@ -13,6 +13,7 @@ the License.
 package applab.search.client;
 
 import java.util.HashMap;
+import java.util.List;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -42,7 +43,7 @@ public class Storage {
 
 
     private static final String DATABASE_NAME = "search";
-    private static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 6;
     private static final int SEQUENCES = 32;
 
     /** keep track of batch size to enable batch inserts **/
@@ -100,34 +101,13 @@ public class Storage {
                 null, null, null, " MAX(" + MENU_ITEM_POSITION_COLUMN + ") DESC, " + optionColumn + " ASC", null);
     }
 
-    public HashMap<String, String> selectContent(String table, String condition) {
-        Cursor cursor = null;
-        HashMap<String, String> results = new HashMap<String, String>();
-        try {
-            cursor = database.query(true, table, new String[] {"content", "attribution", "updated"}, condition,
-                    null, null, null, null, null);
-            cursor.moveToFirst();
-            Integer contentIndex = cursor.getColumnIndexOrThrow("content");
-            String content = cursor.getString(contentIndex);
-
-            Integer attributionIndex = cursor.getColumnIndexOrThrow("attribution");
-            String attribution = cursor.getString(attributionIndex);
-
-            Integer updatedIndex = cursor.getColumnIndexOrThrow("updated");
-            String updated = cursor.getString(updatedIndex);
-
-            results.put("content", content);
-            results.put("attribution", attribution);
-            results.put("updated", updated);
-
-            return results;
-        }
-        finally {
-            if(cursor != null) {
-                cursor.close();
-            }
-        }
+    public String selectContent(String menuItemId) {
+        Cursor cursor = database.query(true, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] {Storage.MENU_ITEM_CONTENT_COLUMN}, Storage.MENU_ITEM_ROWID_COLUMN + " = ?",
+                new String[] {menuItemId}, null, null, null, null);
+        cursor.moveToFirst();
+        return cursor.getString(0);
     }
+
 
     public boolean insertContent(String table, ContentValues values) {
         return database.replace(table, null, values) > 0;
@@ -246,9 +226,9 @@ public class Storage {
             sqlCommand.append("create table " + GlobalConstants.MENU_ITEM_TABLE_NAME);
             sqlCommand.append(" (" + Storage.MENU_ITEM_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.MENU_ITEM_LABEL_COLUMN + " TEXT NOT NULL, "
                                         + Storage.MENU_ITEM_MENUID_COLUMN + " CHAR(16), " + Storage.MENU_ITEM_PARENTID_COLUMN + " CHAR(16), "
-                                        + Storage.MENU_ITEM_POSITION_COLUMN + " INTEGER, " + Storage.MENU_ITEM_CONTENT_COLUMN + " TEXT, ");
+                                        + Storage.MENU_ITEM_POSITION_COLUMN + " INTEGER, " + Storage.MENU_ITEM_CONTENT_COLUMN + " TEXT, " + Storage.MENU_ITEM_ATTACHMENTID_COLUMN + " CHAR(16), ");
             sqlCommand.append(" FOREIGN KEY(menu_id) REFERENCES " + GlobalConstants.MENU_TABLE_NAME + "(id) ON DELETE CASCADE, ");
-            sqlCommand.append(" FOREIGN KEY(parent_id) REFERENCES " + GlobalConstants.MENU_ITEM_TABLE_NAME + "(id) ON DELETE CASCADE, ");
+            sqlCommand.append(" FOREIGN KEY(parent_id) REFERENCES " + GlobalConstants.MENU_ITEM_TABLE_NAME + "(id) ON DELETE CASCADE ");
             sqlCommand.append(" );");
             return sqlCommand.toString();
         }
@@ -269,5 +249,47 @@ public class Storage {
 
             onCreate(database);
         }
+    }
+
+    /**
+     * Returns a cursor containing top level items for a given menu
+     * @param string
+     * @return
+     */
+    public Cursor getTopLevelMenuItems(String menuId) {
+        Cursor itemCursor = database.query(false, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] {Storage.MENU_ITEM_ROWID_COLUMN, Storage.MENU_ITEM_LABEL_COLUMN, Storage.MENU_ITEM_ATTACHMENTID_COLUMN},
+                Storage.MENU_ITEM_MENUID_COLUMN + " = ? AND " + Storage.MENU_ITEM_PARENTID_COLUMN + " IS NULL", new String[] {menuId}, null, null, Storage.MENU_ITEM_POSITION_COLUMN + " ASC, " + Storage.MENU_ITEM_LABEL_COLUMN + " ASC", null);
+        return itemCursor;
+    }
+
+    public Cursor getMenuList() {
+        Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] {Storage.MENU_ROWID_COLUMN, Storage.MENU_LABEL_COLUMN}, null, null, null, null, " " +
+                Storage.MENU_LABEL_COLUMN + " ASC", null);
+        return cursor;
+    }
+
+    int getMenuCount() {
+        Cursor cursor = database.rawQuery("SELECT COUNT(*) as total FROM " + GlobalConstants.MENU_TABLE_NAME, null);
+        int count = 0;
+        if (cursor.moveToFirst()) {
+            count = Integer.parseInt(cursor.getString(0));
+        }
+        cursor.close();
+        return count;
+    }
+
+    public Cursor getChildMenuItems(String parentMenuItemId) {
+        Cursor itemCursor = database.query(false, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] {Storage.MENU_ITEM_ROWID_COLUMN, Storage.MENU_ITEM_LABEL_COLUMN, Storage.MENU_ITEM_ATTACHMENTID_COLUMN},
+                Storage.MENU_ITEM_PARENTID_COLUMN + " = ?", new String[] {parentMenuItemId}, null, null,
+                Storage.MENU_ITEM_POSITION_COLUMN + " ASC, " + Storage.MENU_ITEM_LABEL_COLUMN + " ASC", null);
+        return itemCursor;
+    }
+
+    public String getFirstMenuId() {
+        Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] {Storage.MENU_ROWID_COLUMN}, null, null, null, null, null, null);
+        if (cursor.moveToFirst()) {
+            return cursor.getString(0);
+        }
+        return null;
     }
 }
