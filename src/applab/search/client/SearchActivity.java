@@ -34,7 +34,7 @@ import applab.client.search.R;
 
 /**
  * Responsible for constructing, displaying keyword option sequences, and submitting search queries.
- * 
+ *
  */
 public class SearchActivity extends BaseSearchActivity {
 
@@ -281,9 +281,10 @@ public class SearchActivity extends BaseSearchActivity {
 
         try {
             if (sequence == -1) {
-                searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, Storage.KEY_CATEGORY, null);
+                // TODO: Make this valid
+                searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.MENU_ITEM_TABLE_NAME, Storage.MENU_ITEM_CONTENT_COLUMN, null);
                 while (searchCursor.moveToNext()) {
-                    int option = searchCursor.getColumnIndexOrThrow(Storage.KEY_CATEGORY);
+                    int option = searchCursor.getColumnIndexOrThrow(Storage.MENU_ITEM_CONTENT_COLUMN);
                     addRadioButton(imagePath, radioButtonId, searchCursor, option);
                     radioButtonId++;
                 }
@@ -291,14 +292,14 @@ public class SearchActivity extends BaseSearchActivity {
                 searchCursor.close();
             }
             else {
-                String condition = Storage.KEY_CATEGORY + "='" + selectedKeywords.get(0) + "'";
+                String condition = Storage.MENU_ITEM_CONTENT_COLUMN + "='" + selectedKeywords.get(0) + "'";
 
                 for (int keywordIndex = 1; keywordIndex < selectedKeywords.size(); keywordIndex++) {
                     String keywordSegment = selectedKeywords.get(keywordIndex);
                     condition = condition.concat(" AND col" + (keywordIndex - 1) + "='" + keywordSegment + "'");
                 }
 
-                searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, "col" + Integer.toString(sequence),
+                searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.MENU_ITEM_TABLE_NAME, "col" + Integer.toString(sequence),
                         condition);
 
                 // Save the current Sequence and current Condition in case this is the last menu, in which case we'll
@@ -360,7 +361,7 @@ public class SearchActivity extends BaseSearchActivity {
 
     private void launchResultsDisplay(String condition) {
         // Get the content of the prev. sequence.
-        HashMap<String, String> results = searchDatabase.selectContent(GlobalConstants.DATABASE_TABLE, condition);
+        HashMap<String, String> results = searchDatabase.selectContent(GlobalConstants.MENU_ITEM_TABLE_NAME, condition);
 
         String content = results.get("content");
         String attribution = results.get("attribution");
@@ -390,7 +391,7 @@ public class SearchActivity extends BaseSearchActivity {
 
     /**
      * If keywords have been updated, our search is invalid and we need to reset the search
-     * 
+     *
      * TODO: only do this if the current selection is still invalid
      */
     @Override

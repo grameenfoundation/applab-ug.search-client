@@ -44,12 +44,6 @@ public class KeywordParser {
     private static final String LOG_TAG = "KeywordParser";
     private static final String ADD_TAG = "add";
     private static final String REMOVE_TAG = "remove";
-    private static final String ITEM_ORDER = "order";
-    private static final String ITEM_KEYWORD = "keyword";
-    private static final String ITEM_UPDATED = "updated";
-    private static final String ITEM_ATTRIBUTION = "attribution";
-    private static final String ITEM_CATEGORY = "category";
-    private static final String ITEM_ID = "id";
     private static final String VERSION_ATTRIBUTE_NAME = "version";
     private static final String TOTAL_ATTRIBUTE_NAME = "total";
     private final static String NAMESPACE = "http://schemas.applab.org/2010/07/search";
@@ -101,10 +95,10 @@ public class KeywordParser {
         try {
             addedNodes = 0;
             deletedNodes = 0;
-            
+
             // This line was causing problems on android 2.2 (IDEOS)
             // this.xmlParser.reset();
-            
+
             xmlParser.parse(this.keywordStream, this.keywordHandler);
 
             if (nodeCount == null || keywordVersion == null) {
@@ -113,7 +107,7 @@ public class KeywordParser {
             else if (keywordVersion != "") {
                 KeywordParser.storeKeywordsVersion(keywordVersion);
                 Log.d(LOG_TAG, "Stored version: " + keywordVersion);
-                
+
                 // let UI handler know
                 Log.d(LOG_TAG, "Finished Parsing Keywords ... Added: " + addedNodes + ", Deleted: " + deletedNodes);
                 this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_SUCCESS);
@@ -155,14 +149,11 @@ public class KeywordParser {
         for (int j = 0; j < keywords.length; j++) {
             addValues.put("col" + Integer.toString(j), keywords[j].replace("_", " "));
         }
-        addValues.put(ITEM_ATTRIBUTION, attribution);
-        addValues.put(ITEM_UPDATED, updated);
-        addValues.put(Storage.KEY_ROWID, rowId);
-        addValues.put(Storage.KEY_ORDER, order);
-        addValues.put(Storage.KEY_CATEGORY, category.replace("_", " "));
-        addValues.put(Storage.KEY_CONTENT, content);
+        addValues.put("id", rowId);
+        addValues.put("position", order);
+        addValues.put("content", content);
 
-        storage.insertContent(GlobalConstants.DATABASE_TABLE, addValues);
+        storage.insertContent(GlobalConstants.MENU_ITEM_TABLE_NAME, addValues);
     }
 
     /**
@@ -178,7 +169,7 @@ public class KeywordParser {
 
     /**
      * Record last update version in preferences
-     * 
+     *
      * @param document
      */
     static void storeKeywordsVersion(Document document) {
@@ -203,7 +194,7 @@ public class KeywordParser {
 
     /**
      * SAX parser handler that processes the Keyword xml message
-     * 
+     *
      */
     private class KeywordParseHandler extends DefaultHandler {
         private static final String RESPONSE_ELEMENT = "GetKeywordsResponse";
@@ -233,7 +224,7 @@ public class KeywordParser {
                         nodeCount += 1; // Add one for the start document node
                         Log.d(LOG_TAG, "Total nodes: " + nodeCount);
                         Log.d(LOG_TAG, "Keyword version: " + keywordVersion);
-                        
+
                         bundle = new Bundle();
 
                         // Show parse dialog (send signal with total node count)
@@ -242,7 +233,7 @@ public class KeywordParser {
                         message.what = GlobalConstants.KEYWORD_PARSE_GOT_NODE_TOTAL;
                         message.setData(bundle);
                         responseHandler.sendMessage(message);
-                        
+
                         // If this is the first node, we open the storage
                         if(storage == null) {
                             storage = new Storage(ApplabActivity.getGlobalContext());
@@ -252,17 +243,13 @@ public class KeywordParser {
                 }
                 else if (ADD_TAG.equals(localName)) {
                     contentRow = new ContentRow();
-                    contentRow.setRowId(attributes.getValue(ITEM_ID));
-                    contentRow.setOrder(attributes.getValue(ITEM_ORDER));
-                    contentRow.setCategory(attributes.getValue(ITEM_CATEGORY));
-                    contentRow.setAttribution(attributes.getValue(ITEM_ATTRIBUTION));
-                    contentRow.setUpdated(attributes.getValue(ITEM_UPDATED));
-                    contentRow.setKeyword(attributes.getValue(ITEM_KEYWORD));
+                    contentRow.setRowId(attributes.getValue("id"));
+                    contentRow.setOrder(attributes.getValue("order"));
                 }
                 else if (REMOVE_TAG.equals(localName)) {
-                    String rowId = attributes.getValue(ITEM_ID);
+                    String rowId = attributes.getValue("id");
                     if (storage != null) {
-                        storage.deleteEntry(GlobalConstants.DATABASE_TABLE, rowId);
+                        storage.deleteEntry(GlobalConstants.MENU_ITEM_TABLE_NAME, Storage.MENU_ITEM_ROWID_COLUMN, rowId);
                         deletedNodes++;
                     }
                 }

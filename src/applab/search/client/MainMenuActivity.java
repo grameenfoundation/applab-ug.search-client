@@ -30,6 +30,7 @@ import applab.client.ApplabActivity;
 import applab.client.BrowserActivity;
 import applab.client.BrowserResultDialog;
 import applab.client.HttpHelpers;
+import applab.client.autoupdate.ApplicationUpdateManager;
 import applab.client.dataconnection.DataConnectionManager;
 import applab.client.farmerregistration.FarmerRegistrationAdapter;
 import applab.client.farmerregistration.FarmerRegistrationController;
@@ -217,6 +218,9 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                     BrowserResultDialog.show(this, "Unable to find ID. Try again later.");
                 }
                 break;
+            case ApplicationUpdateManager.INSTALL_APPLICATION:
+            	ApplicationUpdateManager.setFinishedInstall(true);
+            	break;
             default:
                 break;
         }

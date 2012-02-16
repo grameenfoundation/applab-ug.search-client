@@ -27,20 +27,27 @@ import applab.client.search.R;
  * An adapter for the search keywords database
  */
 public class Storage {
-    public static final String KEY_ROWID = "_id";
-    public static final String KEY_VALIDITY = "validity";
-    public static final String KEY_ORDER = "ordering";
-    public static final String KEY_CATEGORY = "category";
-    public static final String KEY_CONTENT = "content";
-    public static final String KEY_UPDATED = "updated";
-    public static final String KEY_ATTRIBUTION = "attribution";
+    /* Menu Table Columns */
+    public static final String MENU_ROWID_COLUMN = "id";
+    public static final String MENU_LABEL_COLUMN = "label";
+
+    /* Menu Item Table Columns */
+    public static final String MENU_ITEM_ROWID_COLUMN = "id";
+    public static final String MENU_ITEM_LABEL_COLUMN = "label";
+    public static final String MENU_ITEM_POSITION_COLUMN = "position";
+    public static final String MENU_ITEM_CONTENT_COLUMN = "content";
+    public static final String MENU_ITEM_MENUID_COLUMN = "menu_id";
+    public static final String MENU_ITEM_PARENTID_COLUMN = "parent_id";
+    public static final String MENU_ITEM_ATTACHMENTID_COLUMN = "attachment_id";
+
+
     private static final String DATABASE_NAME = "search";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
     private static final int SEQUENCES = 32;
-    
+
     /** keep track of batch size to enable batch inserts **/
     private Integer currentBatchSize = 0;
-    private static final Integer MAX_BATCH_SIZE = 200; 
+    private static final Integer MAX_BATCH_SIZE = 200;
 
     private DatabaseHelper databaseHelper;
     private SQLiteDatabase database;
@@ -54,7 +61,7 @@ public class Storage {
 
     /**
      * Attempt to open @DATABASE_NAME database
-     * 
+     *
      * @return Database object
      * @throws SQLException
      */
@@ -76,27 +83,9 @@ public class Storage {
     }
 
     /**
-     * Returns SQL string for table creation
-     * 
-     * @return the SQL statement.
-     */
-    private static String generateCreateTableSqlCommand(String table) {
-        StringBuilder sqlCommand = new StringBuilder();
-        sqlCommand.append("create table " + table);
-        sqlCommand.append(" (_id INTEGER PRIMARY KEY, " + KEY_VALIDITY + " SMALLINT DEFAULT 0, " + KEY_ORDER + " SMALLINT DEFAULT 0, "
-                + KEY_CONTENT + " TEXT DEFAULT 'Content Unavailable', " + KEY_CATEGORY + " VARCHAR DEFAULT NULL, " + KEY_ATTRIBUTION
-                + " VARCHAR DEFAULT NULL, " + KEY_UPDATED + " VARCHAR DEFAULT NULL");
-        for (int i = 0; i < SEQUENCES; i++) {
-            sqlCommand.append(", col" + i + " VARCHAR DEFAULT NULL");
-        }
-        sqlCommand.append(" );");
-        return sqlCommand.toString();
-    }
-
-    /**
      * Select search menu options. Options are the search menu items that the user can select from during a search
      * activity. e.g. Animals, Crops, Farm Inputs, Regional Weather Info are menu options.
-     * 
+     *
      * @param table
      *            the currently active table to query
      * @param optionColumn
@@ -108,7 +97,7 @@ public class Storage {
     public Cursor selectMenuOptions(String table, String optionColumn, String condition) {
         // database.rawQuery("SELECT DISTINCT(" + optionColumn + ") FROM " + table + " WHERE ", selectionArgs)
         return database.query(true, table, new String[] { optionColumn }, condition,
-                null, null, null, " MAX(" + KEY_ORDER + ") DESC, " + optionColumn + " ASC", null);
+                null, null, null, " MAX(" + MENU_ITEM_POSITION_COLUMN + ") DESC, " + optionColumn + " ASC", null);
     }
 
     public HashMap<String, String> selectContent(String table, String condition) {
@@ -118,19 +107,19 @@ public class Storage {
             cursor = database.query(true, table, new String[] {"content", "attribution", "updated"}, condition,
                     null, null, null, null, null);
             cursor.moveToFirst();
-            Integer contentIndex = cursor.getColumnIndexOrThrow("content");            
+            Integer contentIndex = cursor.getColumnIndexOrThrow("content");
             String content = cursor.getString(contentIndex);
-            
+
             Integer attributionIndex = cursor.getColumnIndexOrThrow("attribution");
             String attribution = cursor.getString(attributionIndex);
-            
+
             Integer updatedIndex = cursor.getColumnIndexOrThrow("updated");
             String updated = cursor.getString(updatedIndex);
-            
+
             results.put("content", content);
             results.put("attribution", attribution);
             results.put("updated", updated);
-            
+
             return results;
         }
         finally {
@@ -139,65 +128,65 @@ public class Storage {
             }
         }
     }
-    
-    public boolean deleteEntry(String table, String id) {
-        return database.delete(table, KEY_ROWID + "=" + id, null) > 0;
-    }
 
     public boolean insertContent(String table, ContentValues values) {
         return database.replace(table, null, values) > 0;
     }
-    
-    public boolean deleteEntryInBatch(String table, String id) {
+
+    public boolean deleteEntryInBatch(String table, String rowIdColumn, String id) {
         // Begin a transaction if we're not yet in one
         if(!database.inTransaction()) {
             database.beginTransaction();
         }
-        
-        Boolean successful = deleteEntry(table, id);
-        
+
+        Boolean successful = deleteEntry(table, rowIdColumn, id);
+
         // Increment the currentBatchSize
         currentBatchSize++;
-        
+
         // Write all the previous data
         if((currentBatchSize > MAX_BATCH_SIZE) && database.inTransaction()) {
             database.setTransactionSuccessful();
             database.endTransaction();
             currentBatchSize = 0;
         }
-        
+
         return successful;
-        
+
         // Note: remember to call storage.close() - it will end any pending transactions, in case there are < MAX_BATCH_SIZE values in the batch
     }
-    
+
+    Boolean deleteEntry(String table, String rowIdColumn, String id) {
+        return database.delete(table, rowIdColumn + "=" + id, null) > 0;
+    }
+
     public boolean insertContentInBatch(String table, ContentValues values) {
         // Begin a transaction if we're not yet in one
         if(!database.inTransaction()) {
             database.beginTransaction();
         }
-        
-        // Add the current values 
+
+        // Add the current values
         Boolean successful = insertContent(table, values);
-        
+
         // Increment the currentBatchSize
         currentBatchSize++;
-        
+
         // Write all the previous data
         if((currentBatchSize > MAX_BATCH_SIZE) && database.inTransaction()) {
             database.setTransactionSuccessful();
             database.endTransaction();
             currentBatchSize = 0;
         }
-        
+
         return successful;
-        
-        // Note: remember to call storage.close() - it will end any pending transactions, in case there are < MAX_BATCH_SIZE values in the batch 
+
+        // Note: remember to call storage.close() - it will end any pending transactions, in case there are < MAX_BATCH_SIZE values in the batch
     }
-    
+
     /**
      * Remove all table rows
-     * 
+     *
      * @return the number of rows affected
      */
     public int deleteAll(String table) {
@@ -207,13 +196,13 @@ public class Storage {
     /**
      * checks if the given table exists and has valid data.
      */
-    public boolean tableExistsAndIsValid(String table) {
-        Cursor cursor = database.query(table, new String[] { KEY_ROWID, KEY_CATEGORY }, null,
+    public boolean tableExistsAndIsValid(String table, String idColumn, String labelColumn) {
+        Cursor cursor = database.query(table, new String[] { idColumn}, null,
                 null, null, null, null, "1");
         boolean isValid = false;
         if (cursor.moveToFirst()) {
-            // simple validation: check if a category is not null
-            int columnIndex = cursor.getColumnIndexOrThrow(KEY_CATEGORY);
+            // simple validation: check if the label column is not null
+            int columnIndex = cursor.getColumnIndexOrThrow(labelColumn);
             if (cursor.getString(columnIndex) != null) {
                 isValid = true;
             }
@@ -229,8 +218,39 @@ public class Storage {
 
         @Override
         public void onCreate(SQLiteDatabase database) {
-            // Create keywords table
-            database.execSQL(generateCreateTableSqlCommand(GlobalConstants.DATABASE_TABLE));
+            // Create Menu Table
+            database.execSQL(getMenuTableInitializationSql());
+
+            // Create Menu Item Table
+            database.execSQL(getMenuItemTableInitializationSql());
+        }
+
+        /**
+         * Returns the SQL string for Menu Table creation
+         * @return String
+         */
+        private String getMenuTableInitializationSql() {
+            StringBuilder sqlCommand = new StringBuilder();
+            sqlCommand.append("create table " + GlobalConstants.MENU_TABLE_NAME);
+            sqlCommand.append(" (" + Storage.MENU_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.MENU_LABEL_COLUMN + " TEXT NOT NULL);");
+            return sqlCommand.toString();
+        }
+
+        /**
+         * Returns the SQL string for MenuItem Table creation
+         * @return String
+         */
+        private String getMenuItemTableInitializationSql() {
+
+            StringBuilder sqlCommand = new StringBuilder();
+            sqlCommand.append("create table " + GlobalConstants.MENU_ITEM_TABLE_NAME);
+            sqlCommand.append(" (" + Storage.MENU_ITEM_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.MENU_ITEM_LABEL_COLUMN + " TEXT NOT NULL, "
+                                        + Storage.MENU_ITEM_MENUID_COLUMN + " CHAR(16), " + Storage.MENU_ITEM_PARENTID_COLUMN + " CHAR(16), "
+                                        + Storage.MENU_ITEM_POSITION_COLUMN + " INTEGER, " + Storage.MENU_ITEM_CONTENT_COLUMN + " TEXT, ");
+            sqlCommand.append(" FOREIGN KEY(menu_id) REFERENCES " + GlobalConstants.MENU_TABLE_NAME + "(id) ON DELETE CASCADE, ");
+            sqlCommand.append(" FOREIGN KEY(parent_id) REFERENCES " + GlobalConstants.MENU_ITEM_TABLE_NAME + "(id) ON DELETE CASCADE, ");
+            sqlCommand.append(" );");
+            return sqlCommand.toString();
         }
 
         @Override
@@ -238,8 +258,15 @@ public class Storage {
             Log.w("StorageAdapter", "***Upgrading database from version*** "
                     + oldVersion + " to " + newVersion
                     + ", which will destroy all old data");
-            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.DATABASE_TABLE);
-            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.DATABASE_TABLE2);
+
+            // Get rid of old tables
+            database.execSQL("DROP TABLE IF EXISTS keywords");
+            database.execSQL("DROP TABLE IF EXISTS keywords2");
+
+            // Get rid of new tables if they exist
+            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.MENU_TABLE_NAME);
+            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.MENU_ITEM_TABLE_NAME);
+
             onCreate(database);
         }
     }
