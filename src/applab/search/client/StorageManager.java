@@ -33,15 +33,12 @@ public class StorageManager {
     }
 
     private boolean privateHasKeywords() {
-        // Testing
-        return true;
-
         // once we have valid data, that never changes, but we can
         // switch from invalid to valid at any time
-        /*if (!this.hasKeywords) {
-            this.hasKeywords = getLegacyStorage().tableExistsAndIsValid(GlobalConstants.MENU_ITEM_TABLE_NAME);
+        if (!this.hasKeywords) {
+            this.hasKeywords = getLegacyStorage().tableExistsAndIsValid(GlobalConstants.MENU_ITEM_TABLE_NAME, Storage.MENU_ITEM_ROWID_COLUMN, Storage.MENU_ITEM_LABEL_COLUMN);
         }
 
-        return this.hasKeywords;*/
+        return this.hasKeywords;
     }
 }

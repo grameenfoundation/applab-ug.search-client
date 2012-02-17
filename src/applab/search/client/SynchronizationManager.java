@@ -16,12 +16,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.StringEntity;
+import org.json.simple.parser.ParseException;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
@@ -34,6 +36,7 @@ import android.util.Log;
 import android.widget.Toast;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
+import applab.client.JsonEntityBuilder;
 import applab.client.PropertyStorage;
 import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
@@ -66,6 +69,9 @@ public class SynchronizationManager {
     private Context currentContext;
     private Handler progressMessageHandler;
     private Thread backgroundThread;
+
+    /** Search database */
+    private static Storage searchDatabase;
 
     // used for getting messages from the download and parsing threads
     private Handler internalMessageHandler;
@@ -401,9 +407,6 @@ public class SynchronizationManager {
 
             inboxAdapter.close();
 
-            // Then update local images
-            ImageManager.updatePhoneImages();
-
             // Finally update keywords
             updateKeywords();
         }
@@ -420,40 +423,6 @@ public class SynchronizationManager {
         }
     }
 
-    /**
-     * @throws XmlPullParserException
-     */
-    public void updateKeywords() throws XmlPullParserException {
-        String url = Settings.getNewServerUrl() + ApplabActivity.getGlobalContext().getString(R.string.update_path);
-
-        InputStream keywordStream;
-        try {
-            keywordStream = HttpHelpers.postXmlRequestAndGetStream(url, (StringEntity)getRequestEntity());
-
-            // Write the keywords to disk, and then open a FileStream
-            String filePath = ApplabActivity.getGlobalContext().getCacheDir() + "/keywords.tmp";
-            Boolean downloadSuccessful = XmlHelpers.writeXmlToTempFile(keywordStream, filePath, "</GetKeywordsResponse>");
-            keywordStream.close();
-            File file = new File(filePath);
-            FileInputStream inputStream = new FileInputStream(file);
-
-            if (downloadSuccessful && inputStream != null) {
-                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
-                parseKeywords(inputStream);
-            }
-            else {
-                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
-            }
-
-            if (inputStream != null) {
-                inputStream.close();
-                file.delete();
-            }
-        }
-        catch (IOException e) {
-            sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
-        }
-    }
 
     /**
      * Sets the version in the update request entity
@@ -499,11 +468,11 @@ public class SynchronizationManager {
         }
     }
 
-    private void parseKeywords(InputStream keywordStream) throws XmlPullParserException {
+    private void parseKeywords(InputStream keywordStream) throws XmlPullParserException, ParseException {
         // Call KeywordParser to parse the keywords result and store the contents in our
         // local database
         // TODO: integrate this code into our synchronization manager?
-        KeywordParser keywordParser = new KeywordParser(this.progressMessageHandler, this.internalMessageHandler, keywordStream);
+        JsonSimpleParser keywordParser = new JsonSimpleParser(this.progressMessageHandler, this.internalMessageHandler, keywordStream);
         keywordParser.run();
     }
 
@@ -569,5 +538,66 @@ public class SynchronizationManager {
                 }
             }
         }
+    }
+
+    /**
+     * @throws XmlPullParserException
+     * @throws ParseException
+     */
+    public void updateKeywords() throws XmlPullParserException, ParseException {
+        String url = Settings.getNewServerUrl()
+                + ApplabActivity.getGlobalContext().getString(
+                        R.string.update_path);
+
+        InputStream keywordStream;
+        try {
+            keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
+                    (StringEntity) getRequestEntity());
+
+            // Write the keywords to disk, and then open a FileStream
+            String filePath = ApplabActivity.getGlobalContext().getCacheDir()
+                    + "/keywords.tmp";
+            Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath) ;
+            keywordStream.close();
+            File file = new File(filePath);
+            FileInputStream inputStream = new FileInputStream(file);
+
+            if (downloadSuccessful && inputStream != null) {
+                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
+                parseKeywords(inputStream);
+            } else {
+                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
+            }
+
+            if (inputStream != null) {
+                inputStream.close();
+                file.delete();
+            }
+        } catch (IOException e) {
+            sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
+        }
+    }
+
+    /**
+     * Sets the version in the update request entity
+     *
+     * @return JSON request entity
+     * @throws UnsupportedEncodingException
+     */
+    static AbstractHttpEntity getJsonRequestEntity()
+            throws UnsupportedEncodingException {
+        String keywordsVersion = PropertyStorage.getLocal().getValue(
+                GlobalConstants.KEYWORDS_VERSION_KEY, "2010-07-20 18:34:36");
+        ArrayList<String> menuIds = getMenuIds();
+
+        JsonEntityBuilder jsonRequest = new JsonEntityBuilder(menuIds,
+                keywordsVersion);
+        return jsonRequest.getEntity();
+    }
+
+    public static ArrayList<String> getMenuIds() {
+        ArrayList<String> menuIds = new ArrayList<String>();
+        menuIds = searchDatabase.getLocalMenuIds();
+        return menuIds;
     }
 }

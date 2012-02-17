@@ -12,6 +12,7 @@ the License.
 
 package applab.search.client;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -40,7 +41,6 @@ public class Storage {
     public static final String MENU_ITEM_MENUID_COLUMN = "menu_id";
     public static final String MENU_ITEM_PARENTID_COLUMN = "parent_id";
     public static final String MENU_ITEM_ATTACHMENTID_COLUMN = "attachment_id";
-
 
     private static final String DATABASE_NAME = "search";
     private static final int DATABASE_VERSION = 6;
@@ -76,7 +76,7 @@ public class Storage {
      * Disconnect database
      */
     public void close() {
-        if(database.inTransaction()) {
+        if (database.inTransaction()) {
             database.setTransactionSuccessful();
             database.endTransaction();
         }
@@ -102,47 +102,20 @@ public class Storage {
     }
 
     public String selectContent(String menuItemId) {
-        Cursor cursor = database.query(true, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] {Storage.MENU_ITEM_CONTENT_COLUMN}, Storage.MENU_ITEM_ROWID_COLUMN + " = ?",
-                new String[] {menuItemId}, null, null, null, null);
+        Cursor cursor = database.query(true, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] { Storage.MENU_ITEM_CONTENT_COLUMN },
+                Storage.MENU_ITEM_ROWID_COLUMN + " = ?",
+                new String[] { menuItemId }, null, null, null, null);
         cursor.moveToFirst();
         return cursor.getString(0);
     }
-
 
     public boolean insertContent(String table, ContentValues values) {
         return database.replace(table, null, values) > 0;
     }
 
-    public boolean deleteEntryInBatch(String table, String rowIdColumn, String id) {
-        // Begin a transaction if we're not yet in one
-        if(!database.inTransaction()) {
-            database.beginTransaction();
-        }
-
-        Boolean successful = deleteEntry(table, rowIdColumn, id);
-
-        // Increment the currentBatchSize
-        currentBatchSize++;
-
-        // Write all the previous data
-        if((currentBatchSize > MAX_BATCH_SIZE) && database.inTransaction()) {
-            database.setTransactionSuccessful();
-            database.endTransaction();
-            currentBatchSize = 0;
-        }
-
-        return successful;
-
-        // Note: remember to call storage.close() - it will end any pending transactions, in case there are < MAX_BATCH_SIZE values in the batch
-    }
-
-    Boolean deleteEntry(String table, String rowIdColumn, String id) {
-        return database.delete(table, rowIdColumn + "=" + id, null) > 0;
-    }
-
     public boolean insertContentInBatch(String table, ContentValues values) {
         // Begin a transaction if we're not yet in one
-        if(!database.inTransaction()) {
+        if (!database.inTransaction()) {
             database.beginTransaction();
         }
 
@@ -153,7 +126,7 @@ public class Storage {
         currentBatchSize++;
 
         // Write all the previous data
-        if((currentBatchSize > MAX_BATCH_SIZE) && database.inTransaction()) {
+        if ((currentBatchSize > MAX_BATCH_SIZE) && database.inTransaction()) {
             database.setTransactionSuccessful();
             database.endTransaction();
             currentBatchSize = 0;
@@ -161,7 +134,8 @@ public class Storage {
 
         return successful;
 
-        // Note: remember to call storage.close() - it will end any pending transactions, in case there are < MAX_BATCH_SIZE values in the batch
+        // Note: remember to call storage.close() - it will end any pending transactions, in case there are <
+        // MAX_BATCH_SIZE values in the batch
     }
 
     /**
@@ -177,7 +151,7 @@ public class Storage {
      * checks if the given table exists and has valid data.
      */
     public boolean tableExistsAndIsValid(String table, String idColumn, String labelColumn) {
-        Cursor cursor = database.query(table, new String[] { idColumn}, null,
+        Cursor cursor = database.query(table, new String[] { idColumn, labelColumn }, null,
                 null, null, null, null, "1");
         boolean isValid = false;
         if (cursor.moveToFirst()) {
@@ -207,26 +181,31 @@ public class Storage {
 
         /**
          * Returns the SQL string for Menu Table creation
+         *
          * @return String
          */
         private String getMenuTableInitializationSql() {
             StringBuilder sqlCommand = new StringBuilder();
             sqlCommand.append("create table " + GlobalConstants.MENU_TABLE_NAME);
-            sqlCommand.append(" (" + Storage.MENU_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.MENU_LABEL_COLUMN + " TEXT NOT NULL);");
+            sqlCommand
+                    .append(" (" + Storage.MENU_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.MENU_LABEL_COLUMN + " TEXT NOT NULL);");
             return sqlCommand.toString();
         }
 
         /**
          * Returns the SQL string for MenuItem Table creation
+         *
          * @return String
          */
         private String getMenuItemTableInitializationSql() {
 
             StringBuilder sqlCommand = new StringBuilder();
             sqlCommand.append("create table " + GlobalConstants.MENU_ITEM_TABLE_NAME);
-            sqlCommand.append(" (" + Storage.MENU_ITEM_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.MENU_ITEM_LABEL_COLUMN + " TEXT NOT NULL, "
-                                        + Storage.MENU_ITEM_MENUID_COLUMN + " CHAR(16), " + Storage.MENU_ITEM_PARENTID_COLUMN + " CHAR(16), "
-                                        + Storage.MENU_ITEM_POSITION_COLUMN + " INTEGER, " + Storage.MENU_ITEM_CONTENT_COLUMN + " TEXT, " + Storage.MENU_ITEM_ATTACHMENTID_COLUMN + " CHAR(16), ");
+            sqlCommand.append(" (" + Storage.MENU_ITEM_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.MENU_ITEM_LABEL_COLUMN
+                    + " TEXT NOT NULL, "
+                    + Storage.MENU_ITEM_MENUID_COLUMN + " CHAR(16), " + Storage.MENU_ITEM_PARENTID_COLUMN + " CHAR(16), "
+                    + Storage.MENU_ITEM_POSITION_COLUMN + " INTEGER, " + Storage.MENU_ITEM_CONTENT_COLUMN + " TEXT, "
+                    + Storage.MENU_ITEM_ATTACHMENTID_COLUMN + " CHAR(16), ");
             sqlCommand.append(" FOREIGN KEY(menu_id) REFERENCES " + GlobalConstants.MENU_TABLE_NAME + "(id) ON DELETE CASCADE, ");
             sqlCommand.append(" FOREIGN KEY(parent_id) REFERENCES " + GlobalConstants.MENU_ITEM_TABLE_NAME + "(id) ON DELETE CASCADE ");
             sqlCommand.append(" );");
@@ -253,17 +232,21 @@ public class Storage {
 
     /**
      * Returns a cursor containing top level items for a given menu
+     *
      * @param string
      * @return
      */
     public Cursor getTopLevelMenuItems(String menuId) {
-        Cursor itemCursor = database.query(false, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] {Storage.MENU_ITEM_ROWID_COLUMN, Storage.MENU_ITEM_LABEL_COLUMN, Storage.MENU_ITEM_ATTACHMENTID_COLUMN},
-                Storage.MENU_ITEM_MENUID_COLUMN + " = ? AND " + Storage.MENU_ITEM_PARENTID_COLUMN + " IS NULL", new String[] {menuId}, null, null, Storage.MENU_ITEM_POSITION_COLUMN + " ASC, " + Storage.MENU_ITEM_LABEL_COLUMN + " ASC", null);
+        Cursor itemCursor = database.query(false, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] { Storage.MENU_ITEM_ROWID_COLUMN,
+                Storage.MENU_ITEM_LABEL_COLUMN, Storage.MENU_ITEM_ATTACHMENTID_COLUMN },
+                Storage.MENU_ITEM_MENUID_COLUMN + " = ? AND " + Storage.MENU_ITEM_PARENTID_COLUMN + " IS NULL", new String[] { menuId },
+                null, null, Storage.MENU_ITEM_POSITION_COLUMN + " ASC, " + Storage.MENU_ITEM_LABEL_COLUMN + " ASC", null);
         return itemCursor;
     }
 
     public Cursor getMenuList() {
-        Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] {Storage.MENU_ROWID_COLUMN, Storage.MENU_LABEL_COLUMN}, null, null, null, null, " " +
+        Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] { Storage.MENU_ROWID_COLUMN,
+                Storage.MENU_LABEL_COLUMN }, null, null, null, null, " " +
                 Storage.MENU_LABEL_COLUMN + " ASC", null);
         return cursor;
     }
@@ -279,17 +262,63 @@ public class Storage {
     }
 
     public Cursor getChildMenuItems(String parentMenuItemId) {
-        Cursor itemCursor = database.query(false, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] {Storage.MENU_ITEM_ROWID_COLUMN, Storage.MENU_ITEM_LABEL_COLUMN, Storage.MENU_ITEM_ATTACHMENTID_COLUMN},
-                Storage.MENU_ITEM_PARENTID_COLUMN + " = ?", new String[] {parentMenuItemId}, null, null,
+        Cursor itemCursor = database.query(false, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] { Storage.MENU_ITEM_ROWID_COLUMN,
+                Storage.MENU_ITEM_LABEL_COLUMN, Storage.MENU_ITEM_ATTACHMENTID_COLUMN },
+                Storage.MENU_ITEM_PARENTID_COLUMN + " = ?", new String[] { parentMenuItemId }, null, null,
                 Storage.MENU_ITEM_POSITION_COLUMN + " ASC, " + Storage.MENU_ITEM_LABEL_COLUMN + " ASC", null);
         return itemCursor;
     }
 
     public String getFirstMenuId() {
-        Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] {Storage.MENU_ROWID_COLUMN}, null, null, null, null, null, null);
+        Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] { Storage.MENU_ROWID_COLUMN }, null, null,
+                null, null, null, null);
         if (cursor.moveToFirst()) {
             return cursor.getString(0);
         }
         return null;
+    }
+
+    /**
+     * Delete all entries for this id and also where the parent id is this id (delete children too)
+     *
+     * @param table
+     * @param id
+     * @return
+     */
+    public boolean deleteMenuItemEntry(String itemId) {
+        return database.delete(GlobalConstants.MENU_ITEM_TABLE_NAME, Storage.MENU_ITEM_ROWID_COLUMN + "='" + itemId + "'", null) > 0;
+    }
+
+    /**
+     * Delete all entries in menu table for this id and also where the parent id this id (delete children too)
+     *
+     * @param table
+     * @param id
+     * @return
+     */
+    public boolean deleteMenuEntry(String menuId) {
+        return database.delete(GlobalConstants.MENU_TABLE_NAME, Storage.MENU_ROWID_COLUMN + "= '" + menuId + "'", null) > 0;
+
+    }
+
+    public boolean insertMenu(String table, ContentValues values) {
+        return database.replace(table, null, values) > 0;
+    }
+
+    public ArrayList<String> getLocalMenuIds() {
+        Cursor cursor = getMenuList();
+        ArrayList<String> results = new ArrayList<String>();
+        try {
+            while(cursor.moveToNext()) {
+                results.add(cursor.getString(0));
+            }
+
+            return results;
+        }
+        finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
     }
 }

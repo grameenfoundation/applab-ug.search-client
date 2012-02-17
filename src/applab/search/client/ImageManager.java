@@ -139,11 +139,12 @@ public class ImageManager {
             for (String imageId : imageIds) {
                 try {
                     Log.d("Image Download", "Getting " + imageId);
-                    InputStream image = HttpHelpers.getResource(Settings.getServerUrl() + "/search/sfimages?imageId="+imageId);
+                    InputStream image = HttpHelpers.getResource(Settings.getNewServerUrl()  + "search/getsfimages?imageId="+imageId);
                     ImageFilesUtility.writeFile(imageId + ".jpeg", image);
                 } catch (IOException e) {
                     Log.e("IOException", e.getMessage());
                 }
+                JsonSimpleParser.incrementProgressLevel();
             }
         }
     }
@@ -153,13 +154,13 @@ public class ImageManager {
             for (String imageId : imageIds) {
                 File file = new File("/sdcard/ckwsearch/", imageId + ".jpeg");
                 ImageFilesUtility.deleteFile(file);
+                JsonSimpleParser.incrementProgressLevel();
             }
         }
     }
 
     public static void updatePhoneImages(List<String> updatedImageIds, List<String> deletedImageIds) {
-        List<String> images = new ArrayList<String>();
         getImages(updatedImageIds);
-        getImages(deletedImageIds);
+        deleteImages(deletedImageIds);
     }
 }
