@@ -102,11 +102,20 @@ public class Storage {
     }
 
     public String selectContent(String menuItemId) {
-        Cursor cursor = database.query(true, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] { Storage.MENU_ITEM_CONTENT_COLUMN },
-                Storage.MENU_ITEM_ROWID_COLUMN + " = ?",
-                new String[] { menuItemId }, null, null, null, null);
-        cursor.moveToFirst();
-        return cursor.getString(0);
+        Cursor cursor = null;
+        try {
+            cursor = database.query(true, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] { Storage.MENU_ITEM_CONTENT_COLUMN },
+                    Storage.MENU_ITEM_ROWID_COLUMN + " = ?",
+                    new String[] { menuItemId }, null, null, null, null);
+            cursor.moveToFirst();
+            String content = cursor.getString(0);
+            return content;
+        }
+        finally {
+            if (null != cursor) {
+                cursor.close();
+            }
+        }
     }
 
     public boolean insertContent(String table, ContentValues values) {
@@ -239,7 +248,8 @@ public class Storage {
     public Cursor getTopLevelMenuItems(String menuId) {
         Cursor itemCursor = database.query(false, GlobalConstants.MENU_ITEM_TABLE_NAME, new String[] { Storage.MENU_ITEM_ROWID_COLUMN,
                 Storage.MENU_ITEM_LABEL_COLUMN, Storage.MENU_ITEM_ATTACHMENTID_COLUMN },
-                Storage.MENU_ITEM_MENUID_COLUMN + " = ? AND " + Storage.MENU_ITEM_PARENTID_COLUMN + " IS NULL", new String[] { menuId },
+                Storage.MENU_ITEM_MENUID_COLUMN + " = ? AND (" + Storage.MENU_ITEM_PARENTID_COLUMN + " IS NULL OR "
+                        + Storage.MENU_ITEM_PARENTID_COLUMN + " = '' )", new String[] { menuId },
                 null, null, Storage.MENU_ITEM_POSITION_COLUMN + " ASC, " + Storage.MENU_ITEM_LABEL_COLUMN + " ASC", null);
         return itemCursor;
     }
@@ -270,12 +280,20 @@ public class Storage {
     }
 
     public String getFirstMenuId() {
-        Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] { Storage.MENU_ROWID_COLUMN }, null, null,
-                null, null, null, null);
-        if (cursor.moveToFirst()) {
-            return cursor.getString(0);
+        Cursor cursor = null;
+        try {
+            cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] { Storage.MENU_ROWID_COLUMN }, null, null,
+                    null, null, null, null);
+            if (cursor.moveToFirst()) {
+                return cursor.getString(0);
+            }
+            return null;
         }
-        return null;
+        finally {
+            if (null != cursor) {
+                cursor.close();
+            }
+        }
     }
 
     /**
@@ -309,7 +327,7 @@ public class Storage {
         Cursor cursor = getMenuList();
         ArrayList<String> results = new ArrayList<String>();
         try {
-            while(cursor.moveToNext()) {
+            while (cursor.moveToNext()) {
                 results.add(cursor.getString(0));
             }
 

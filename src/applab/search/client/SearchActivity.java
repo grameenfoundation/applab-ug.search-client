@@ -299,6 +299,11 @@ public class SearchActivity extends BaseSearchActivity {
                 // Get the item for which we want to show content
                 String contentItemId = getPreviousSelectedItemId();
 
+                if("".equals(contentItemId)) {
+                    // no previous data
+                    return;
+                }
+
                 // Decrement page and breadcrumb (so that back button works well)
                 pageIndex--;
                 if (breadcrumbItems.size() > 0) {
