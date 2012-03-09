@@ -123,7 +123,7 @@ public class ImageFilesUtility {
         if (!storageReady()) {
             return false;
         }
-        
+
         fileName = getFullPath(fileName);
         if(fileName == null) {
             return false;
@@ -135,7 +135,7 @@ public class ImageFilesUtility {
         for(String format : SUPPORTED_FORMATS ) {
             String path = ROOT + fileName + format;
             File file = new File(path);
-            
+
             if (file.exists()) {
                 return path;
             }

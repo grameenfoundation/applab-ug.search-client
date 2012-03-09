@@ -30,14 +30,12 @@ public class GlobalConstants {
     public static final int SETUP_DIALOG = 3;
 
     public static final String KEYWORDS_VERSION_KEY = "keywordsVersion";
-    
+
     public static final String FARMER_REG_FORM_HASH = "farmerRegistrationFormHash";
 
-    /** keywords table 1 */
-    public static final String DATABASE_TABLE = "keywords";
-
-    /** keywords table 2 */
-    public static final String DATABASE_TABLE2 = "keywords2";
+    /** The new tables **/
+    public static final String MENU_TABLE_NAME = "menu";
+    public static final String MENU_ITEM_TABLE_NAME = "menu_item";
 
     /** current user name or id */
     public static String intervieweeName;

@@ -16,12 +16,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.StringEntity;
+import org.json.simple.parser.ParseException;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
@@ -34,6 +36,7 @@ import android.util.Log;
 import android.widget.Toast;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
+import applab.client.JsonEntityBuilder;
 import applab.client.PropertyStorage;
 import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
@@ -43,11 +46,11 @@ import applab.client.search.R;
 /**
  * The SynchronizationManager is responsible for all the complexity involved in scheduling timers, background threads,
  * coordinating UI, etc.
- * 
+ *
  * SynchronizationManager handles three main tasks: 1) Ensuring keywords and their associated content is up to date 2)
  * Sending any searches that failed to send in the mainline path 3) Transmitting logs of any searches that have happened
  * on our cached data so that we can track this activity for M&E purposes on our servers
- * 
+ *
  * TODO: move the general scheduling algorithm into shared code and leverage it
  */
 public class SynchronizationManager {
@@ -66,6 +69,9 @@ public class SynchronizationManager {
     private Context currentContext;
     private Handler progressMessageHandler;
     private Thread backgroundThread;
+
+    /** Search database */
+    private static Storage searchDatabase;
 
     // used for getting messages from the download and parsing threads
     private Handler internalMessageHandler;
@@ -135,7 +141,7 @@ public class SynchronizationManager {
                     synchronizeNow = true;
                 }
             }
-            
+
             if(synchronizeNow && (!processAlreadyRunning)) {
                 SynchronizationManager.singleton.launchedFromTimer = launchedFromTimer;
                 if (isModal) {
@@ -144,7 +150,7 @@ public class SynchronizationManager {
                 }
             }
         }
-        
+
         if (processAlreadyRunning) {
             // SynchronizationManager.singleton.attachActivity(context, completionCallback);
             Toast notification = Toast.makeText(context,
@@ -169,7 +175,7 @@ public class SynchronizationManager {
 
     /**
      * Make sure our background timer is scheduled. Assumes that it's called under a lock.
-     * 
+     *
      * Returns true if we allocated the timer
      */
     public boolean ensureTimerIsScheduled() {
@@ -222,7 +228,7 @@ public class SynchronizationManager {
     /**
      * We have a new activity to attach to our progress UI and/or we have to bring up a progress dialog to link into an
      * existing synchronization
-     * 
+     *
      * @deprecated This function is being deprecated in 3.1 due to conflicts with the background process. We now show a
      *             toast instead
      */
@@ -362,7 +368,7 @@ public class SynchronizationManager {
 
     /**
      * Called by our background or timer thread to perform the actual synchronization tasks from a separate thread.
-     * 
+     *
      * @throws XmlPullParserException
      */
     private void performBackgroundSynchronization() throws XmlPullParserException {
@@ -401,9 +407,6 @@ public class SynchronizationManager {
 
             inboxAdapter.close();
 
-            // Then update local images
-            ImageManager.updateLocalImages();
-
             // Finally update keywords
             updateKeywords();
         }
@@ -420,44 +423,10 @@ public class SynchronizationManager {
         }
     }
 
-    /**
-     * @throws XmlPullParserException
-     */
-    public void updateKeywords() throws XmlPullParserException {
-        String url = Settings.getNewServerUrl() + ApplabActivity.getGlobalContext().getString(R.string.update_path);
-
-        InputStream keywordStream;
-        try {
-            keywordStream = HttpHelpers.postXmlRequestAndGetStream(url, (StringEntity)getRequestEntity());
-
-            // Write the keywords to disk, and then open a FileStream
-            String filePath = ApplabActivity.getGlobalContext().getCacheDir() + "/keywords.tmp";
-            Boolean downloadSuccessful = XmlHelpers.writeXmlToTempFile(keywordStream, filePath, "</GetKeywordsResponse>");
-            keywordStream.close();
-            File file = new File(filePath);
-            FileInputStream inputStream = new FileInputStream(file);
-
-            if (downloadSuccessful && inputStream != null) {
-                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
-                parseKeywords(inputStream);
-            }
-            else {
-                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
-            }
-
-            if (inputStream != null) {
-                inputStream.close();
-                file.delete();
-            }
-        }
-        catch (IOException e) {
-            sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
-        }
-    }
 
     /**
      * Sets the version in the update request entity
-     * 
+     *
      * @return XML request entity
      * @throws UnsupportedEncodingException
      */
@@ -499,11 +468,11 @@ public class SynchronizationManager {
         }
     }
 
-    private void parseKeywords(InputStream keywordStream) throws XmlPullParserException {
+    private void parseKeywords(InputStream keywordStream) throws XmlPullParserException, ParseException {
         // Call KeywordParser to parse the keywords result and store the contents in our
         // local database
         // TODO: integrate this code into our synchronization manager?
-        KeywordParser keywordParser = new KeywordParser(this.progressMessageHandler, this.internalMessageHandler, keywordStream);
+        JsonSimpleParser keywordParser = new JsonSimpleParser(this.progressMessageHandler, this.internalMessageHandler, keywordStream);
         keywordParser.run();
     }
 
@@ -528,10 +497,10 @@ public class SynchronizationManager {
 
     /**
      * handler that we use to schedule synchronization tasks on a separate thread
-     * 
+     *
      * Used both on-demand and timer-based synchronization. In the on-demand case, we may interact with UI through the
      * message pump
-     * 
+     *
      */
     private class BackgroundSynchronizationTask implements Runnable {
         private SynchronizationManager synchronizationManager;
@@ -569,5 +538,66 @@ public class SynchronizationManager {
                 }
             }
         }
+    }
+
+    /**
+     * @throws XmlPullParserException
+     * @throws ParseException
+     */
+    public void updateKeywords() throws XmlPullParserException, ParseException {
+        String url = Settings.getNewServerUrl()
+                + ApplabActivity.getGlobalContext().getString(
+                        R.string.update_path);
+
+        InputStream keywordStream;
+        try {
+            keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
+                    (StringEntity) getRequestEntity());
+
+            // Write the keywords to disk, and then open a FileStream
+            String filePath = ApplabActivity.getGlobalContext().getCacheDir()
+                    + "/keywords.tmp";
+            Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath) ;
+            keywordStream.close();
+            File file = new File(filePath);
+            FileInputStream inputStream = new FileInputStream(file);
+
+            if (downloadSuccessful && inputStream != null) {
+                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
+                parseKeywords(inputStream);
+            } else {
+                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
+            }
+
+            if (inputStream != null) {
+                inputStream.close();
+                file.delete();
+            }
+        } catch (IOException e) {
+            sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
+        }
+    }
+
+    /**
+     * Sets the version in the update request entity
+     *
+     * @return JSON request entity
+     * @throws UnsupportedEncodingException
+     */
+    static AbstractHttpEntity getJsonRequestEntity()
+            throws UnsupportedEncodingException {
+        String keywordsVersion = PropertyStorage.getLocal().getValue(
+                GlobalConstants.KEYWORDS_VERSION_KEY, "2010-07-20 18:34:36");
+        ArrayList<String> menuIds = getMenuIds();
+
+        JsonEntityBuilder jsonRequest = new JsonEntityBuilder(menuIds,
+                keywordsVersion);
+        return jsonRequest.getEntity();
+    }
+
+    public static ArrayList<String> getMenuIds() {
+        ArrayList<String> menuIds = new ArrayList<String>();
+        menuIds = searchDatabase.getLocalMenuIds();
+        return menuIds;
     }
 }
