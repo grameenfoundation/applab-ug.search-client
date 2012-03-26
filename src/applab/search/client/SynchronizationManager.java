@@ -36,7 +36,6 @@ import android.util.Log;
 import android.widget.Toast;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
-import applab.client.JsonEntityBuilder;
 import applab.client.PropertyStorage;
 import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
@@ -46,11 +45,11 @@ import applab.client.search.R;
 /**
  * The SynchronizationManager is responsible for all the complexity involved in scheduling timers, background threads,
  * coordinating UI, etc.
- *
+ * 
  * SynchronizationManager handles three main tasks: 1) Ensuring keywords and their associated content is up to date 2)
  * Sending any searches that failed to send in the mainline path 3) Transmitting logs of any searches that have happened
  * on our cached data so that we can track this activity for M&E purposes on our servers
- *
+ * 
  * TODO: move the general scheduling algorithm into shared code and leverage it
  */
 public class SynchronizationManager {
@@ -142,7 +141,7 @@ public class SynchronizationManager {
                 }
             }
 
-            if(synchronizeNow && (!processAlreadyRunning)) {
+            if (synchronizeNow && (!processAlreadyRunning)) {
                 SynchronizationManager.singleton.launchedFromTimer = launchedFromTimer;
                 if (isModal) {
                     // start a modal synchronization episode
@@ -175,7 +174,7 @@ public class SynchronizationManager {
 
     /**
      * Make sure our background timer is scheduled. Assumes that it's called under a lock.
-     *
+     * 
      * Returns true if we allocated the timer
      */
     public boolean ensureTimerIsScheduled() {
@@ -215,10 +214,11 @@ public class SynchronizationManager {
         }
 
         BackgroundSynchronizationTask task = new BackgroundSynchronizationTask(this, true);
-        if(this.launchedFromTimer) {
+        if (this.launchedFromTimer) {
             // Timer already has it's own thread, so just run the task
             task.run();
-        } else {
+        }
+        else {
             // Start a new thread
             this.backgroundThread = new Thread(task);
             this.backgroundThread.start();
@@ -228,7 +228,7 @@ public class SynchronizationManager {
     /**
      * We have a new activity to attach to our progress UI and/or we have to bring up a progress dialog to link into an
      * existing synchronization
-     *
+     * 
      * @deprecated This function is being deprecated in 3.1 due to conflicts with the background process. We now show a
      *             toast instead
      */
@@ -368,7 +368,7 @@ public class SynchronizationManager {
 
     /**
      * Called by our background or timer thread to perform the actual synchronization tasks from a separate thread.
-     *
+     * 
      * @throws XmlPullParserException
      */
     private void performBackgroundSynchronization() throws XmlPullParserException {
@@ -401,10 +401,6 @@ public class SynchronizationManager {
             inboxAdapter.open();
             submitPendingUsageLogs(inboxAdapter);
 
-            /*
-             * Comment out the code below as we will look to remove in 3.2 TODO submitIncompleteSearches(inboxAdapter);
-             */
-
             inboxAdapter.close();
 
             // Finally update keywords
@@ -423,10 +419,9 @@ public class SynchronizationManager {
         }
     }
 
-
     /**
      * Sets the version in the update request entity
-     *
+     * 
      * @return XML request entity
      * @throws UnsupportedEncodingException
      */
@@ -497,10 +492,10 @@ public class SynchronizationManager {
 
     /**
      * handler that we use to schedule synchronization tasks on a separate thread
-     *
+     * 
      * Used both on-demand and timer-based synchronization. In the on-demand case, we may interact with UI through the
      * message pump
-     *
+     * 
      */
     private class BackgroundSynchronizationTask implements Runnable {
         private SynchronizationManager synchronizationManager;
@@ -509,7 +504,7 @@ public class SynchronizationManager {
         private boolean hasLock;
 
         public BackgroundSynchronizationTask(SynchronizationManager synchronizationManager,
-                                             boolean hasLock) {
+                boolean hasLock) {
             this.synchronizationManager = synchronizationManager;
             this.hasLock = hasLock;
         }
@@ -549,15 +544,20 @@ public class SynchronizationManager {
                 + ApplabActivity.getGlobalContext().getString(
                         R.string.update_path);
 
+        int networkTimeout = 5 * 60 * 1000;
+
         InputStream keywordStream;
         try {
+
             keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                    (StringEntity) getRequestEntity());
+                    (StringEntity)getRequestEntity());
+            // keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
+            // (StringEntity) getRequestEntity(), networkTimeout);
 
             // Write the keywords to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir()
                     + "/keywords.tmp";
-            Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath) ;
+            Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath);
             keywordStream.close();
             File file = new File(filePath);
             FileInputStream inputStream = new FileInputStream(file);
@@ -565,7 +565,8 @@ public class SynchronizationManager {
             if (downloadSuccessful && inputStream != null) {
                 sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
                 parseKeywords(inputStream);
-            } else {
+            }
+            else {
                 sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
             }
 
@@ -573,26 +574,10 @@ public class SynchronizationManager {
                 inputStream.close();
                 file.delete();
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
-    }
-
-    /**
-     * Sets the version in the update request entity
-     *
-     * @return JSON request entity
-     * @throws UnsupportedEncodingException
-     */
-    static AbstractHttpEntity getJsonRequestEntity()
-            throws UnsupportedEncodingException {
-        String keywordsVersion = PropertyStorage.getLocal().getValue(
-                GlobalConstants.KEYWORDS_VERSION_KEY, "2010-07-20 18:34:36");
-        ArrayList<String> menuIds = getMenuIds();
-
-        JsonEntityBuilder jsonRequest = new JsonEntityBuilder(menuIds,
-                keywordsVersion);
-        return jsonRequest.getEntity();
     }
 
     public static ArrayList<String> getMenuIds() {
