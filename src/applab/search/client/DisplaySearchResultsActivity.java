@@ -112,7 +112,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
 
             if (!configurationChanged && searchResult != null) {
                 DisplaySearchResultsActivity.lastRowId =
-                            inboxDatabase.insertRecord(searchTitle, searchResult, farmerId, location, "Complete", request);
+                        inboxDatabase.insertRecord(searchTitle, searchResult, farmerId, location, "Complete", request);
             }
 
             /**
@@ -130,7 +130,13 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
                 this.request = inboxCursor.getString(requestColumn);
             }
             if (this.location == null || this.location.length() == 0) {
-                this.location = inboxCursor.getString(locationColumn);
+                try {
+                    this.location = inboxCursor.getString(locationColumn);
+                }
+                catch (Exception e) {
+                    // No location was captured
+                    this.location = "";
+                }
             }
 
             if (this.farmerId == null || this.farmerId.length() == 0) {
@@ -206,7 +212,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
 
     /**
      * makes an inbox access log entry
-     * 
+     *
      * @return the last table insert ID
      */
     private long insertLogEntry() {

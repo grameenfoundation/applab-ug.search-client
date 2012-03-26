@@ -5,10 +5,10 @@ import applab.client.search.R;
 
 /**
  * Singleton that is responsible for managing the local storage of our data.
- * 
+ *
  * This is primarily our local cache of keywords and results, but also includes local storage of our unsent queries and
  * local search usage
- * 
+ *
  * TODO: clean this up, unify with Storage class, and migrate the majority to common code
  */
 public class StorageManager {
@@ -36,7 +36,7 @@ public class StorageManager {
         // once we have valid data, that never changes, but we can
         // switch from invalid to valid at any time
         if (!this.hasKeywords) {
-            this.hasKeywords = getLegacyStorage().tableExistsAndIsValid(GlobalConstants.DATABASE_TABLE);
+            this.hasKeywords = getLegacyStorage().tableExistsAndIsValid(GlobalConstants.MENU_ITEM_TABLE_NAME, Storage.MENU_ITEM_ROWID_COLUMN, Storage.MENU_ITEM_LABEL_COLUMN);
         }
 
         return this.hasKeywords;

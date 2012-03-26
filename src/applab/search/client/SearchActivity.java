@@ -33,8 +33,8 @@ import applab.client.location.GpsManager;
 import applab.client.search.R;
 
 /**
- * Responsible for constructing, displaying keyword option sequences, and submitting search queries.
- * 
+ * Responsible for constructing, displaying option pages, and submitting search queries.
+ *
  */
 public class SearchActivity extends BaseSearchActivity {
 
@@ -51,29 +51,36 @@ public class SearchActivity extends BaseSearchActivity {
 
     private Button backButton;
 
-    /** Layout for first search sequence */
+    /** Layout for first search page */
     private LinearLayout startLayout;
 
-    /** Layout for all but first search sequence */
+    /** Layout for all subsequent pages */
     private LinearLayout layout;
 
-    private RadioGroup keywordChoices;
+    /** The radio group to show on this page */
+    private RadioGroup pageRadioGroup;
 
-    /** view where search path is displayed */
-    private TextView searchPath;
+    /**
+     * A hashmap to hold the ids of the currently displayed items. It is used to get the id to use in the next selection
+     **/
+    private HashMap<Integer, String> pageItemIds;
 
-    /** holds selected keywords */
-    private ArrayList<String> selectedKeywords;
+    /** View where breadcrumb is displayed */
+    private TextView breadcrumbView;
 
-    /** holds the selected radio button ID */
-    private int radioId;
+    /** Holds all the previously selected items in this path/breadcrumb */
+    private ArrayList<BreadcrumbItem> breadcrumbItems;
 
-    /** search sequence number */
-    private int sequence;
+    private class BreadcrumbItem {
+        String label;
+        String id;
+    }
 
-    private String lastSelection = "";
+    /** Holds the selected radio button ID */
+    private int selectedRadioButtonId;
 
-    private String currentCondition;
+    /** Page index. Tracking this makes some operations easier */
+    private int pageIndex = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -81,62 +88,41 @@ public class SearchActivity extends BaseSearchActivity {
         this.searchDatabase = new Storage(this);
 
         setContentView(R.layout.main);
-        this.keywordChoices = (RadioGroup)findViewById(R.id.radio_group);
-        this.keywordChoices.bringToFront();
+        this.pageRadioGroup = (RadioGroup)findViewById(R.id.radio_group);
+        this.pageRadioGroup.bringToFront();
         this.nextButtonSmall = (Button)findViewById(R.id.next_button);
         this.nextButtonLarge = (Button)findViewById(R.id.next);
         this.backButton = (Button)findViewById(R.id.back_button);
-        this.searchPath = (TextView)findViewById(R.id.search);
-        this.searchPath.setEllipsize(TextUtils.TruncateAt.START);
-        this.searchPath.setSingleLine();
-        this.searchPath.setHorizontallyScrolling(true);
+        this.breadcrumbView = (TextView)findViewById(R.id.search);
+        this.breadcrumbView.setEllipsize(TextUtils.TruncateAt.START);
+        this.breadcrumbView.setSingleLine();
+        this.breadcrumbView.setHorizontallyScrolling(true);
         this.startLayout = (LinearLayout)findViewById(R.id.startLayout);
         this.nextButtonSmall.setText(getString(R.string.next_button));
         this.layout = (LinearLayout)findViewById(R.id.layout);
         this.backButton.setText(getString(R.string.back_button));
 
-        // Initialize selectedKeywords to empty array list
-        this.selectedKeywords = new ArrayList<String>();
+        // Initialize selectedKeywords to empty array list, and also pageItemIds
+        this.breadcrumbItems = new ArrayList<BreadcrumbItem>();
+        this.pageItemIds = new HashMap<Integer, String>();
 
-        // if (!SynchronizationManager.isSynchronizing()) {
-            ActivityState instanceState = (ActivityState)getLastNonConfigurationInstance();
-
-            if (instanceState != null) {
-                this.sequence = instanceState.currentKeywordSegmentIndex;
-                this.selectedKeywords = instanceState.keywords;
-                String query = "";
-                for (String keywordSegment : this.selectedKeywords) {
-                    query = query.concat(" >" + keywordSegment);
-                }
-                this.searchPath.setText(query);
-            }
-            else {
-                this.sequence = -1;
-            }
-
-            buildKeywordsMenu();
-        //}
-
-        if (this.sequence > 1) {
-            this.startLayout.setVisibility(View.GONE);
-        }
-        else {
-            this.layout.setVisibility(View.GONE);
-        }
+        // Build the menu
+        buildMenu();
 
         this.nextButtonLarge.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                radioId = keywordChoices.getCheckedRadioButtonId();
+                // Get the selected radio button, if any
+                selectedRadioButtonId = pageRadioGroup.getCheckedRadioButtonId();
 
-                if (radioId != -1) {
-                    RadioButton rb = (RadioButton)findViewById(radioId);
-                    String choice = rb.getText().toString();
-                    selectedKeywords.add(new String(choice));
-                    searchPath.setText(getSearchPath());
-                    ++sequence;
-                    buildKeywordsMenu();
-                    startLayout.setVisibility(View.GONE);
-                    layout.setVisibility(View.VISIBLE);
+                if (selectedRadioButtonId != -1) {
+                    // Use it to find the selected label, and add it to the breadcrumb
+                    updateBreadcrumbFromRadioButtonSelection();
+
+                    // Also update the pageNumber
+                    ++pageIndex;
+
+                    // Build the menu
+                    buildMenu();
                 }
                 else {
                     Toast toast = Toast.makeText(getApplicationContext(),
@@ -150,21 +136,16 @@ public class SearchActivity extends BaseSearchActivity {
 
         this.nextButtonSmall.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                radioId = keywordChoices.getCheckedRadioButtonId();
+                selectedRadioButtonId = pageRadioGroup.getCheckedRadioButtonId();
 
-                if (radioId != -1) {
-                    RadioButton rb = (RadioButton)findViewById(radioId);
-                    String choice = rb.getText().toString();
-                    String query = "";
-                    selectedKeywords.add(new String(choice));
+                if (selectedRadioButtonId != -1) {
+                    updateBreadcrumbFromRadioButtonSelection();
 
-                    for (int i = 0; i < selectedKeywords.size(); i++) {
-                        query = query.concat(" >" + selectedKeywords.get(i));
-                    }
+                    // Also update the pageNumber
+                    ++pageIndex;
 
-                    searchPath.setText(query);
-                    ++sequence;
-                    buildKeywordsMenu();
+                    // Build the menu
+                    buildMenu();
                 }
                 else {
                     showToast(R.string.empty_select);
@@ -175,59 +156,52 @@ public class SearchActivity extends BaseSearchActivity {
 
         backButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                resetSelectionInfo();
                 goBack();
             }
         });
 
     }
 
-    private void resetSelectionInfo() {
-        if (selectedKeywords.size() > 0) {
-            nextButtonSmall.setText(getString(R.string.next_button));
-            if (selectedKeywords.size() == 1) {
-                layout.setVisibility(View.GONE);
-                startLayout.setVisibility(View.VISIBLE);
-            }
-            --sequence;
-            lastSelection = selectedKeywords.get(selectedKeywords.size() - 1);
-            selectedKeywords.remove(selectedKeywords.size() - 1);
-
-        }
-    }
-
     private void goBack() {
-        keywordChoices.clearCheck();
-        keywordChoices.removeAllViews();
-        buildKeywordsMenu();
-        String query = "";
-        for (int i = 0; i < selectedKeywords.size(); i++) {
-            query = query.concat(" >" + selectedKeywords.get(i));
+        // First get the previously selected item
+        String selectedItemId = this.getPreviousSelectedItemId();
+
+        // Decrement the page number, but make sure it's atleast 1
+        pageIndex--;
+        pageIndex = Math.max(pageIndex, 0);
+
+        if (breadcrumbItems.size() > 0) {
+            breadcrumbItems.remove(breadcrumbItems.size() - 1);
         }
-        searchPath.setText(query);
+
+        pageRadioGroup.clearCheck();
+        pageRadioGroup.removeAllViews();
+
+        buildMenu(selectedItemId);
+        breadcrumbView.setText(getBreadcrumb());
     }
 
     /**
      * returns the category + full set of keyword segments, optionally each delimited by '> '
      */
-    private String getSearchPath(String delimeter) {
-        StringBuilder keywordDisplay = new StringBuilder();
+    private String getBreadcrumb(String delimeter) {
+        StringBuilder breadcrumb = new StringBuilder();
         boolean isFirstSegment = true;
-        for (String keywordSegment : this.selectedKeywords) {
+        for (BreadcrumbItem breadcrumbSegment : this.breadcrumbItems) {
             if (isFirstSegment) {
                 isFirstSegment = false;
             }
             else {
-                keywordDisplay.append(delimeter);
+                breadcrumb.append(delimeter);
             }
-            keywordDisplay.append(keywordSegment);
+            breadcrumb.append(breadcrumbSegment.label);
         }
 
-        return keywordDisplay.toString();
+        return breadcrumb.toString();
     }
 
-    private String getSearchPath() {
-        return getSearchPath(" >");
+    private String getBreadcrumb() {
+        return getBreadcrumb(" >");
     }
 
     private String getCategoryFromSearchPath(String searchPath, String delimeter) {
@@ -237,7 +211,7 @@ public class SearchActivity extends BaseSearchActivity {
         for (int i = 0; i < searchPathArray.length; i++) {
             temp = searchPathArray[i].trim();
             if (temp != null && !temp.equals("")) {
-                 return temp;
+                return temp;
             }
         }
         return temp;
@@ -245,11 +219,11 @@ public class SearchActivity extends BaseSearchActivity {
 
     private void showSearchResults(String farmerId, String location, String content) {
         Intent searchResultActivity = new Intent(getApplicationContext(), DisplaySearchResultsActivity.class);
-        String searchPath = getSearchPath();
+        String searchPath = getBreadcrumb();
         searchResultActivity.putExtra("searchTitle", searchPath);
         searchResultActivity.putExtra("name", farmerId);
         searchResultActivity.putExtra("location", location);
-        searchResultActivity.putExtra("request", getSearchPath(" "));
+        searchResultActivity.putExtra("request", getBreadcrumb(" "));
         searchResultActivity.putExtra("category", getCategoryFromSearchPath(searchPath, SEARCH_PATH_DELIMETER));
 
         // Was this a successful search?
@@ -260,67 +234,119 @@ public class SearchActivity extends BaseSearchActivity {
         switchToActivity(searchResultActivity);
     }
 
-    private String getImagePath() {
-        String path = "";
-        for (String keywordSegment : this.selectedKeywords) {
-            path = path.concat(keywordSegment + " ");
-        }
-
-        // Convert to lower case and replace spaces with under scores
-        return path.toLowerCase().replace(" ", "_");
-    }
 
     /**
-     * Builds search menus.
+     * Builds current menu
+     *
+     * @param string
      */
-    private void buildKeywordsMenu() {
+    private void buildMenu() {
+        buildMenu(null);
+    }
+
+    private void buildMenu(String previousSelectedItemId) {
         this.searchDatabase.open();
         Cursor searchCursor = null;
-        String imagePath = getImagePath();
         int radioButtonId = 1;
 
         try {
-            if (sequence == -1) {
-                searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, Storage.KEY_CATEGORY, null);
-                while (searchCursor.moveToNext()) {
-                    int option = searchCursor.getColumnIndexOrThrow(Storage.KEY_CATEGORY);
-                    addRadioButton(imagePath, radioButtonId, searchCursor, option);
-                    radioButtonId++;
-                }
+            // Get the number of menus this user is allowed to see
+            Integer menuCount = searchDatabase.getMenuCount();
 
-                searchCursor.close();
+            if (pageIndex == 0) {
+                // We're on the first page
+                if (menuCount <= 0) {
+                    // No menu items
+                    return;
+                }
+                else if (menuCount == 1) {
+                    searchCursor = searchDatabase.getTopLevelMenuItems(searchDatabase.getFirstMenuId());
+                }
+                else {
+                    searchCursor = searchDatabase.getMenuList();
+                }
             }
             else {
-                String condition = Storage.KEY_CATEGORY + "='" + selectedKeywords.get(0) + "'";
+                // Get the last selected Item from the breadcrumb
+                String selectedItemOrMenuId = getPreviousSelectedItemId();
 
-                for (int keywordIndex = 1; keywordIndex < selectedKeywords.size(); keywordIndex++) {
-                    String keywordSegment = selectedKeywords.get(keywordIndex);
-                    condition = condition.concat(" AND col" + (keywordIndex - 1) + "='" + keywordSegment + "'");
+                // Decide whether selectedItemOrMenuId is a menuId or an itemId
+                if (menuCount == 1) {
+                    // selectedItemOrMenuId is an ItemId, since we can only see one menu
+                    searchCursor = searchDatabase.getChildMenuItems(selectedItemOrMenuId);
+                }
+                else if (menuCount > 1 && pageIndex == 0) {
+                    // selectedItemOrMenuId is a menuId, sine we're on the first page and there was/is more than one
+                    // menu (so the first page displays the menus)
+                    searchCursor = searchDatabase.getTopLevelMenuItems(selectedItemOrMenuId);
+
+                }
+                else if (menuCount > 1 && pageIndex > 0) {
+                    // selectedItemOrMenuId is an itemId
+                    searchCursor = searchDatabase.getChildMenuItems(selectedItemOrMenuId);
+                }
+                else {
+                    // not sure what's going on
+                    return;
+                }
+            }
+
+            // If the cursor has no content, we might be able
+            if (!searchCursor.moveToFirst()) {
+                // Close the cursor
+                searchCursor.close();
+
+                // Get the item for which we want to show content
+                String contentItemId = getPreviousSelectedItemId();
+
+                if("".equals(contentItemId)) {
+                    // no previous data
+                    return;
                 }
 
-                searchCursor = searchDatabase.selectMenuOptions(GlobalConstants.DATABASE_TABLE, "col" + Integer.toString(sequence),
-                        condition);
+                // Decrement page and breadcrumb (so that back button works well)
+                pageIndex--;
+                if (breadcrumbItems.size() > 0) {
+                    breadcrumbItems.remove(breadcrumbItems.size() - 1);
+                }
 
-                // Save the current Sequence and current Condition in case this is the last menu, in which case we'll
-                // have to use the previous "state" to get content
-                currentCondition = condition;
+                // Try to load content
+                launchResultsDisplay(contentItemId);
+            }
+            else {
 
-                Boolean isFirst = true;
-                while (searchCursor.moveToNext()) {
-                    int option = searchCursor.getColumnIndexOrThrow("col" + Integer.toString(sequence));
-                    if (searchCursor.getString(option) == null) {
-                        // We're at the end of the keyword sequence, so we just launch the results and exit
-                        launchResultsDisplay(currentCondition);
-                        resetSelectionInfo();
+                Boolean isFirstLoop = true;
+                do {
+                    String menuOrItemId = searchCursor.getString(0); // Id is the first index
+                    String label = searchCursor.getString(1); // label is at the 2nd index
+                    String attachmentId = null;
+
+                    // Clear the previous radio button selection
+                    if (isFirstLoop) {
+                        this.pageRadioGroup.clearCheck();
+                        this.pageRadioGroup.removeAllViews();
+                        this.pageItemIds.clear();
+                        isFirstLoop = false;
                     }
-                    else {
-                        if (isFirst) {
-                            this.keywordChoices.clearCheck();
-                            this.keywordChoices.removeAllViews();
-                            isFirst = false;
-                        }
-                        radioButtonId = addRadioButton(imagePath, radioButtonId, searchCursor, option);
+
+                    if ((menuCount == 1 && pageIndex == 0) || pageIndex > 0) {
+                        // We got items, so they may have an attachment
+                        attachmentId = searchCursor.getString(2); // attachment id is the 3rd item
                     }
+
+                    radioButtonId = addRadioButton(menuOrItemId, label, radioButtonId, attachmentId, previousSelectedItemId);
+                } while (searchCursor.moveToNext());
+
+                searchCursor.close();
+
+                // The last thing we do is set the layouts
+                if (pageIndex < 1) {
+                    startLayout.setVisibility(View.VISIBLE);
+                    layout.setVisibility(View.GONE);
+                }
+                else {
+                    startLayout.setVisibility(View.GONE);
+                    layout.setVisibility(View.VISIBLE);
                 }
             }
         }
@@ -333,53 +359,59 @@ public class SearchActivity extends BaseSearchActivity {
     }
 
     /**
-     * @param imagePath
-     * @param radioButtonId
-     * @param searchCursor
-     * @param option
+     * Gets the itemId that was selected on the previous page
+     *
      * @return
      */
-    public int addRadioButton(String imagePath, int radioButtonId, Cursor searchCursor, int option) {
-        RadioButton radioButton;
+    private String getPreviousSelectedItemId() {
+        if (breadcrumbItems.size() > 0) {
+            return breadcrumbItems.get(breadcrumbItems.size() - 1).id;
+        }
+        return "";
+    }
+
+    /**
+     * Adds a radio button to the radio button group
+     *
+     * @param label
+     * @param radioButtonId
+     * @param imagePath
+     * @param attachmentId
+     * @param selectedId
+     * @return
+     */
+    private int addRadioButton(String menuOrItemId, String label, int radioButtonId, String attachmentId, String selectedId) {
+        RadioButton radioButton = new RadioButton(this);
+        radioButton.setId(radioButtonId);
+
         String radioButtonText;
-        radioButton = new RadioButton(this);
-        radioButton.setId(radioButtonId++);
-        radioButtonText = searchCursor.getString(option);
+        radioButtonText = label;
         radioButton.setText(radioButtonText);
-        trySetImage(radioButton, imagePath + radioButtonText.trim().toLowerCase().replace(" ", "_"));
-        if (radioButtonText.compareTo(lastSelection) == 0) {
+        trySetImage(radioButton, attachmentId + ".jpg");
+
+        if (null != selectedId && selectedId.equals(menuOrItemId)) {
             radioButton.setChecked(true);
             radioButton.setSelected(true);
         }
+
         radioButton.setTextColor(-16777216);
         radioButton.setTextSize(21);
         radioButton.setPadding(40, 1, 1, 1);
-        this.keywordChoices.addView(radioButton);
-        return radioButtonId;
+        this.pageRadioGroup.addView(radioButton);
+
+        // Save the current itemId
+        pageItemIds.put(radioButtonId, menuOrItemId);
+        return ++radioButtonId;
     }
 
-    private void launchResultsDisplay(String condition) {
-        // Get the content of the prev. sequence.
-        HashMap<String, String> results = searchDatabase.selectContent(GlobalConstants.DATABASE_TABLE, condition);
-
-        String content = results.get("content");
-        String attribution = results.get("attribution");
-        String updated = results.get("updated");
-
-        if (attribution != null && attribution.length() > 0) {
-            content += "\n\nAttribution: " + attribution;
-        }
-
-        if (updated != null && updated.length() > 0) {
-            content += "\n\nUpdated: " + updated;
-        }
-
+    private void launchResultsDisplay(String menuItemId) {
+        String content = searchDatabase.selectContent(menuItemId);
         showSearchResults(GlobalConstants.intervieweeName, GpsManager.getInstance().getLocationAsString(), content);
     }
 
-    private void trySetImage(RadioButton radioButton, String imagePath) {
-        if (ImageFilesUtility.imageExists(imagePath)) {
-            radioButton.setCompoundDrawablesWithIntrinsicBounds(null, null, null, ImageFilesUtility.getImageAsDrawable(imagePath));
+    private void trySetImage(RadioButton radioButton, String image) {
+        if (ImageFilesUtility.imageExists(image)) {
+            radioButton.setCompoundDrawablesWithIntrinsicBounds(null, null, null, ImageFilesUtility.getImageAsDrawable(image));
         }
     }
 
@@ -390,19 +422,19 @@ public class SearchActivity extends BaseSearchActivity {
 
     /**
      * If keywords have been updated, our search is invalid and we need to reset the search
-     * 
+     *
      * TODO: only do this if the current selection is still invalid
      */
     @Override
     protected void onKeywordUpdateComplete() {
-        if (this.selectedKeywords != null) {
-            this.selectedKeywords.clear();
+        if (this.breadcrumbItems != null) {
+            this.breadcrumbItems.clear();
         }
-        searchPath.setText("Search: ");
-        this.sequence = -1;
-        this.keywordChoices.clearCheck();
-        this.keywordChoices.removeAllViews();
-        buildKeywordsMenu();
+        breadcrumbView.setText("Search: ");
+        this.pageIndex = 0;
+        this.pageRadioGroup.clearCheck();
+        this.pageRadioGroup.removeAllViews();
+        buildMenu();
         this.layout.setVisibility(View.GONE);
         this.startLayout.setVisibility(View.VISIBLE);
         showToast(R.string.refreshed, Toast.LENGTH_LONG);
@@ -411,8 +443,8 @@ public class SearchActivity extends BaseSearchActivity {
     @Override
     public Object onRetainNonConfigurationInstance() {
         ActivityState instanceState = new ActivityState();
-        instanceState.currentKeywordSegmentIndex = sequence;
-        instanceState.keywords = selectedKeywords;
+        instanceState.currentPage = pageIndex;
+        instanceState.currentBreadcrumbItems = breadcrumbItems;
         return instanceState;
     }
 
@@ -420,8 +452,8 @@ public class SearchActivity extends BaseSearchActivity {
      * object for holding activity data to store for orientation changes
      */
     private class ActivityState {
-        int currentKeywordSegmentIndex;
-        ArrayList<String> keywords;
+        int currentPage;
+        ArrayList<BreadcrumbItem> currentBreadcrumbItems;
     }
 
     // Remove unnecessary menu items for this activity
@@ -433,5 +465,22 @@ public class SearchActivity extends BaseSearchActivity {
         menu.removeItem(GlobalConstants.ABOUT_ID);
         menu.removeItem(GlobalConstants.REFRESH_ID); // Do not show the update keywords option on search activity
         return result;
+    }
+
+    /**
+     *
+     */
+    public void updateBreadcrumbFromRadioButtonSelection() {
+        RadioButton radioButton = (RadioButton)findViewById(selectedRadioButtonId);
+
+        String choice = radioButton.getText().toString();
+        String selectedItemOrMenuId = pageItemIds.get(selectedRadioButtonId);
+
+        BreadcrumbItem breadcrumbItem = new BreadcrumbItem();
+        breadcrumbItem.label = choice;
+        breadcrumbItem.id = selectedItemOrMenuId;
+
+        breadcrumbItems.add(breadcrumbItem);
+        breadcrumbView.setText(getBreadcrumb());
     }
 }
