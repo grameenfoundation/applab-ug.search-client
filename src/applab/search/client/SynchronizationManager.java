@@ -37,6 +37,7 @@ import android.widget.Toast;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
 import applab.client.PropertyStorage;
+import applab.client.StringHelpers;
 import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
 import applab.client.farmerregistration.FarmerRegistrationController;
@@ -61,6 +62,7 @@ public class SynchronizationManager {
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
     private final static String REQUEST_ELEMENT_NAME = "GetKeywordsRequest";
     private final static String VERSION_ELEMENT_NAME = "localKeywordsVersion";
+    private final static String CURRENT_MENU_IDS = "menuIds";
     public Timer timer;
     private boolean isSynchronizing;
     private static Boolean synchronizeNow; // This tells us to start sync
@@ -426,11 +428,14 @@ public class SynchronizationManager {
      * @throws UnsupportedEncodingException
      */
     static AbstractHttpEntity getRequestEntity() throws UnsupportedEncodingException {
-        String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, "2010-07-20 18:34:36");
+        String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, "10/13/2010 10:34 AM");
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
         xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
         xmlRequest.writeStartElement(VERSION_ELEMENT_NAME);
         xmlRequest.writeText(keywordsVersion);
+        xmlRequest.writeEndElement();
+        xmlRequest.writeStartElement(CURRENT_MENU_IDS);
+        xmlRequest.writeText(getMenuIds());
         xmlRequest.writeEndElement();
         xmlRequest.writeEndElement();
         return xmlRequest.getEntity();
@@ -550,9 +555,7 @@ public class SynchronizationManager {
         try {
 
             keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                    (StringEntity)getRequestEntity());
-            // keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
-            // (StringEntity) getRequestEntity(), networkTimeout);
+                    (StringEntity)getRequestEntity(), networkTimeout);
 
             // Write the keywords to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir()
@@ -580,9 +583,12 @@ public class SynchronizationManager {
         }
     }
 
-    public static ArrayList<String> getMenuIds() {
+    private static String getMenuIds() {
         ArrayList<String> menuIds = new ArrayList<String>();
+        if (searchDatabase == null) {
+            searchDatabase = new Storage(ApplabActivity.getGlobalContext());
+        }
         menuIds = searchDatabase.getLocalMenuIds();
-        return menuIds;
+        return StringHelpers.commaSeparateValues(menuIds);
     }
 }

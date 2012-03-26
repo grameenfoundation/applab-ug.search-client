@@ -255,10 +255,16 @@ public class Storage {
     }
 
     public Cursor getMenuList() {
+        try {
         Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] { Storage.MENU_ROWID_COLUMN,
                 Storage.MENU_LABEL_COLUMN }, null, null, null, null, " " +
                 Storage.MENU_LABEL_COLUMN + " ASC", null);
         return cursor;
+        }
+        catch(NullPointerException ex) {
+            // throws null pointer exception if the application is run for the first time!
+            return null;
+        }
     }
 
     int getMenuCount() {
@@ -326,11 +332,13 @@ public class Storage {
     public ArrayList<String> getLocalMenuIds() {
         Cursor cursor = getMenuList();
         ArrayList<String> results = new ArrayList<String>();
+        if (null == cursor) {
+            return results;
+        }
         try {
             while (cursor.moveToNext()) {
                 results.add(cursor.getString(0));
             }
-
             return results;
         }
         finally {
