@@ -36,7 +36,6 @@ import android.util.Log;
 import android.widget.Toast;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
-import applab.client.JsonEntityBuilder;
 import applab.client.PropertyStorage;
 import applab.client.XmlEntityBuilder;
 import applab.client.XmlHelpers;
@@ -401,10 +400,6 @@ public class SynchronizationManager {
             inboxAdapter.open();
             submitPendingUsageLogs(inboxAdapter);
 
-            /*
-             * Comment out the code below as we will look to remove in 3.2 TODO submitIncompleteSearches(inboxAdapter);
-             */
-
             inboxAdapter.close();
 
             // Finally update keywords
@@ -548,11 +543,13 @@ public class SynchronizationManager {
         String url = Settings.getNewServerUrl()
                 + ApplabActivity.getGlobalContext().getString(
                         R.string.update_path);
-
+        
+        int networkTimeout = 5 * 60* 1000;
+        
         InputStream keywordStream;
         try {
             keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                    (StringEntity) getRequestEntity());
+                    (StringEntity) getRequestEntity(), networkTimeout);
 
             // Write the keywords to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir()
@@ -576,23 +573,6 @@ public class SynchronizationManager {
         } catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
-    }
-
-    /**
-     * Sets the version in the update request entity
-     *
-     * @return JSON request entity
-     * @throws UnsupportedEncodingException
-     */
-    static AbstractHttpEntity getJsonRequestEntity()
-            throws UnsupportedEncodingException {
-        String keywordsVersion = PropertyStorage.getLocal().getValue(
-                GlobalConstants.KEYWORDS_VERSION_KEY, "2010-07-20 18:34:36");
-        ArrayList<String> menuIds = getMenuIds();
-
-        JsonEntityBuilder jsonRequest = new JsonEntityBuilder(menuIds,
-                keywordsVersion);
-        return jsonRequest.getEntity();
     }
 
     public static ArrayList<String> getMenuIds() {
