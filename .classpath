@@ -10,5 +10,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/CommonClient"/>
 	<classpathentry kind="lib" path="/CommonClient/lib/acra-4.2.3.jar"/>
 	<classpathentry kind="src" path="CommonClient_src"/>
+	<classpathentry kind="lib" path="/CommonClient/lib/json-simple-1.1.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
