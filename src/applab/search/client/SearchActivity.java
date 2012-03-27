@@ -70,6 +70,8 @@ public class SearchActivity extends BaseSearchActivity {
 
     /** Holds all the previously selected items in this path/breadcrumb */
     private ArrayList<BreadcrumbItem> breadcrumbItems;
+    
+    private String keywordForContentDisplay;
 
     private class BreadcrumbItem {
         String label;
@@ -219,12 +221,12 @@ public class SearchActivity extends BaseSearchActivity {
 
     private void showSearchResults(String farmerId, String location, String content) {
         Intent searchResultActivity = new Intent(getApplicationContext(), DisplaySearchResultsActivity.class);
-        String searchPath = getBreadcrumb();
-        searchResultActivity.putExtra("searchTitle", searchPath);
+        
+        searchResultActivity.putExtra("searchTitle", keywordForContentDisplay);
         searchResultActivity.putExtra("name", farmerId);
         searchResultActivity.putExtra("location", location);
-        searchResultActivity.putExtra("request", getBreadcrumb(" "));
-        searchResultActivity.putExtra("category", getCategoryFromSearchPath(searchPath, SEARCH_PATH_DELIMETER));
+        searchResultActivity.putExtra("request", keywordForContentDisplay);
+        searchResultActivity.putExtra("category", getCategoryFromSearchPath(keywordForContentDisplay, SEARCH_PATH_DELIMETER));
 
         // Was this a successful search?
         if (content != null && content.length() > 0) {
@@ -481,6 +483,7 @@ public class SearchActivity extends BaseSearchActivity {
         breadcrumbItem.id = selectedItemOrMenuId;
 
         breadcrumbItems.add(breadcrumbItem);
-        breadcrumbView.setText(getBreadcrumb());
+        keywordForContentDisplay = getBreadcrumb();
+        breadcrumbView.setText(keywordForContentDisplay);
     }
 }
