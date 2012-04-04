@@ -54,7 +54,7 @@
 
 			<Button android:id="@+id/forgot_button" android:textSize="16px"
 				android:layout_width="fill_parent" android:layout_height="wrap_content"
-				android:padding="20px" android:text="Forgot Farmer\'s ID" />
+				android:padding="20px" android:text="Find Farmer ID" />
 
 		</LinearLayout>
 	</ScrollView>

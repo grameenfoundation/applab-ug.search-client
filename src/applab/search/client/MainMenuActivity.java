@@ -97,28 +97,40 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
         // TODO: how do we detect when we had a progress dialog up before and so should still be modal?
         SynchronizationManager.onActivityResume(this, keywordSynchronizationCallback);
 
-        setContentView(R.layout.launch_menu);
-        setFeatureDrawableResource(Window.FEATURE_RIGHT_ICON, R.drawable.search_title);
+		setContentView(R.layout.launch_menu);
+		setFeatureDrawableResource(Window.FEATURE_RIGHT_ICON,
+				R.drawable.search_title);
+		
+		 Intent intentReceiver = getIntent();
+	        String farmerIdFound = intentReceiver.getStringExtra("edit_text");
 
-        this.nextButton = (Button)findViewById(R.id.next_button);
-        this.inboxButton = (Button)findViewById(R.id.inbox_button);
-        this.inboxButton.setText(getString(R.string.inbox_button));
-        this.farmerNameEditBox = (EditText)findViewById(R.id.id_field);
-        this.forgotButton = (Button)findViewById(R.id.forgot_button);
-        this.registerButton = (Button)findViewById(R.id.register_button);
-        this.aginfoButton = (Button)findViewById(R.id.aginfo_button);
-        this.farmerNameEditBox.setFilters(new InputFilter[] { getFarmerInputFilter() });
+		this.nextButton = (Button) findViewById(R.id.next_button);
+		this.inboxButton = (Button) findViewById(R.id.inbox_button);
+		this.inboxButton.setText(getString(R.string.inbox_button));
+		this.farmerNameEditBox = (EditText) findViewById(R.id.id_field);
+		this.forgotButton = (Button) findViewById(R.id.forgot_button);
+		this.registerButton = (Button) findViewById(R.id.register_button);
+		this.aginfoButton = (Button) findViewById(R.id.aginfo_button);
+		this.farmerNameEditBox
+				.setFilters(new InputFilter[] { getFarmerInputFilter() });
+		
+		if (farmerIdFound != null) {
+			this.farmerNameEditBox.setText(farmerIdFound);
+		}
 
         if (!StorageManager.hasKeywords()) {
             this.inboxButton.setEnabled(false);
             this.nextButton.setEnabled(false);
         }
 
-        this.forgotButton.setOnClickListener(new OnClickListener() {
-            public void onClick(View v) {
-                onRequestBrowserIntentButtonClick("findFarmerId", FORGOT_ID_CODE);
-            }
-        });
+		this.forgotButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				//Start FindFarmerId Activity
+				Intent nextActivity = new Intent(getApplicationContext(),
+						FindFarmerIdActivity.class);
+				startActivity(nextActivity);
+			}
+		});
 
         this.registerButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {

@@ -251,41 +251,50 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         return result;
     }
 
-    /**
-     * Regular expression check to match 2 letters followed by at least 4 but at most 5 digits for a Farmer ID.
-     * 
-     * @param text
-     *            the matcher
-     * @return true if the matcher is an exact match of the input text
-     */
-    boolean checkId(String text) {
-        Pattern pattern = Pattern.compile("[a-zA-Z]{2}[0-9]{4,5}+");
-        Matcher matcher = pattern.matcher(text);
-        return matcher.matches();
-    }
+	/**
+	 * Regular expression check to match 2 letters followed by at least 4 but at
+	 * most 5 digits for a Farmer ID.
+	 * 
+	 * @param text
+	 *            the matcher
+	 * @return true if the matcher is an exact match of the input text
+	 */
+	boolean checkId(String farmerId) {
+		searchDatabase.open();
+		Pattern pattern = Pattern.compile("[a-zA-Z]{2}[0-9]{4,5}+");
+		Matcher matcher = pattern.matcher(farmerId);
 
-    /**
-     * Dialog confirming a test search
-     * 
-     * @param yesListener
-     *            the listener to call on clicking the positive button
-     * @param noListener
-     *            the listener to call on clicking the negative button
-     */
-    void showTestSearchDialog(DialogInterface.OnClickListener yesListener, DialogInterface.OnClickListener noListener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setIcon(R.drawable.help);
-        builder.setTitle("Perform Test Search?");
-        builder.setMessage("The ID you entered is not valid, "
-                + "it should be 2 letters followed by at least 4 numbers."
-                + "\nWould you like to do a test search instead?"
-                + " NOTE: You will NOT be compensated for doing a test search.")
-                .setCancelable(false)
-                .setPositiveButton("Yes", yesListener)
-                .setNegativeButton("No", noListener);
-        AlertDialog alert = builder.create();
-        alert.show();
-    }
+		if ((matcher.matches())
+				|| (searchDatabase.isFarmerIdInFarmerLocalCacheTable(farmerId) || searchDatabase
+						.isFarmerIdSetToUsedInAvailableFarmerIdTable(farmerId))) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Dialog confirming a test search
+	 * 
+	 * @param yesListener
+	 *            the listener to call on clicking the positive button
+	 * @param noListener
+	 *            the listener to call on clicking the negative button
+	 */
+	void showTestSearchDialog(DialogInterface.OnClickListener yesListener,
+			DialogInterface.OnClickListener noListener) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setIcon(R.drawable.help);
+		builder.setTitle("Perform Test Search?");
+		builder.setMessage(
+				"The ID you entered is not valid, "
+						+ "it should be 2 letters followed by at least 4 numbers."
+						+ "\nWould you like to do a test search instead?"
+						+ " NOTE: You will NOT be compensated for doing a test search.")
+				.setCancelable(false).setPositiveButton("Yes", yesListener)
+				.setNegativeButton("No", noListener);
+		AlertDialog alert = builder.create();
+		alert.show();
+	}
 
     public static void tryStartService(Context context) {
         if(!serviceStarted) {

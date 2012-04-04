@@ -447,7 +447,75 @@ public class Storage {
 
     }
 
-    /**
+	public String findFarmerIdFromFarmerLocalCacheTable(String farmerFirstName,
+			String farmerLastName, String farmerFatherName) {
+		Cursor cursor = null;
+		try {
+			cursor = database.query(true,
+					GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME,
+					new String[] { Storage.FARMER_LOCAL_CACHE_FARMER_ID },
+					Storage.FARMER_LOCAL_CACHE_FIRST_NAME + " = ? AND "
+							+ Storage.FARMER_LOCAL_CACHE_LAST_NAME
+							+ " = ? AND "
+							+ Storage.FARMER_LOCAL_CACHE_FATHER_NAME + " = ?",
+					new String[] { farmerFirstName, farmerLastName,
+							farmerFatherName }, null, null, null, null);
+
+			if (cursor.moveToFirst()) {
+				return cursor.getString(0);
+			}
+			return null;
+		} finally {
+			if (null != cursor) {
+				cursor.close();
+			}
+		}
+
+	}
+
+	public boolean isFarmerIdInFarmerLocalCacheTable(String farmerId) {
+		Cursor cursor = null;
+		final String countSql = "SELECT COUNT(*) FROM"
+				+ GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME + "WHERE"
+				+ Storage.FARMER_LOCAL_CACHE_FARMER_ID + "= ?";
+		cursor = database.rawQuery(countSql, new String[] { farmerId });
+
+		int count = 0;
+		if (cursor.moveToFirst()) {
+			count = Integer.parseInt(cursor.getString(0));
+		}
+		cursor.close();
+
+		if (count > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public boolean isFarmerIdSetToUsedInAvailableFarmerIdTable(String farmerId) {
+		Cursor cursor = null;
+		final String countSql = "SELECT COUNT(*) FROM"
+				+ GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME + "WHERE"
+				+ Storage.FARMER_LOCAL_CACHE_FARMER_ID + "= ? AND "
+				+ Storage.AVAILABLE_FARMER_ID_STATUS + "= ?";
+		cursor = database.rawQuery(countSql, new String[] { farmerId,
+				GlobalConstants.AVAILABLE_FARMER_ID_USED_STATUS });
+
+		int count = 0;
+		if (cursor.moveToFirst()) {
+			count = Integer.parseInt(cursor.getString(0));
+		}
+		cursor.close();
+
+		if (count > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/**
      * Toggle the status of farmer id in the local farmer id database
      *
      * @param farmerId
