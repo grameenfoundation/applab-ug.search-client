@@ -250,7 +250,7 @@ public class Storage {
         private String getAvailableFarmerIdTableInitializationSql() {
 
             StringBuilder sqlCommand = new StringBuilder();
-            sqlCommand.append("create table " + GlobalConstants.AVAILABLE_FARMER_ID);
+            sqlCommand.append("create table " + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME);
             sqlCommand.append(" (" + Storage.AVAILABLE_FARMER_ID_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, "
                     + Storage.AVAILABLE_FARMER_ID_FARMER_ID
                     + " CHAR(16), " + Storage.AVAILABLE_FARMER_ID_USED_STATUS + " INTEGER ");
@@ -266,7 +266,7 @@ public class Storage {
         private String getFarmerLocalCacheTableInitializationSql() {
 
             StringBuilder sqlCommand = new StringBuilder();
-            sqlCommand.append("create table " + GlobalConstants.FARMER_LOCAL_CACHE);
+            sqlCommand.append("create table " + GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME);
             sqlCommand.append(" (" + Storage.FARMER_LOCAL_CACHE_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.FARMER_LOCAL_CACHE_FARMER_ID
                     + " CHAR(16), "
                     + Storage.FARMER_LOCAL_CACHE_FIRST_NAME + " CHAR(16), " + Storage.FARMER_LOCAL_CACHE_MIDDLE_NAME + " CHAR(16), "
@@ -289,8 +289,8 @@ public class Storage {
             // Get rid of new tables if they exist
             database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.MENU_TABLE_NAME);
             database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.MENU_ITEM_TABLE_NAME);
-            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.FARMER_LOCAL_CACHE);
-            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.AVAILABLE_FARMER_ID);
+            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME);
+            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME);
 
             onCreate(database);
         }
