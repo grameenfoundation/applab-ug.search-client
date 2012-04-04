@@ -10,6 +10,15 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/CommonClient"/>
 	<classpathentry kind="lib" path="/CommonClient/lib/acra-4.2.3.jar"/>
 	<classpathentry kind="src" path="CommonClient_src"/>
-	<classpathentry kind="lib" path="/CommonClient/lib/json-simple-1.1.1.jar"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry kind="lib" path="C:/Code/Applab/applab-ug.search-client/lib/json-simple-1.1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Android/android-sdk/platforms/android-4/android.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://developer.android.com/reference/"/>
+		</attributes>
+		<accessrules>
+			<accessrule kind="nonaccessible" pattern="com/android/internal/**"/>
+		</accessrules>
+	</classpathentry>
+	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
