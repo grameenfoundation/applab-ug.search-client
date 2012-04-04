@@ -3,7 +3,6 @@ package applab.search.client;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -34,24 +33,26 @@ public class FindFarmerIdActivity extends Activity {
 		this.farmerFatherName = (EditText) findViewById(R.id.fathersnametext);
 		this.searchButton = (Button) findViewById(R.id.search);
 		this.farmerIdResult = (TextView) findViewById(R.id.farmeridresult);
-		this.useThisIdButton = (Button)findViewById(R.id.usethisid);
+		this.useThisIdButton = (Button) findViewById(R.id.usethisid);
 
 		// add a click listener to the "Search" button
 		this.searchButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				farmerIdResult.setText(farmerLocalCache.findFarmerIdFromFarmerLocalCacheTable(
-						farmerFirstName.getText().toString(), farmerLastName
-						.getText().toString(), farmerFatherName
-						.getText().toString()));
+				farmerIdResult.setText(farmerLocalCache
+						.findFarmerIdFromFarmerLocalCacheTable(farmerFirstName
+								.getText().toString(), farmerLastName.getText()
+								.toString(), farmerFatherName.getText()
+								.toString()));
 			}
 		});
-		
+
 		// add a click listener to the "Use This Id" button
 		this.useThisIdButton.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v){
+			public void onClick(View v) {
 				Intent newIntent = new Intent(getApplicationContext(),
 						MainMenuActivity.class);
-				newIntent.putExtra("edit_text", farmerIdResult.getText().toString());
+				newIntent.putExtra("edit_text", farmerIdResult.getText()
+						.toString());
 				startActivity(newIntent);
 			}
 		});
