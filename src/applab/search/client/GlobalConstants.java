@@ -36,6 +36,8 @@ public class GlobalConstants {
     /** The new tables **/
     public static final String MENU_TABLE_NAME = "menu";
     public static final String MENU_ITEM_TABLE_NAME = "menu_item";
+    public static final String AVAILABLE_FARMER_ID = "available_farmer_id";
+    public static final String FARMER_LOCAL_CACHE = "farmer_local_cache";
 
     /** current user name or id */
     public static String intervieweeName;

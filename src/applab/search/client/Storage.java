@@ -42,8 +42,23 @@ public class Storage {
     public static final String MENU_ITEM_PARENTID_COLUMN = "parent_id";
     public static final String MENU_ITEM_ATTACHMENTID_COLUMN = "attachment_id";
 
+    /* Available Farmer Ids Table Columns */
+    public static final String AVAILABLE_FARMER_ID_ROWID_COLUMN = "id";
+    public static final String AVAILABLE_FARMER_ID_FARMER_ID = "farmer_id";
+    public static final String AVAILABLE_FARMER_ID_USED_STATUS = "used_status";
+
+    /* Farmer Local Cache Table Columns */
+    public static final String FARMER_LOCAL_CACHE_ROWID_COLUMN = "id";
+    public static final String FARMER_LOCAL_CACHE_FARMER_ID = "farmer_id";
+    public static final String FARMER_LOCAL_CACHE_FIRST_NAME = "first_name";
+    public static final String FARMER_LOCAL_CACHE_MIDDLE_NAME = "middle_name";
+    public static final String FARMER_LOCAL_CACHE_LAST_NAME = "last_name";
+    public static final String FARMER_LOCAL_CACHE_DATE_OF_BIRTH = "date_of_birth";
+    public static final String FARMER_LOCAL_CACHE_FATHER_NAME = "father_name";
+    public static final String FARMER_LOCAL_CACHE_LAST_UPDATED_DATE = "last_updated_date";
+
     private static final String DATABASE_NAME = "search";
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 7;
     private static final int SEQUENCES = 32;
 
     /** keep track of batch size to enable batch inserts **/
@@ -62,7 +77,7 @@ public class Storage {
 
     /**
      * Attempt to open @DATABASE_NAME database
-     *
+     * 
      * @return Database object
      * @throws SQLException
      */
@@ -86,7 +101,7 @@ public class Storage {
     /**
      * Select search menu options. Options are the search menu items that the user can select from during a search
      * activity. e.g. Animals, Crops, Farm Inputs, Regional Weather Info are menu options.
-     *
+     * 
      * @param table
      *            the currently active table to query
      * @param optionColumn
@@ -149,7 +164,7 @@ public class Storage {
 
     /**
      * Remove all table rows
-     *
+     * 
      * @return the number of rows affected
      */
     public int deleteAll(String table) {
@@ -186,11 +201,17 @@ public class Storage {
 
             // Create Menu Item Table
             database.execSQL(getMenuItemTableInitializationSql());
+
+            // Create Available Farmer Id Table
+            database.execSQL(getAvailableFarmerIdTableInitializationSql());
+
+            // Create Farmer Local Cache Table
+            database.execSQL(getFarmerLocalCacheTableInitializationSql());
         }
 
         /**
          * Returns the SQL string for Menu Table creation
-         *
+         * 
          * @return String
          */
         private String getMenuTableInitializationSql() {
@@ -203,7 +224,7 @@ public class Storage {
 
         /**
          * Returns the SQL string for MenuItem Table creation
-         *
+         * 
          * @return String
          */
         private String getMenuItemTableInitializationSql() {
@@ -221,6 +242,40 @@ public class Storage {
             return sqlCommand.toString();
         }
 
+        /**
+         * Returns the SQL string for AvailableFarmerId Table creation
+         * 
+         * @return String
+         */
+        private String getAvailableFarmerIdTableInitializationSql() {
+
+            StringBuilder sqlCommand = new StringBuilder();
+            sqlCommand.append("create table " + GlobalConstants.AVAILABLE_FARMER_ID);
+            sqlCommand.append(" (" + Storage.AVAILABLE_FARMER_ID_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, "
+                    + Storage.AVAILABLE_FARMER_ID_FARMER_ID
+                    + " CHAR(16), " + Storage.AVAILABLE_FARMER_ID_USED_STATUS + " INTEGER ");
+            sqlCommand.append(" );");
+            return sqlCommand.toString();
+        }
+
+        /**
+         * Returns the SQL string for FarmerLocalCache Table creation
+         * 
+         * @return String
+         */
+        private String getFarmerLocalCacheTableInitializationSql() {
+
+            StringBuilder sqlCommand = new StringBuilder();
+            sqlCommand.append("create table " + GlobalConstants.FARMER_LOCAL_CACHE);
+            sqlCommand.append(" (" + Storage.FARMER_LOCAL_CACHE_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.FARMER_LOCAL_CACHE_FARMER_ID
+                    + " CHAR(16), "
+                    + Storage.FARMER_LOCAL_CACHE_FIRST_NAME + " CHAR(16), " + Storage.FARMER_LOCAL_CACHE_MIDDLE_NAME + " CHAR(16), "
+                    + Storage.FARMER_LOCAL_CACHE_LAST_NAME + " CHAR(16), " + Storage.FARMER_LOCAL_CACHE_DATE_OF_BIRTH + " DATE, "
+                    + Storage.FARMER_LOCAL_CACHE_FATHER_NAME + " CHAR(16), " + Storage.FARMER_LOCAL_CACHE_LAST_UPDATED_DATE + " DATETIME ");
+            sqlCommand.append(" );");
+            return sqlCommand.toString();
+        }
+
         @Override
         public void onUpgrade(SQLiteDatabase database, int oldVersion, int newVersion) {
             Log.w("StorageAdapter", "***Upgrading database from version*** "
@@ -234,6 +289,8 @@ public class Storage {
             // Get rid of new tables if they exist
             database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.MENU_TABLE_NAME);
             database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.MENU_ITEM_TABLE_NAME);
+            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.FARMER_LOCAL_CACHE);
+            database.execSQL("DROP TABLE IF EXISTS " + GlobalConstants.AVAILABLE_FARMER_ID);
 
             onCreate(database);
         }
@@ -241,7 +298,7 @@ public class Storage {
 
     /**
      * Returns a cursor containing top level items for a given menu
-     *
+     * 
      * @param string
      * @return
      */
@@ -256,12 +313,12 @@ public class Storage {
 
     public Cursor getMenuList() {
         try {
-        Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] { Storage.MENU_ROWID_COLUMN,
-                Storage.MENU_LABEL_COLUMN }, null, null, null, null, " " +
-                Storage.MENU_LABEL_COLUMN + " ASC", null);
-        return cursor;
+            Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] { Storage.MENU_ROWID_COLUMN,
+                    Storage.MENU_LABEL_COLUMN }, null, null, null, null, " " +
+                    Storage.MENU_LABEL_COLUMN + " ASC", null);
+            return cursor;
         }
-        catch(NullPointerException ex) {
+        catch (NullPointerException ex) {
             // throws null pointer exception if the application is run for the first time!
             return null;
         }
@@ -304,7 +361,7 @@ public class Storage {
 
     /**
      * Delete all entries for this id and also where the parent id is this id (delete children too)
-     *
+     * 
      * @param table
      * @param id
      * @return
@@ -315,7 +372,7 @@ public class Storage {
 
     /**
      * Delete all entries in menu table for this id and also where the parent id this id (delete children too)
-     *
+     * 
      * @param table
      * @param id
      * @return
