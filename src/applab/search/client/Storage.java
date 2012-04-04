@@ -45,7 +45,7 @@ public class Storage {
     /* Available Farmer Ids Table Columns */
     public static final String AVAILABLE_FARMER_ID_ROWID_COLUMN = "id";
     public static final String AVAILABLE_FARMER_ID_FARMER_ID = "farmer_id";
-    public static final String AVAILABLE_FARMER_ID_USED_STATUS = "used_status";
+    public static final String AVAILABLE_FARMER_ID_STATUS = "status";
 
     /* Farmer Local Cache Table Columns */
     public static final String FARMER_LOCAL_CACHE_ROWID_COLUMN = "id";
@@ -253,7 +253,7 @@ public class Storage {
             sqlCommand.append("create table " + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME);
             sqlCommand.append(" (" + Storage.AVAILABLE_FARMER_ID_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, "
                     + Storage.AVAILABLE_FARMER_ID_FARMER_ID
-                    + " CHAR(16), " + Storage.AVAILABLE_FARMER_ID_USED_STATUS + " INTEGER ");
+                    + " CHAR(16), " + Storage.AVAILABLE_FARMER_ID_STATUS + " INTEGER ");
             sqlCommand.append(" );");
             return sqlCommand.toString();
         }
@@ -384,6 +384,10 @@ public class Storage {
 
     public boolean insertMenu(String table, ContentValues values) {
         return database.replace(table, null, values) > 0;
+    }
+    
+    public boolean deleteUsedFarmerIds() {
+        return database.delete(GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME, Storage.AVAILABLE_FARMER_ID_STATUS + "=" + 1, null) > 0;
     }
 
     public ArrayList<String> getLocalMenuIds() {

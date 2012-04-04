@@ -62,6 +62,7 @@ public class SynchronizationManager {
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
     private final static String REQUEST_ELEMENT_NAME = "GetKeywordsRequest";
     private final static String VERSION_ELEMENT_NAME = "localKeywordsVersion";
+    private final static String CURRENT_FARMER_ID_COUNT = "currentFarmerIdCount";
     private final static String CURRENT_MENU_IDS = "menuIds";
     public Timer timer;
     private boolean isSynchronizing;
@@ -404,9 +405,13 @@ public class SynchronizationManager {
             submitPendingUsageLogs(inboxAdapter);
 
             inboxAdapter.close();
-
+            
+            // Get New Farmer Ids
+            getNewFarmerIds();
+            
             // Finally update keywords
             updateKeywords();
+            
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -436,6 +441,16 @@ public class SynchronizationManager {
         xmlRequest.writeEndElement();
         xmlRequest.writeStartElement(CURRENT_MENU_IDS);
         xmlRequest.writeText(getMenuIds());
+        xmlRequest.writeEndElement();
+        xmlRequest.writeEndElement();
+        return xmlRequest.getEntity();
+    }
+    
+    static AbstractHttpEntity getFarmerIdsRequestEntity() throws UnsupportedEncodingException {
+        XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
+        xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
+        xmlRequest.writeStartElement(CURRENT_FARMER_ID_COUNT);
+        xmlRequest.writeText("12");
         xmlRequest.writeEndElement();
         xmlRequest.writeEndElement();
         return xmlRequest.getEntity();
@@ -474,6 +489,14 @@ public class SynchronizationManager {
         // TODO: integrate this code into our synchronization manager?
         JsonSimpleParser keywordParser = new JsonSimpleParser(this.progressMessageHandler, this.internalMessageHandler, keywordStream);
         keywordParser.run();
+    }
+    
+    private void parseFarmerIds(InputStream farmerIdStream) throws XmlPullParserException, ParseException {
+        // Call FarmerIdParser to parse the farmerIds result and store the contents in our
+        // local database
+        // TODO: integrate this code into our synchronization manager?
+        JsonSimpleFarmerIdParser farmerIdParser = new JsonSimpleFarmerIdParser(this.progressMessageHandler, this.internalMessageHandler, farmerIdStream);
+        farmerIdParser.run();
     }
 
     /**
@@ -581,6 +604,47 @@ public class SynchronizationManager {
         catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
+    }
+    
+    public void getNewFarmerIds() throws XmlPullParserException, ParseException {
+        
+        String url = Settings.getNewServerUrl()
+                + ApplabActivity.getGlobalContext().getString(
+                        R.string.get_farmer_ids_path);
+
+        int networkTimeout = 3 * 60 * 1000;
+
+        InputStream farmerIdsStream;
+        try {
+
+            farmerIdsStream = HttpHelpers.postJsonRequestAndGetStream(url,
+                    (StringEntity)getFarmerIdsRequestEntity(), networkTimeout);
+
+            // Write the farmer Ids to disk, and then open a FileStream
+            String filePath = ApplabActivity.getGlobalContext().getCacheDir()
+                    + "/farmerIds.tmp";
+            Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(farmerIdsStream, filePath);
+            farmerIdsStream.close();
+            File file = new File(filePath);
+            FileInputStream inputStream = new FileInputStream(file);
+
+            if (downloadSuccessful && inputStream != null) {
+                sendInternalMessage(GlobalConstants.FARMER_IDS_DOWNLOAD_SUCCESS);                
+                parseFarmerIds(inputStream);
+            }
+            else {
+                sendInternalMessage(GlobalConstants.FARMER_IDS_DOWNLOAD_FAILURE);
+            }
+
+            if (inputStream != null) {
+                inputStream.close();
+                file.delete();
+            }
+        }
+        catch (IOException e) {
+            sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
+        }
+        
     }
 
     private static String getMenuIds() {

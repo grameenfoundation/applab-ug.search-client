@@ -13,6 +13,7 @@
 <string name="settings_activity">Preferences</string>
 <string name="search_path">mobile/oktopus/search.php</string>
 <string name="update_path">search/getsearchkeywords</string>
+<string name="get_farmer_ids_path">search/getFarmerIds</string>
 <string name="server">http://test.applab.org</string>
 <string name="main_menu_details">Enter farmer\'s ID in the box below:</string>
 <string name="connection_error">Unable to establish a connection</string>
