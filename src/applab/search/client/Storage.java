@@ -362,8 +362,8 @@ public class Storage {
     public String getNextFarmerId() {
         Cursor cursor = null;
         try {
-            cursor = database.query(false, GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME, new String[] { Storage.AVAILABLE_FARMER_ID_ROWID_COLUMN, 
-                    Storage.AVAILABLE_FARMER_ID_FARMER_ID }, Storage.AVAILABLE_FARMER_ID_STATUS + " = ?", new String[] { GlobalConstants.AVAILABLE_FARMER_ID_USED_STATUS },
+            cursor = database.query(false, GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME, new String[] { Storage.AVAILABLE_FARMER_ID_FARMER_ID }, 
+                    Storage.AVAILABLE_FARMER_ID_STATUS + " = ?", new String[] { GlobalConstants.AVAILABLE_FARMER_ID_UNUSED_STATUS },
                     null, null, null, null);
             if (cursor.moveToFirst()) {
                 return cursor.getString(0);
