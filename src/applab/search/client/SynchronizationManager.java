@@ -62,7 +62,8 @@ public class SynchronizationManager {
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
     private final static String REQUEST_ELEMENT_NAME = "GetKeywordsRequest";
     private final static String VERSION_ELEMENT_NAME = "localKeywordsVersion";
-    private final static String CURRENT_FARMER_ID_COUNT = "currentFarmerIdCount";
+    private final static String CURRENT_FARMER_ID_COUNT = "currentFarmerIdCount"; 
+    private final static String FARMER_CACHE_LAST_UPDATE_DATE = "localCacheVersion";
     private final static String CURRENT_MENU_IDS = "menuIds";
     public Timer timer;
     private boolean isSynchronizing;
@@ -409,6 +410,9 @@ public class SynchronizationManager {
             // Get New Farmer Ids
             getNewFarmerIds();
             
+            // Get Local Farmer Cache
+            getFamerLocalCache();
+            
             // Finally update keywords
             updateKeywords();
             
@@ -425,7 +429,7 @@ public class SynchronizationManager {
             looper.quit();
         }
     }
-
+    
     /**
      * Sets the version in the update request entity
      * 
@@ -446,11 +450,22 @@ public class SynchronizationManager {
         return xmlRequest.getEntity();
     }
     
-    static AbstractHttpEntity getFarmerIdsRequestEntity() throws UnsupportedEncodingException {
+    static AbstractHttpEntity getFarmerIdsRequestEntity(int currentFarmerIdCount) throws UnsupportedEncodingException {
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
         xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
         xmlRequest.writeStartElement(CURRENT_FARMER_ID_COUNT);
-        xmlRequest.writeText("12");
+        xmlRequest.writeText(Integer.toString(currentFarmerIdCount));
+        xmlRequest.writeEndElement();
+        xmlRequest.writeEndElement();
+        return xmlRequest.getEntity();
+    }
+    
+    static AbstractHttpEntity getFarmerCacheRequestEntity() throws UnsupportedEncodingException {
+        String farmerCacheVersion = PropertyStorage.getLocal().getValue(GlobalConstants.FARMER_CACHE_VERSION_KEY, "2012-04-03 00:00:00");
+        XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
+        xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
+        xmlRequest.writeStartElement(FARMER_CACHE_LAST_UPDATE_DATE);
+        xmlRequest.writeText(farmerCacheVersion);
         xmlRequest.writeEndElement();
         xmlRequest.writeEndElement();
         return xmlRequest.getEntity();
@@ -497,6 +512,13 @@ public class SynchronizationManager {
         // TODO: integrate this code into our synchronization manager?
         JsonSimpleFarmerIdParser farmerIdParser = new JsonSimpleFarmerIdParser(this.progressMessageHandler, this.internalMessageHandler, farmerIdStream);
         farmerIdParser.run();
+    }
+    
+    private void parseFarmerCache(InputStream farmerCacheStream) throws XmlPullParserException, ParseException {
+        // Call FarmerCacheParser to parse the farmerCache result and store the contents in our
+        // local database
+        JsonSimpleFarmerCacheParser farmerCacheParser = new JsonSimpleFarmerCacheParser(this.progressMessageHandler, this.internalMessageHandler, farmerCacheStream);
+        farmerCacheParser.run();
     }
 
     /**
@@ -617,8 +639,12 @@ public class SynchronizationManager {
         InputStream farmerIdsStream;
         try {
 
+            if (searchDatabase == null) {
+                searchDatabase = new Storage(ApplabActivity.getGlobalContext());
+            }
+            int unsedfarmerIdCount = searchDatabase.getUnusedFarmerIdCount();
             farmerIdsStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                    (StringEntity)getFarmerIdsRequestEntity(), networkTimeout);
+                    (StringEntity)getFarmerIdsRequestEntity(unsedfarmerIdCount), networkTimeout);
 
             // Write the farmer Ids to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir()
@@ -629,13 +655,47 @@ public class SynchronizationManager {
             FileInputStream inputStream = new FileInputStream(file);
 
             if (downloadSuccessful && inputStream != null) {
-                sendInternalMessage(GlobalConstants.FARMER_IDS_DOWNLOAD_SUCCESS);                
                 parseFarmerIds(inputStream);
             }
-            else {
-                sendInternalMessage(GlobalConstants.FARMER_IDS_DOWNLOAD_FAILURE);
+            
+            if (inputStream != null) {
+                inputStream.close();
+                file.delete();
             }
+        }
+        catch (IOException e) {
+            sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
+        }        
+    }
+    
+    private void getFamerLocalCache() throws XmlPullParserException, ParseException {
+        String url = Settings.getNewServerUrl()
+                + ApplabActivity.getGlobalContext().getString(
+                        R.string.get_farmer_cache_path);
 
+        int networkTimeout = 5 * 60 * 1000;
+
+        InputStream farmerCacheStream;
+        try {
+
+            if (searchDatabase == null) {
+                searchDatabase = new Storage(ApplabActivity.getGlobalContext());
+            }            
+            farmerCacheStream = HttpHelpers.postJsonRequestAndGetStream(url,
+                    (StringEntity)getFarmerCacheRequestEntity(), networkTimeout);
+
+            // Write the farmer Ids to disk, and then open a FileStream
+            String filePath = ApplabActivity.getGlobalContext().getCacheDir()
+                    + "/farmerCache.tmp";
+            Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(farmerCacheStream, filePath);
+            farmerCacheStream.close();
+            File file = new File(filePath);
+            FileInputStream inputStream = new FileInputStream(file);
+            
+            if (downloadSuccessful && inputStream != null) {                             
+                parseFarmerCache(inputStream);
+            }
+            
             if (inputStream != null) {
                 inputStream.close();
                 file.delete();

@@ -94,15 +94,12 @@ public class JsonSimpleFarmerIdParser {
             if (addedNodes != 0) {
                 // let UI handler know
                 Log.d(LOG_TAG, "Finished Parsing Farmer Ids ... Added: " + addedNodes);
-                this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_SUCCESS);
             }           
         }
         catch (IOException e) {
-            this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             Log.d(LOG_TAG, "IOException: " + e);
         }
         catch (IllegalStateException e) {
-            this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             Log.d(LOG_TAG, "IllegalStateException: " + e);
         }
         finally {

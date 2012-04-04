@@ -55,7 +55,6 @@ public class Storage {
     public static final String FARMER_LOCAL_CACHE_LAST_NAME = "last_name";
     public static final String FARMER_LOCAL_CACHE_DATE_OF_BIRTH = "date_of_birth";
     public static final String FARMER_LOCAL_CACHE_FATHER_NAME = "father_name";
-    public static final String FARMER_LOCAL_CACHE_LAST_UPDATED_DATE = "last_updated_date";
 
     private static final String DATABASE_NAME = "search";
     private static final int DATABASE_VERSION = 7;
@@ -270,8 +269,8 @@ public class Storage {
             sqlCommand.append(" (" + Storage.FARMER_LOCAL_CACHE_ROWID_COLUMN + " CHAR(16) PRIMARY KEY, " + Storage.FARMER_LOCAL_CACHE_FARMER_ID
                     + " CHAR(16), "
                     + Storage.FARMER_LOCAL_CACHE_FIRST_NAME + " CHAR(16), " + Storage.FARMER_LOCAL_CACHE_MIDDLE_NAME + " CHAR(16), "
-                    + Storage.FARMER_LOCAL_CACHE_LAST_NAME + " CHAR(16), " + Storage.FARMER_LOCAL_CACHE_DATE_OF_BIRTH + " DATE, "
-                    + Storage.FARMER_LOCAL_CACHE_FATHER_NAME + " CHAR(16), " + Storage.FARMER_LOCAL_CACHE_LAST_UPDATED_DATE + " DATETIME ");
+                    + Storage.FARMER_LOCAL_CACHE_LAST_NAME + " CHAR(16), " + Storage.FARMER_LOCAL_CACHE_DATE_OF_BIRTH + " CHAR(16), "
+                    + Storage.FARMER_LOCAL_CACHE_FATHER_NAME + " CHAR(16) ");
             sqlCommand.append(" );");
             return sqlCommand.toString();
         }
@@ -407,6 +406,26 @@ public class Storage {
     public boolean deleteUsedFarmerIds() {
         return database.delete(GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME, Storage.AVAILABLE_FARMER_ID_STATUS + "=" + 1, null) > 0;
     }
+    
+    public int getUnusedFarmerIdCount() {
+        Cursor cursor = null;
+        try {
+            cursor = database.rawQuery("SELECT COUNT(*) FROM " + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME + " WHERE status = 0 ", null);
+            if (cursor.moveToFirst()) {
+                return cursor.getInt(0);
+            }
+            return 0;
+        }
+        catch (NullPointerException ex) {
+            Log.w("No search database yet: ", "SEARCH");
+            return 0;
+        }
+        finally {
+            if (null != cursor) {
+                cursor.close();
+            }
+        }
+    }
 
     public ArrayList<String> getLocalMenuIds() {
         Cursor cursor = getMenuList();
@@ -425,6 +444,7 @@ public class Storage {
                 cursor.close();
             }
         }
+
     }
 
     /**

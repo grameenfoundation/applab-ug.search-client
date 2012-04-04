@@ -24,15 +24,13 @@ public class GlobalConstants {
     public static final int DISMISS_WAIT_DIALOG = 6;
     public static final int KEYWORD_PARSE_GOT_NODE_TOTAL = 7;
     
-    public static final int FARMER_IDS_DOWNLOAD_SUCCESS = 12;
-    public static final int FARMER_IDS_DOWNLOAD_FAILURE = 13;
-
     public static final int UPDATE_DIALOG = 0;
     public static final int CONNECT_DIALOG = 1;
     public static final int PARSE_DIALOG = 2;
     public static final int SETUP_DIALOG = 3;
 
     public static final String KEYWORDS_VERSION_KEY = "keywordsVersion";
+    public final static String FARMER_CACHE_VERSION_KEY = "lastUpdateDate";
 
     public static final String FARMER_REG_FORM_HASH = "farmerRegistrationFormHash";
 
