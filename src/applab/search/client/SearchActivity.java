@@ -40,9 +40,6 @@ public class SearchActivity extends BaseSearchActivity {
 
     private static final String SEARCH_PATH_DELIMETER = " >";
 
-    /** database where search keywords are stored */
-    private Storage searchDatabase;
-
     /** smaller "Next" button */
     private Button nextButtonSmall;
 
@@ -87,7 +84,6 @@ public class SearchActivity extends BaseSearchActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.searchDatabase = new Storage(this);
 
         setContentView(R.layout.main);
         this.pageRadioGroup = (RadioGroup)findViewById(R.id.radio_group);

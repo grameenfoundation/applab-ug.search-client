@@ -171,6 +171,12 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                     if (result < 0) {
                         message = "Failed to save farmer registration record.";
                     }
+                    else { //Farmer registration successful, mark assigned farmer id as used
+                        this.searchDatabase.open();
+                        searchDatabase.toggleFarmerIdStatus(GlobalConstants.intervieweeName, 
+                                GlobalConstants.AVAILABLE_FARMER_ID_USED_STATUS);
+                        this.searchDatabase.close();
+                    }
 
                     BrowserResultDialog.show(this, message, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {

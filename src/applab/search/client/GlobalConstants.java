@@ -44,6 +44,10 @@ public class GlobalConstants {
 
     /** current user name or id */
     public static String intervieweeName;
+    
+    /** different status of farmer ids **/
+    public static final String AVAILABLE_FARMER_ID_UNUSED_STATUS = "0";
+    public static final String AVAILABLE_FARMER_ID_USED_STATUS = "1";
 
     /** current or last known location */
     public static String location = "Unknown";

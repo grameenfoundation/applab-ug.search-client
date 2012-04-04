@@ -359,6 +359,24 @@ public class Storage {
         }
     }
 
+    public String getNextFarmerId() {
+        Cursor cursor = null;
+        try {
+            cursor = database.query(false, GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME, new String[] { Storage.AVAILABLE_FARMER_ID_ROWID_COLUMN, 
+                    Storage.AVAILABLE_FARMER_ID_FARMER_ID }, Storage.AVAILABLE_FARMER_ID_STATUS + " = ?", new String[] { GlobalConstants.AVAILABLE_FARMER_ID_USED_STATUS },
+                    null, null, null, null);
+            if (cursor.moveToFirst()) {
+                return cursor.getString(0);
+            }
+            return null;
+        }
+        finally {
+            if (null != cursor) {
+                cursor.close();
+            }
+        }
+    }
+    
     /**
      * Delete all entries for this id and also where the parent id is this id (delete children too)
      * 
@@ -407,5 +425,22 @@ public class Storage {
                 cursor.close();
             }
         }
+    }
+
+    /**
+     * Toggle the status of farmer id in the local farmer id database
+     *
+     * @param farmerId
+     *            the farmer id whose status needs to be toggled
+     * @param newStatus
+     *            the new value of the status field
+     * @return 
+     *            the number of rows affected by the call to update
+     */
+    public void toggleFarmerIdStatus(String farmerId, String newStatus) {
+        ContentValues farmerIdStatus = new ContentValues();
+        farmerIdStatus.put(AVAILABLE_FARMER_ID_STATUS, newStatus);
+        database.update(GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME, farmerIdStatus, 
+                Storage.AVAILABLE_FARMER_ID_FARMER_ID + " = ?", new String[] { farmerId });         
     }
 }

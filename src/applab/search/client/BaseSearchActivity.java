@@ -23,6 +23,9 @@ import applab.client.search.R;
  */
 public abstract class BaseSearchActivity extends ApplabActivity { 
     private static boolean serviceStarted;
+
+    /** database where everything is stored */
+    public Storage searchDatabase;
     
     protected BaseSearchActivity() {
         super();
@@ -53,6 +56,8 @@ public abstract class BaseSearchActivity extends ApplabActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.searchDatabase = new Storage(this);
+        
         tryStartService(ApplabActivity.getGlobalContext());
     }
     
@@ -292,16 +297,16 @@ public abstract class BaseSearchActivity extends ApplabActivity {
             serviceStarted = true;
         }
     }
-    
+
     /**
      * Method to retrieve the next available free ID from the local db when registering a new farmer.
      * 
      * @return farmerId that should be assigned to the new farmer
      */
     String getNextAvailableId() {
-        String farmerId = null;
-
-
+        this.searchDatabase.open();
+        String farmerId = searchDatabase.getNextFarmerId();
+        this.searchDatabase.close();
         return farmerId;
     }
 }
