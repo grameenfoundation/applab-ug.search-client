@@ -240,6 +240,10 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
      */
     private void onRequestBrowserIntentButtonClick(String urlPattern, int requestCode) {
         String farmerName = farmerNameEditBox.getText().toString().replace(" ", "");
+        // Check local db for available IDs if no farmerId is provided in the app or an invalid id is provided
+        if (urlPattern.contentEquals("getFarmerRegistrationForm") && (farmerName.length() == 0 || !checkId(farmerName))) {
+            farmerName = getNextAvailableId();
+        }
         if (farmerName.length() > 0 || urlPattern.contentEquals("findFarmerId")) {
             if (urlPattern.contentEquals("findFarmerId") || checkId(farmerName)) {
                 // Set the farmer ID

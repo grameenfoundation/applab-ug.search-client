@@ -292,4 +292,16 @@ public abstract class BaseSearchActivity extends ApplabActivity {
             serviceStarted = true;
         }
     }
+    
+    /**
+     * Method to retrieve the next available free ID from the local db when registering a new farmer.
+     * 
+     * @return farmerId that should be assigned to the new farmer
+     */
+    String getNextAvailableId() {
+        String farmerId = null;
+
+
+        return farmerId;
+    }
 }
