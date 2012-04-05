@@ -271,7 +271,8 @@ public class Storage {
 			sqlCommand.append(" (" + Storage.AVAILABLE_FARMER_ID_ROWID_COLUMN
 					+ " CHAR(16) PRIMARY KEY, "
 					+ Storage.AVAILABLE_FARMER_ID_FARMER_ID + " CHAR(16), "
-					+ Storage.AVAILABLE_FARMER_ID_STATUS + " INTEGER ");
+					+ Storage.AVAILABLE_FARMER_ID_STATUS + " CHAR(16) ");
+					//+ Storage.AVAILABLE_FARMER_ID_STATUS + " INTEGER ");
 			sqlCommand.append(" );");
 			return sqlCommand.toString();
 		}
@@ -524,10 +525,10 @@ public class Storage {
 
 	public boolean isFarmerIdInFarmerLocalCacheTable(String farmerId) {
 		Cursor cursor = null;
-		final String countSql = "SELECT COUNT(*) FROM"
-				+ GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME + "WHERE"
-				+ Storage.FARMER_LOCAL_CACHE_FARMER_ID + "= ?";
-		cursor = database.rawQuery(countSql, new String[] { farmerId });
+		final String countSql = "SELECT COUNT(*) FROM "
+				+ GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME + " WHERE "
+				+ Storage.FARMER_LOCAL_CACHE_FARMER_ID + " = ?";
+		cursor = database.rawQuery(countSql, new String[] {farmerId});
 
 		int count = 0;
 		if (cursor.moveToFirst()) {
@@ -536,18 +537,20 @@ public class Storage {
 		cursor.close();
 
 		if (count > 0) {
+			Log.d("check1","exists!!");
 			return true;
 		} else {
+			Log.d("check1","dont exist!!");
 			return false;
 		}
 	}
 
 	public boolean isFarmerIdSetToUsedInAvailableFarmerIdTable(String farmerId) {
 		Cursor cursor = null;
-		final String countSql = "SELECT COUNT(*) FROM"
-				+ GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME + "WHERE"
-				+ Storage.FARMER_LOCAL_CACHE_FARMER_ID + "= ? AND "
-				+ Storage.AVAILABLE_FARMER_ID_STATUS + "= ?";
+		final String countSql = "SELECT COUNT(*) FROM "
+				+ GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME + " WHERE "
+				+ Storage.AVAILABLE_FARMER_ID_FARMER_ID + " = ? AND "
+				+ Storage.AVAILABLE_FARMER_ID_STATUS + " = ?";
 		cursor = database.rawQuery(countSql, new String[] { farmerId,
 				GlobalConstants.AVAILABLE_FARMER_ID_USED_STATUS });
 
@@ -558,8 +561,11 @@ public class Storage {
 		cursor.close();
 
 		if (count > 0) {
+			Log.d("check1","usedId!!");
 			return true;
+			
 		} else {
+			Log.d("check1","nonusedId!!");
 			return false;
 		}
 	}

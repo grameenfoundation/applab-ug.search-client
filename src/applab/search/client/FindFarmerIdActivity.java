@@ -9,7 +9,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import applab.client.R;
 
-public class FindFarmerIdActivity extends Activity {
+public class FindFarmerIdActivity extends BaseSearchActivity {
 
 	/** cache where search keywords are stored */
 	private Storage farmerLocalCache;
@@ -34,18 +34,33 @@ public class FindFarmerIdActivity extends Activity {
 		this.searchButton = (Button) findViewById(R.id.search);
 		this.farmerIdResult = (TextView) findViewById(R.id.farmeridresult);
 		this.useThisIdButton = (Button) findViewById(R.id.usethisid);
-
+		useThisIdButton.setVisibility(View.GONE);
+	
+		
 		// add a click listener to the "Search" button
 		this.searchButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				farmerIdResult.setText(farmerLocalCache
+				String farmerId = farmerLocalCache
 						.findFarmerIdFromFarmerLocalCacheTable(farmerFirstName
 								.getText().toString(), farmerLastName.getText()
 								.toString(), farmerFatherName.getText()
-								.toString()));
+								.toString());
+				if (farmerId != null){
+					farmerIdResult.setText(farmerId);
+					useThisIdButton.setVisibility(View.VISIBLE);
+					
+				}
+				
+				else {
+					
+					showToast("Invalid Farmer");
+					useThisIdButton.setVisibility(View.GONE);
+					searchButton.setVisibility(View.GONE);
+					
+				}
 			}
 		});
-
+     
 		// add a click listener to the "Use This Id" button
 		this.useThisIdButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
@@ -56,6 +71,5 @@ public class FindFarmerIdActivity extends Activity {
 				startActivity(newIntent);
 			}
 		});
-
 	}
 }
