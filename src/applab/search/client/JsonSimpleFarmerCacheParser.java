@@ -82,19 +82,16 @@ public class JsonSimpleFarmerCacheParser {
 
             this.storage = new Storage(ApplabActivity.getGlobalContext());
             this.storage.open();
-
-            // delete used farmer Ids
-            this.storage.deleteUsedFarmerIds();
-
+            
             while (!this.farmerCacheHandler.isEnd()) {
                 jsonParser.parse(new InputStreamReader(this.farmerCacheStream),
                         (org.json.simple.parser.ContentHandler)this.farmerCacheHandler,
                         true);
-                if (this.farmerCacheHandler.isVersionFound()){
+                if (this.farmerCacheHandler.isVersionFound()) {
                     farmerCacheVersion = this.farmerCacheHandler.getVersion();
                 }
             }
-            
+
             if (addedNodes != 0) {
                 // let UI handler know
                 Log.d(LOG_TAG, "Finished Parsing Farmer Cache ... Added: " + addedNodes);
@@ -251,26 +248,27 @@ public class JsonSimpleFarmerCacheParser {
                         if (key.equals(ID)) {
                             dataObject.setId(String.valueOf(value));
                         }
+
+                        else if (key.equals(FARMER_ID)) {
+                            dataObject.setFarmerId(String.valueOf(value));
+                        }
+                        else if (key.equals(FIRST_NAME)) {
+                            dataObject.setFirstName(String.valueOf(value));
+                        }
+                        else if (key.equals(MIDDLE_NAME)) {
+                            dataObject.setMiddleName(String.valueOf(value));
+                        }
+                        else if (key.equals(LAST_NAME)) {
+                            dataObject.setLastName(String.valueOf(value));
+                        }
+                        else if (key.equals(DATE_OF_BIRTH)) {
+                            dataObject.setDateOfBirthString(String.valueOf(value));
+                        }
+                        else if (key.equals(PARENT_NAME)) {
+                            dataObject.setParentName(String.valueOf(value));
+                        }
                     }
-                    else if (key.equals(FARMER_ID)) {
-                        dataObject.setFarmerId(String.valueOf(value));
-                    }
-                    else if (key.equals(FIRST_NAME)) {
-                        dataObject.setFirstName(String.valueOf(value));
-                    }
-                    else if (key.equals(MIDDLE_NAME)) {
-                        dataObject.setMiddleName(String.valueOf(value));
-                    }
-                    else if (key.equals(LAST_NAME)) {
-                        dataObject.setLastName(String.valueOf(value));
-                    }
-                    else if (key.equals(DATE_OF_BIRTH)) {
-                        dataObject.setDateOfBirthString(String.valueOf(value));
-                    }
-                    else if (key.equals(PARENT_NAME)) {
-                        dataObject.setParentName(String.valueOf(value));
-                    }
-                }
+                }              
             }
             return true;
         }
