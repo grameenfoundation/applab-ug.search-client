@@ -43,361 +43,403 @@ import applab.client.search.R;
  * 
  */
 public class MainMenuActivity extends BaseSearchActivity implements Runnable {
-    private static final int REGISTRATION_CODE = 2;
-    private static final int FORGOT_ID_CODE = 3;
-    private static final int AGINFO_CODE = 1;
-    private static final int PROGRESS_DIALOG = 1;
+	private static final int REGISTRATION_CODE = 2;
+	private static final int FORGOT_ID_CODE = 3;
+	private static final int AGINFO_CODE = 1;
+	private static final int PROGRESS_DIALOG = 1;
 
-    private Button inboxButton;
-    private Button nextButton;
-    private Button forgotButton;
-    private Button registerButton;
-    private Button aginfoButton;
-    private EditText farmerNameEditBox;
-    private FarmerRegistrationController farmerRegController;
-    private int requestCode;
-    private ProgressDialog progressDialog;
-    private String errorMessage;
+	private Button inboxButton;
+	private Button nextButton;
+	private Button forgotButton;
+	private Button registerButton;
+	private Button aginfoButton;
+	private EditText farmerNameEditBox;
+	private FarmerRegistrationController farmerRegController;
+	private int requestCode;
+	private ProgressDialog progressDialog;
+	private String errorMessage;
 
-    /**
-     * Used to participate in the synchronization lifecycle events
-     */
-    private Handler keywordSynchronizationCallback = new Handler() {
-        @Override
-        public void handleMessage(Message message) {
-            switch (message.what) {
-                case GlobalConstants.KEYWORD_PARSE_SUCCESS:
-                    onKeywordUpdateComplete();
-                    break;
-            }
-        }
-    };
+	/**
+	 * Used to participate in the synchronization lifecycle events
+	 */
+	private Handler keywordSynchronizationCallback = new Handler() {
+		@Override
+		public void handleMessage(Message message) {
+			switch (message.what) {
+			case GlobalConstants.KEYWORD_PARSE_SUCCESS:
+				onKeywordUpdateComplete();
+				break;
+			}
+		}
+	};
 
-    public MainMenuActivity() {
-        this.farmerRegController = new FarmerRegistrationController();
-    }
+	public MainMenuActivity() {
+		this.farmerRegController = new FarmerRegistrationController();
+	}
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
 
-        ApplabActivity.setAppVersion(getString(R.string.app_name), getString(R.string.app_version));
+		ApplabActivity.setAppVersion(getString(R.string.app_name),
+				getString(R.string.app_version));
 
-        // Request to display an icon in the title bar. Must be done in onCreate()
-        requestWindowFeature(Window.FEATURE_RIGHT_ICON);
-    }
+		// Request to display an icon in the title bar. Must be done in
+		// onCreate()
+		requestWindowFeature(Window.FEATURE_RIGHT_ICON);
+	}
 
-    @Override
-    public void onResume() {
-        // First run parent code
-        super.onResume();
+	@Override
+	public void onResume() {
+		// First run parent code
+		super.onResume();
 
-        // Check if we're in the middle of synchronizing keywords, and if we should be
-        // displaying a progress meter or not (i.e. was this a background synchronization?)
-        // TODO: how do we detect when we had a progress dialog up before and so should still be modal?
-        SynchronizationManager.onActivityResume(this, keywordSynchronizationCallback);
+		// Check if we're in the middle of synchronizing keywords, and if we
+		// should be
+		// displaying a progress meter or not (i.e. was this a background
+		// synchronization?)
+		// TODO: how do we detect when we had a progress dialog up before and so
+		// should still be modal?
+		SynchronizationManager.onActivityResume(this,
+				keywordSynchronizationCallback);
 
-        setContentView(R.layout.launch_menu);
-        setFeatureDrawableResource(Window.FEATURE_RIGHT_ICON, R.drawable.search_title);
+		setContentView(R.layout.launch_menu);
+		setFeatureDrawableResource(Window.FEATURE_RIGHT_ICON,
+				R.drawable.search_title);
 
-        this.nextButton = (Button)findViewById(R.id.next_button);
-        this.inboxButton = (Button)findViewById(R.id.inbox_button);
-        this.inboxButton.setText(getString(R.string.inbox_button));
-        this.farmerNameEditBox = (EditText)findViewById(R.id.id_field);
-        this.forgotButton = (Button)findViewById(R.id.forgot_button);
-        this.registerButton = (Button)findViewById(R.id.register_button);
-        this.aginfoButton = (Button)findViewById(R.id.aginfo_button);
-        this.farmerNameEditBox.setFilters(new InputFilter[] { getFarmerInputFilter() });
+		Intent intentReceiver = getIntent();
+		String farmerIdFound = intentReceiver.getStringExtra("edit_text");
 
-        if (!StorageManager.hasKeywords()) {
-            this.inboxButton.setEnabled(false);
-            this.nextButton.setEnabled(false);
-        }
+		this.nextButton = (Button) findViewById(R.id.next_button);
+		this.inboxButton = (Button) findViewById(R.id.inbox_button);
+		this.inboxButton.setText(getString(R.string.inbox_button));
+		this.farmerNameEditBox = (EditText) findViewById(R.id.id_field);
+		this.forgotButton = (Button) findViewById(R.id.forgot_button);
+		this.registerButton = (Button) findViewById(R.id.register_button);
+		this.aginfoButton = (Button) findViewById(R.id.aginfo_button);
+		this.farmerNameEditBox
+				.setFilters(new InputFilter[] { getFarmerInputFilter() });
 
-        this.forgotButton.setOnClickListener(new OnClickListener() {
-            public void onClick(View v) {
-                onRequestBrowserIntentButtonClick("findFarmerId", FORGOT_ID_CODE);
-            }
-        });
+		if (farmerIdFound != null) {
+			this.farmerNameEditBox.setText(farmerIdFound);
+		}
 
-        this.registerButton.setOnClickListener(new OnClickListener() {
-            public void onClick(View v) {
-                onRequestBrowserIntentButtonClick("getFarmerRegistrationForm", REGISTRATION_CODE);
-            }
-        });
+		if (!StorageManager.hasKeywords()) {
+			this.inboxButton.setEnabled(false);
+			this.nextButton.setEnabled(false);
+		}
 
-        this.aginfoButton.setOnClickListener(new OnClickListener() {
+		this.forgotButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				// Start FindFarmerId Activity
+				Intent nextActivity = new Intent(getApplicationContext(),
+						FindFarmerIdActivity.class);
+				startActivity(nextActivity);
+			}
+		});
 
-            @Override
-            public void onClick(View v) {
-                onRequestBrowserIntentButtonClick("getSubscriptionForm", AGINFO_CODE);
-            }
-        });
+		this.registerButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				onRequestBrowserIntentButtonClick("getFarmerRegistrationForm",
+						REGISTRATION_CODE);
+			}
+		});
 
-        this.nextButton.setText("Start New Search");
-        this.nextButton.setOnClickListener(new OnClickListener() {
-            public void onClick(View v) {
-                GpsManager.getInstance().update();
-                onButtonClick(SearchActivity.class);
-            }
+		this.aginfoButton.setOnClickListener(new OnClickListener() {
 
-        });
+			@Override
+			public void onClick(View v) {
+				onRequestBrowserIntentButtonClick("getSubscriptionForm",
+						AGINFO_CODE);
+			}
+		});
 
-        this.inboxButton.setOnClickListener(new OnClickListener() {
-            public void onClick(View v) {
-                onButtonClick(InboxListActivity.class);
-            }
-        });
+		this.nextButton.setText("Start New Search");
+		this.nextButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				GpsManager.getInstance().update();
+				onButtonClick(SearchActivity.class);
+			}
 
-    }
+		});
 
-    @Override
-    protected void refreshKeywords() {
-        super.refreshKeywords();
-        SynchronizationManager.synchronize(this, keywordSynchronizationCallback);
-    }
+		this.inboxButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				onButtonClick(InboxListActivity.class);
+			}
+		});
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+	}
 
-        switch (requestCode) {
-            case REGISTRATION_CODE:
-                if (resultCode == RESULT_OK) {
+	@Override
+	protected void refreshKeywords() {
+		super.refreshKeywords();
+		SynchronizationManager
+				.synchronize(this, keywordSynchronizationCallback);
+	}
 
-                    Bundle bundle = data.getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT);
-                    bundle.putString(FarmerRegistrationAdapter.KEY_LOCATION, GpsManager.getInstance().getLocationAsString());
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-                    String message = "Registration successful.";
-                    long result = this.farmerRegController.saveNewFarmerRegistration(bundle);
-                    if (result < 0) {
-                        message = "Failed to save farmer registration record.";
-                    }
-                    else { //Farmer registration successful, mark assigned farmer id as used
-                        this.searchDatabase.open();
-                        searchDatabase.toggleFarmerIdStatus(GlobalConstants.intervieweeName, 
-                                GlobalConstants.AVAILABLE_FARMER_ID_USED_STATUS);
-                        this.searchDatabase.close();
-                    }
+		switch (requestCode) {
+		case REGISTRATION_CODE:
+			if (resultCode == RESULT_OK) {
 
-                    BrowserResultDialog.show(this, message, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            switchToActivity(SearchActivity.class);
-                            dialog.cancel();
-                        }
-                    });
-                }
-                else if (resultCode == RESULT_CANCELED) {
-                    // reset the Farmer ID
-                    GlobalConstants.intervieweeName = "";
-                    // Show error dialog
-                    BrowserResultDialog.show(this, "Unable to register farmer. \nCheck the ID or try again later.");
-                }
+				Bundle bundle = data
+						.getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT);
+				bundle.putString(FarmerRegistrationAdapter.KEY_LOCATION,
+						GpsManager.getInstance().getLocationAsString());
 
-                break;
-            case AGINFO_CODE:
-                if (resultCode == RESULT_OK) {
-                    // reset the Farmer ID
-                    GlobalConstants.intervieweeName = "";
-                    BrowserResultDialog.show(this, "Subscriptions updated successfully");
-                }
-                else if (resultCode == RESULT_CANCELED) {
-                    // reset the Farmer ID
-                    GlobalConstants.intervieweeName = "";
-                    BrowserResultDialog.show(this, "Subscription was unsuccessful.\nPlease try again later.");
-                }
-                break;
-            case FORGOT_ID_CODE:
-                if (resultCode == RESULT_OK) {
-                    if (data != null) {
-                        final String farmerId = data.getStringExtra(BrowserActivity.EXTRA_DATA_INTENT);
-                        BrowserResultDialog.show(this, "Selected ID: " + farmerId, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                GlobalConstants.intervieweeName = farmerId;
-                                switchToActivity(SearchActivity.class);
-                                dialog.cancel();
-                            }
-                        });
-                    }
-                }
-                else if (resultCode == RESULT_CANCELED) {
-                    // reset the Farmer ID
-                    GlobalConstants.intervieweeName = "";
-                    BrowserResultDialog.show(this, "Unable to find ID. Try again later.");
-                }
-                break;
-            case ApplicationUpdateManager.INSTALL_APPLICATION:
-            	ApplicationUpdateManager.setFinishedInstall(true);
-            	break;
-            default:
-                break;
-        }
+				String message = "Registration successful.";
+				long result = this.farmerRegController
+						.saveNewFarmerRegistration(bundle);
+				if (result < 0) {
+					message = "Failed to save farmer registration record.";
+				} else { // Farmer registration successful, mark assigned farmer
+							// id as used
+					this.searchDatabase.open();
+					searchDatabase.toggleFarmerIdStatus(
+							GlobalConstants.intervieweeName,
+							GlobalConstants.AVAILABLE_FARMER_ID_USED_STATUS);
+					this.searchDatabase.close();
+				}
 
-        // restore the farmer id as previously typed in by the user.
-        farmerNameEditBox.setText(GlobalConstants.intervieweeName);
-    }
+				BrowserResultDialog.show(this, message,
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								switchToActivity(SearchActivity.class);
+								dialog.cancel();
+							}
+						});
+			} else if (resultCode == RESULT_CANCELED) {
+				// reset the Farmer ID
+				GlobalConstants.intervieweeName = "";
+				// Show error dialog
+				BrowserResultDialog
+						.show(this,
+								"Unable to register farmer. \nCheck the ID or try again later.");
+			}
 
-    /**
-     * Common code for handling button clicks that start a browser activity for a result.
-     * 
-     * @param urlPattern
-     *            The @BrowserActivity.EXTRA_URL_INTENT related url pattern
-     * @param requestCode
-     *            Code identifying the button that invoked the browser call. This so that the result is handled
-     *            accordingly in the parent activity.
-     */
-    private void onRequestBrowserIntentButtonClick(String urlPattern, int requestCode) {
-        String farmerName = farmerNameEditBox.getText().toString().replace(" ", "");
-        // Check local db for available IDs if no farmerId is provided in the app or an invalid id is provided
-        if (urlPattern.contentEquals("getFarmerRegistrationForm") && (farmerName.length() == 0 || !checkId(farmerName))) {
-            farmerName = getNextAvailableId();
-        }
-        if (farmerName.length() > 0 || urlPattern.contentEquals("findFarmerId")) {
-            if (urlPattern.contentEquals("findFarmerId") || checkId(farmerName)) {
-                // Set the farmer ID
-                GlobalConstants.intervieweeName = farmerName;
+			break;
+		case AGINFO_CODE:
+			if (resultCode == RESULT_OK) {
+				// reset the Farmer ID
+				GlobalConstants.intervieweeName = "";
+				BrowserResultDialog.show(this,
+						"Subscriptions updated successfully");
+			} else if (resultCode == RESULT_CANCELED) {
+				// reset the Farmer ID
+				GlobalConstants.intervieweeName = "";
+				BrowserResultDialog
+						.show(this,
+								"Subscription was unsuccessful.\nPlease try again later.");
+			}
+			break;
+		case FORGOT_ID_CODE:
+			if (resultCode == RESULT_OK) {
+				if (data != null) {
+					final String farmerId = data
+							.getStringExtra(BrowserActivity.EXTRA_DATA_INTENT);
+					BrowserResultDialog.show(this, "Selected ID: " + farmerId,
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int id) {
+									GlobalConstants.intervieweeName = farmerId;
+									switchToActivity(SearchActivity.class);
+									dialog.cancel();
+								}
+							});
+				}
+			} else if (resultCode == RESULT_CANCELED) {
+				// reset the Farmer ID
+				GlobalConstants.intervieweeName = "";
+				BrowserResultDialog.show(this,
+						"Unable to find ID. Try again later.");
+			}
+			break;
+		case ApplicationUpdateManager.INSTALL_APPLICATION:
+			ApplicationUpdateManager.setFinishedInstall(true);
+			break;
+		default:
+			break;
+		}
 
-                // Start GPS search for: Farmer Registration, Ag Info Subscription, Forgot Farmer ID Search
-                GpsManager.getInstance().update();
+		// restore the farmer id as previously typed in by the user.
+		farmerNameEditBox.setText(GlobalConstants.intervieweeName);
+	}
 
-                if (requestCode == REGISTRATION_CODE) {
-                    showDialog(PROGRESS_DIALOG);
-                    this.requestCode = requestCode;
-                    new Thread(this).start();
-                }
-                else {
-                    Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
+	/**
+	 * Common code for handling button clicks that start a browser activity for
+	 * a result.
+	 * 
+	 * @param urlPattern
+	 *            The @BrowserActivity.EXTRA_URL_INTENT related url pattern
+	 * @param requestCode
+	 *            Code identifying the button that invoked the browser call.
+	 *            This so that the result is handled accordingly in the parent
+	 *            activity.
+	 */
+	private void onRequestBrowserIntentButtonClick(String urlPattern,
+			int requestCode) {
+		String farmerName = farmerNameEditBox.getText().toString()
+				.replace(" ", "");
+		// Check local db for available IDs if no farmerId is provided in the
+		// app or an invalid id is provided
+		if (urlPattern.contentEquals("getFarmerRegistrationForm")
+				&& (farmerName.length() == 0 || !checkId(farmerName))) {
+			farmerName = getNextAvailableId();
+		}
+		if (farmerName.length() > 0 || urlPattern.contentEquals("findFarmerId")) {
+			if (urlPattern.contentEquals("findFarmerId") || checkId(farmerName)) {
+				// Set the farmer ID
+				GlobalConstants.intervieweeName = farmerName;
 
-                    String serverUrl = Settings.getServerUrl();
-                    serverUrl = serverUrl.substring(0, serverUrl.length() - 1);
+				// Start GPS search for: Farmer Registration, Ag Info
+				// Subscription, Forgot Farmer ID Search
+				GpsManager.getInstance().update();
 
-                    webActivity.putExtra(BrowserActivity.EXTRA_URL_INTENT,
-                            serverUrl + ":8888/services/" + urlPattern + HttpHelpers.getCommonParameters() + "&farmerId="
-                                    + farmerName);
-                    startActivityForResult(webActivity, requestCode);
-                }
-            }
-            else {
-                showToast("Invalid Farmer ID.");
-            }
-        }
-        else {
-            showToast(R.string.empty_text);
-        }
-    }
+				if (requestCode == REGISTRATION_CODE) {
+					showDialog(PROGRESS_DIALOG);
+					this.requestCode = requestCode;
+					new Thread(this).start();
+				} else {
+					Intent webActivity = new Intent(getApplicationContext(),
+							BrowserActivity.class);
 
-    /**
-     * Common code for handling button clicks for "New Search" and "Recent Searches"
-     * 
-     * @param classId
-     */
-    private void onButtonClick(Class<?> classId) {
-        final Intent nextActivity = new Intent(getApplicationContext(), classId);
-        nextActivity.putExtra("block", false);
-        String farmerName = farmerNameEditBox.getText().toString().replace(" ", "");
-        if (farmerName.length() > 0) {
-            if (checkId(farmerName)) {
-                GlobalConstants.intervieweeName = farmerName;
-                switchToActivity(nextActivity);
-            }
-            else {
-                showTestSearchDialog(new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        GlobalConstants.intervieweeName = "TEST";
-                        switchToActivity(nextActivity);
-                        dialog.cancel();
-                    }
-                }, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                });
-            }
-        }
-        else {
-            showToast(R.string.empty_text);
-        }
-    }
+					String serverUrl = Settings.getServerUrl();
+					serverUrl = serverUrl.substring(0, serverUrl.length() - 1);
 
-    @Override
-    protected boolean showFarmerId() {
-        return false;
-    }
+					webActivity.putExtra(BrowserActivity.EXTRA_URL_INTENT,
+							serverUrl + ":8888/services/" + urlPattern
+									+ HttpHelpers.getCommonParameters()
+									+ "&farmerId=" + farmerName);
+					startActivityForResult(webActivity, requestCode);
+				}
+			} else {
+				showToast("Invalid Farmer ID.");
+			}
+		} else {
+			showToast(R.string.empty_text);
+		}
+	}
 
-    @Override
-    protected void onKeywordUpdateComplete() {
-        super.onKeywordUpdateComplete();
-        if (StorageManager.hasKeywords()) {
-            this.inboxButton.setEnabled(true);
-            this.nextButton.setEnabled(true);
-        }
-    }
+	/**
+	 * Common code for handling button clicks for "New Search" and
+	 * "Recent Searches"
+	 * 
+	 * @param classId
+	 */
+	private void onButtonClick(Class<?> classId) {
+		final Intent nextActivity = new Intent(getApplicationContext(), classId);
+		nextActivity.putExtra("block", false);
+		String farmerName = farmerNameEditBox.getText().toString()
+				.replace(" ", "");
+		if (farmerName.length() > 0) {
+			if (checkId(farmerName)) {
+				GlobalConstants.intervieweeName = farmerName;
+				switchToActivity(nextActivity);
+			} else {
+				showTestSearchDialog(new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int id) {
+						GlobalConstants.intervieweeName = "TEST";
+						switchToActivity(nextActivity);
+						dialog.cancel();
+					}
+				}, new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int id) {
+						dialog.cancel();
+					}
+				});
+			}
+		} else {
+			showToast(R.string.empty_text);
+		}
+	}
 
-    // Remove unnecessary menu items for this activity
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        boolean result = super.onPrepareOptionsMenu(menu);
-        menu.removeItem(GlobalConstants.HOME_ID);
-        menu.removeItem(GlobalConstants.RESET_ID);
-        menu.removeItem(GlobalConstants.DELETE_ID);
-        menu.removeItem(GlobalConstants.INBOX_ID);
-        return result;
-    }
+	@Override
+	protected boolean showFarmerId() {
+		return false;
+	}
 
-    public void run() {
+	@Override
+	protected void onKeywordUpdateComplete() {
+		super.onKeywordUpdateComplete();
+		if (StorageManager.hasKeywords()) {
+			this.inboxButton.setEnabled(true);
+			this.nextButton.setEnabled(true);
+		}
+	}
 
-        if (this.requestCode == REGISTRATION_CODE) {
+	// Remove unnecessary menu items for this activity
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		boolean result = super.onPrepareOptionsMenu(menu);
+		menu.removeItem(GlobalConstants.HOME_ID);
+		menu.removeItem(GlobalConstants.RESET_ID);
+		menu.removeItem(GlobalConstants.DELETE_ID);
+		menu.removeItem(GlobalConstants.INBOX_ID);
+		return result;
+	}
 
-            errorMessage = null;
+	public void run() {
 
-            String html = this.farmerRegController.getFormHtml(GlobalConstants.intervieweeName, Settings.getServerUrl());
+		if (this.requestCode == REGISTRATION_CODE) {
 
-            if (html != null) {
-                Intent webActivity = new Intent(getApplicationContext(), BrowserActivity.class);
-                webActivity.putExtra(BrowserActivity.EXTRA_HTML_INTENT, html);
-                startActivityForResult(webActivity, this.requestCode);
-            }
-            else {
-                errorMessage = "Failed to get the farmer registration form. Please try again.";
-            }
+			errorMessage = null;
 
-            // Dismiss the progress window.
-            handler.sendEmptyMessage(0);
-        }
-    }
+			String html = this.farmerRegController.getFormHtml(
+					GlobalConstants.intervieweeName, Settings.getServerUrl());
 
-    private Handler handler = new Handler() {
+			if (html != null) {
+				Intent webActivity = new Intent(getApplicationContext(),
+						BrowserActivity.class);
+				webActivity.putExtra(BrowserActivity.EXTRA_HTML_INTENT, html);
+				startActivityForResult(webActivity, this.requestCode);
+			} else {
+				errorMessage = "Failed to get the farmer registration form. Please try again.";
+			}
 
-        @Override
-        public void handleMessage(Message msg) {
-            dismissDialog(PROGRESS_DIALOG);
+			// Dismiss the progress window.
+			handler.sendEmptyMessage(0);
+		}
+	}
 
-            if (errorMessage != null) {
-                showToast(errorMessage);
-            }
-        }
-    };
+	private Handler handler = new Handler() {
 
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle(getTitle());
-        progressDialog.setMessage("Loading Form. Please wait ...");
-        progressDialog.setIndeterminate(true);
-        progressDialog.setCancelable(false);
+		@Override
+		public void handleMessage(Message msg) {
+			dismissDialog(PROGRESS_DIALOG);
 
-        return progressDialog;
-    }
+			if (errorMessage != null) {
+				showToast(errorMessage);
+			}
+		}
+	};
 
-    @Override
-    protected void onStart() {
-        super.onStart();
+	@Override
+	protected Dialog onCreateDialog(int id) {
+		progressDialog = new ProgressDialog(this);
+		progressDialog.setTitle(getTitle());
+		progressDialog.setMessage("Loading Form. Please wait ...");
+		progressDialog.setIndeterminate(true);
+		progressDialog.setCancelable(false);
 
-        // We need to display only one settings screen at a time.
-        // So if no settings screen shown for GPS, try show that of mobile data, if disabled.
-        // Every time a settings screen is closed, Activity:onStart() will be called and hence
-        // help us ensure that we display all the settings screen we need, but one a time.
-        if (!GpsManager.getInstance().onStart(this)) {
-            DataConnectionManager.getInstance().onStart(this);
-        }
-    }
+		return progressDialog;
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+
+		// We need to display only one settings screen at a time.
+		// So if no settings screen shown for GPS, try show that of mobile data,
+		// if disabled.
+		// Every time a settings screen is closed, Activity:onStart() will be
+		// called and hence
+		// help us ensure that we display all the settings screen we need, but
+		// one a time.
+		if (!GpsManager.getInstance().onStart(this)) {
+			DataConnectionManager.getInstance().onStart(this);
+		}
+	}
 }

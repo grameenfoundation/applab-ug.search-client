@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+    <TextView
+        android:id="@+id/label"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="First Name:"/>
+    <EditText
+        android:id="@+id/firstnametext"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:drawable/editbox_background"
+        android:layout_below="@id/label"/>
+    <TextView
+        android:id="@+id/label1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Last Name:"
+        android:layout_below="@id/firstnametext"/>
+    <EditText
+        android:id="@+id/lastnametext"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:drawable/editbox_background"
+        android:layout_below="@id/label1"/>
+    <TextView
+        android:id="@+id/label2"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Father's name:"
+        android:layout_below="@id/lastnametext"/>
+    <EditText
+        android:id="@+id/fathersnametext"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:drawable/editbox_background"
+        android:layout_below="@id/label2"/> 
+    <Button
+        android:id="@+id/search"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_marginLeft="10dip"
+        android:text="Search" 
+        android:layout_below="@id/fathersnametext"/>   
+    <TextView
+        android:id="@+id/farmeridresult"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:layout_below="@id/search"/>
+    <Button
+        android:id="@+id/usethisid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Use This Id" 
+        android:layout_below="@id/farmeridresult"/>
+</RelativeLayout>

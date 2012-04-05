@@ -14,6 +14,7 @@
 <activity android:configChanges="orientation|keyboardHidden" android:name="applab.search.client.DisplaySearchResultsActivity"/>
 <activity android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden" android:name="applab.search.client.InboxListActivity"/>
 <activity android:label="@string/gps_activity" android:configChanges="orientation|keyboardHidden" android:name="applab.search.client.LocationActivity"/>
+<activity android:name="applab.search.client.FindFarmerIdActivity" android:configChanges="orientation|keyboardHidden"/>
 <activity android:label="@string/settings_activity" android:theme="@android:style/Theme.Light" android:configChanges="orientation|keyboardHidden" android:name="applab.search.client.Settings"/>
   
 <!--  Hook for being notified when the OS boots -->  

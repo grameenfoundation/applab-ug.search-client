@@ -18,295 +18,336 @@ import applab.client.autoupdate.ApplicationUpdateManager;
 import applab.client.search.R;
 
 /**
- * Base class for all Search activities, consolidates code around synchronization, menus, progress dialogs, etc.
+ * Base class for all Search activities, consolidates code around
+ * synchronization, menus, progress dialogs, etc.
  * 
  */
-public abstract class BaseSearchActivity extends ApplabActivity { 
-    private static boolean serviceStarted;
+public abstract class BaseSearchActivity extends ApplabActivity {
+	private static boolean serviceStarted;
 
-    /** database where everything is stored */
-    public Storage searchDatabase;
-    
-    protected BaseSearchActivity() {
-        super();
-    }
+	/** database where everything is stored */
+	public Storage searchDatabase;
 
-    /**
-     * called when we are notified that keywords have been updated
-     * 
-     * Used by MainMenuActivity to enable its buttons
-     */
-    protected void onKeywordUpdateComplete() {
-    }
+	protected BaseSearchActivity() {
+		super();
+	}
 
-    /**
-     * Take care of some clean up when ending any activity
-     */
-    @Override
-    protected void onPause() {
+	/**
+	 * called when we are notified that keywords have been updated
+	 * 
+	 * Used by MainMenuActivity to enable its buttons
+	 */
+	protected void onKeywordUpdateComplete() {
+	}
 
-        // Check if we're in the middle of a keyword download and we need to destroy the dialogs that are displaying
-        // (otherwise they will leak)
-        ProgressDialogManager.tryDestroyProgressDialog();
+	/**
+	 * Take care of some clean up when ending any activity
+	 */
+	@Override
+	protected void onPause() {
 
-        // Call parent
-        super.onPause();
-    }
+		// Check if we're in the middle of a keyword download and we need to
+		// destroy the dialogs that are displaying
+		// (otherwise they will leak)
+		ProgressDialogManager.tryDestroyProgressDialog();
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        this.searchDatabase = new Storage(this);
-        
-        tryStartService(ApplabActivity.getGlobalContext());
-    }
-    
-    /**
-     * Take care of some setup when resuming any activity. We use onResume() rather than onCreate() because from
-     * Activity Life Cycle, onResume seems to be called just before the app loading completes, while onCreate may be
-     * by-passed in some scenarios.
-     */
-    @Override
-    protected void onResume() {
+		// Call parent
+		super.onPause();
+	}
 
-        // TODO: Check if we need to reload activity content (e.g if it was saved on screen orientation change)
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		this.searchDatabase = new Storage(this);
 
-        // Other setup
-        this.setActivityTitle();
+		tryStartService(ApplabActivity.getGlobalContext());
+	}
 
-        // Call parent
-        super.onResume();
-    }
+	/**
+	 * Take care of some setup when resuming any activity. We use onResume()
+	 * rather than onCreate() because from Activity Life Cycle, onResume seems
+	 * to be called just before the app loading completes, while onCreate may be
+	 * by-passed in some scenarios.
+	 */
+	@Override
+	protected void onResume() {
 
-    private void setActivityTitle() {
-        String title = getTitleName();
+		// TODO: Check if we need to reload activity content (e.g if it was
+		// saved on screen orientation change)
 
-        // TODO: move this out of a global and into an Intent extra
-        int maxFarmerNameLength = 30;
-        String farmerName = GlobalConstants.intervieweeName;
+		// Other setup
+		this.setActivityTitle();
 
-        if (farmerName != null && farmerName.length() > 0 && showFarmerId()) {
-            title += " | ";
-            if (farmerName.length() > maxFarmerNameLength) {
-                farmerName = farmerName.substring(0, maxFarmerNameLength) + "...";
-            }
-            title += farmerName;
-        }
+		// Call parent
+		super.onResume();
+	}
 
-        this.setTitle(title);
-    }
+	private void setActivityTitle() {
+		String title = getTitleName();
 
-    /**
-     * return the base name to use in the title. Default is "CKW Search"
-     * 
-     * @return
-     */
-    protected String getTitleName() {
-        return getString(R.string.app_name);
-    }
+		// TODO: move this out of a global and into an Intent extra
+		int maxFarmerNameLength = 30;
+		String farmerName = GlobalConstants.intervieweeName;
 
-    // TODO: do we want this? It was in SearchActivity.java...
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // release synchronization lock
-        SynchronizationManager.completeSynchronization();
-    }
+		if (farmerName != null && farmerName.length() > 0 && showFarmerId()) {
+			title += " | ";
+			if (farmerName.length() > maxFarmerNameLength) {
+				farmerName = farmerName.substring(0, maxFarmerNameLength)
+						+ "...";
+			}
+			title += farmerName;
+		}
 
-    /**
-     * Let activity know if a configuration change has occurred Configuration change usually leads to reloading the
-     * activity, which can cause some code to re-run, unless we check for this first
-     */
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        // Set a variable on the bundle to let us know that state has changed
-        outState.putBoolean("configurationChanged", true);
+		this.setTitle(title);
+	}
 
-        // Call parent
-        super.onSaveInstanceState(outState);
-    }
+	/**
+	 * return the base name to use in the title. Default is "CKW Search"
+	 * 
+	 * @return
+	 */
+	protected String getTitleName() {
+		return getString(R.string.app_name);
+	}
 
-    /**
-     * override if you want to display a prompt to confirm refreshing
-     */
-    protected boolean confirmRefresh() {
-        return false;
-    }
+	// TODO: do we want this? It was in SearchActivity.java...
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		// release synchronization lock
+		SynchronizationManager.completeSynchronization();
+	}
 
-    /**
-     * override if you do not want to show the farmer ID in the activity title bar
-     * @return
-     */
-        protected boolean showFarmerId() {
-            return true;
-       }
-    // helper methods for Android menu management
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        boolean result = super.onCreateOptionsMenu(menu);
-        // groupId, itemId, order, title
-        menu.add(1, GlobalConstants.REFRESH_ID, 0, R.string.menu_refresh).setIcon(R.drawable.refresh);
-        menu.add(0, GlobalConstants.INBOX_ID, 0, R.string.menu_inbox).setIcon(R.drawable.folder);
-        menu.add(0, GlobalConstants.ABOUT_ID, 2, R.string.menu_about).setIcon(R.drawable.about);
-        menu.add(0, GlobalConstants.EXIT_ID, 3, R.string.menu_exit).setIcon(R.drawable.exit);
-        menu.add(0, GlobalConstants.SETTINGS_ID, 1, R.string.menu_settings).setIcon(R.drawable.settings);
-        menu.add(0, GlobalConstants.HOME_ID, 0, R.string.menu_home).setIcon(R.drawable.home);
-        menu.add(1, GlobalConstants.RESET_ID, 0, R.string.menu_reset).setIcon(R.drawable.search);
-        menu.add(0, GlobalConstants.DELETE_ID, 0, R.string.menu_delete).setIcon(R.drawable.delete);
-        menu.add(0, GlobalConstants.CHECK_FOR_UPDATES_ID, 0, R.string.menu_check_for_updates).setIcon(R.drawable.update);
+	/**
+	 * Let activity know if a configuration change has occurred Configuration
+	 * change usually leads to reloading the activity, which can cause some code
+	 * to re-run, unless we check for this first
+	 */
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		// Set a variable on the bundle to let us know that state has changed
+		outState.putBoolean("configurationChanged", true);
 
-        return result;
-    }
+		// Call parent
+		super.onSaveInstanceState(outState);
+	}
 
-    protected void refreshKeywords() {
-        
-    }
+	/**
+	 * override if you want to display a prompt to confirm refreshing
+	 */
+	protected boolean confirmRefresh() {
+		return false;
+	}
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        super.onOptionsItemSelected(item);
+	/**
+	 * override if you do not want to show the farmer ID in the activity title
+	 * bar
+	 * 
+	 * @return
+	 */
+	protected boolean showFarmerId() {
+		return true;
+	}
 
-        // for a number of our menu items, the correct action is
-        switch (item.getItemId()) {
-            case GlobalConstants.REFRESH_ID:
-                if (confirmRefresh()) {
-                    DialogInterface.OnClickListener onClickYes = new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            dialog.cancel();
-                            refreshKeywords();
-                        }
-                    };
+	// helper methods for Android menu management
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		boolean result = super.onCreateOptionsMenu(menu);
+		// groupId, itemId, order, title
+		menu.add(1, GlobalConstants.REFRESH_ID, 0, R.string.menu_refresh)
+				.setIcon(R.drawable.refresh);
+		menu.add(0, GlobalConstants.INBOX_ID, 0, R.string.menu_inbox).setIcon(
+				R.drawable.folder);
+		menu.add(0, GlobalConstants.ABOUT_ID, 2, R.string.menu_about).setIcon(
+				R.drawable.about);
+		menu.add(0, GlobalConstants.EXIT_ID, 3, R.string.menu_exit).setIcon(
+				R.drawable.exit);
+		menu.add(0, GlobalConstants.SETTINGS_ID, 1, R.string.menu_settings)
+				.setIcon(R.drawable.settings);
+		menu.add(0, GlobalConstants.HOME_ID, 0, R.string.menu_home).setIcon(
+				R.drawable.home);
+		menu.add(1, GlobalConstants.RESET_ID, 0, R.string.menu_reset).setIcon(
+				R.drawable.search);
+		menu.add(0, GlobalConstants.DELETE_ID, 0, R.string.menu_delete)
+				.setIcon(R.drawable.delete);
+		menu.add(0, GlobalConstants.CHECK_FOR_UPDATES_ID, 0,
+				R.string.menu_check_for_updates).setIcon(R.drawable.update);
 
-                    ErrorDialogManager.show(R.string.refresh_confirm, this, onClickYes, null);
-                }
-                else {
-                    refreshKeywords();
-                }
-                return true;
-            case GlobalConstants.ABOUT_ID:
-                AboutDialog.show(this, getString(R.string.app_version), getString(R.string.app_name),
-                        getString(R.string.release_date), getString(R.string.info), R.drawable.icon);
+		return result;
+	}
 
-                return true;
-            case GlobalConstants.EXIT_ID:
-                ApplabActivity.exit();
-                return true;
-            case GlobalConstants.SETTINGS_ID:
-                // At the moment switchToActivity will make it impossible to leave the settings activity
-                startActivity(Settings.class);
-                return true;
-            case GlobalConstants.INBOX_ID:
-                switchToActivity(InboxListActivity.class);
-                finish();
-                return true;
-            case GlobalConstants.HOME_ID:
-                switchToActivity(MainMenuActivity.class);
-                return true;
-            case GlobalConstants.RESET_ID:
-                // TODO: should we check if the system is in the middle of synchronizing?
-                switchToActivity(SearchActivity.class);
-                return true;
-            case GlobalConstants.DELETE_ID:
-                DialogInterface.OnClickListener okListener = new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        InboxAdapter inbox = new InboxAdapter(getApplicationContext());
-                        inbox.open();
-                        inbox.deleteAllRecords(InboxAdapter.INBOX_DATABASE_TABLE);
-                        inbox.close();
-                        dialog.cancel();
+	protected void refreshKeywords() {
 
-                        // replace ourself with a new instance that doesn't block
-                        Intent inboxList = new Intent(getApplicationContext(), InboxListActivity.class);
-                        inboxList.putExtra("block", false);
-                        switchToActivity(inboxList);
-                        finish();
-                    }
-                };
+	}
 
-                ErrorDialogManager.show(R.string.delete_alert, this, okListener, null);
-                return true;
-            case GlobalConstants.CHECK_FOR_UPDATES_ID:
-                Toast updateToast = Toast.makeText(this.getApplicationContext(), getApplicationContext().getString(R.string.background_update_confirmation),
-                        Toast.LENGTH_LONG);
-                updateToast.show();
-                new ApplicationUpdateManager().runOnce(this.getApplicationContext());
-                return true;
-        }
-        return false;
-    }
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		super.onOptionsItemSelected(item);
 
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        boolean result = super.onPrepareOptionsMenu(menu);
+		// for a number of our menu items, the correct action is
+		switch (item.getItemId()) {
+		case GlobalConstants.REFRESH_ID:
+			if (confirmRefresh()) {
+				DialogInterface.OnClickListener onClickYes = new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int id) {
+						dialog.cancel();
+						refreshKeywords();
+					}
+				};
 
-        // Do any "on-the-fly" changes to the menu;
+				ErrorDialogManager.show(R.string.refresh_confirm, this,
+						onClickYes, null);
+			} else {
+				refreshKeywords();
+			}
+			return true;
+		case GlobalConstants.ABOUT_ID:
+			AboutDialog.show(this, getString(R.string.app_version),
+					getString(R.string.app_name),
+					getString(R.string.release_date), getString(R.string.info),
+					R.drawable.icon);
 
-        // TODO: do we want to disable any functionality while we're synchronizing?
-        // how about other removals/disables based on current display activity?
-        /*
-         * if (SynchronizationManager.isSynchronizing()) { // Disable keyword updates and new searches
-         * menu.setGroupEnabled(1, false); } else { menu.setGroupEnabled(1, true); }
-         */
+			return true;
+		case GlobalConstants.EXIT_ID:
+			ApplabActivity.exit();
+			return true;
+		case GlobalConstants.SETTINGS_ID:
+			// At the moment switchToActivity will make it impossible to leave
+			// the settings activity
+			startActivity(Settings.class);
+			return true;
+		case GlobalConstants.INBOX_ID:
+			switchToActivity(InboxListActivity.class);
+			finish();
+			return true;
+		case GlobalConstants.HOME_ID:
+			switchToActivity(MainMenuActivity.class);
+			return true;
+		case GlobalConstants.RESET_ID:
+			// TODO: should we check if the system is in the middle of
+			// synchronizing?
+			switchToActivity(SearchActivity.class);
+			return true;
+		case GlobalConstants.DELETE_ID:
+			DialogInterface.OnClickListener okListener = new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					InboxAdapter inbox = new InboxAdapter(
+							getApplicationContext());
+					inbox.open();
+					inbox.deleteAllRecords(InboxAdapter.INBOX_DATABASE_TABLE);
+					inbox.close();
+					dialog.cancel();
 
-        return result;
-    }
+					// replace ourself with a new instance that doesn't block
+					Intent inboxList = new Intent(getApplicationContext(),
+							InboxListActivity.class);
+					inboxList.putExtra("block", false);
+					switchToActivity(inboxList);
+					finish();
+				}
+			};
 
-    /**
-     * Regular expression check to match 2 letters followed by at least 4 but at most 5 digits for a Farmer ID.
-     * 
-     * @param text
-     *            the matcher
-     * @return true if the matcher is an exact match of the input text
-     */
-    boolean checkId(String text) {
-        Pattern pattern = Pattern.compile("[a-zA-Z]{2}[0-9]{4,5}+");
-        Matcher matcher = pattern.matcher(text);
-        return matcher.matches();
-    }
+			ErrorDialogManager.show(R.string.delete_alert, this, okListener,
+					null);
+			return true;
+		case GlobalConstants.CHECK_FOR_UPDATES_ID:
+			Toast updateToast = Toast.makeText(
+					this.getApplicationContext(),
+					getApplicationContext().getString(
+							R.string.background_update_confirmation),
+					Toast.LENGTH_LONG);
+			updateToast.show();
+			new ApplicationUpdateManager()
+					.runOnce(this.getApplicationContext());
+			return true;
+		}
+		return false;
+	}
 
-    /**
-     * Dialog confirming a test search
-     * 
-     * @param yesListener
-     *            the listener to call on clicking the positive button
-     * @param noListener
-     *            the listener to call on clicking the negative button
-     */
-    void showTestSearchDialog(DialogInterface.OnClickListener yesListener, DialogInterface.OnClickListener noListener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setIcon(R.drawable.help);
-        builder.setTitle("Perform Test Search?");
-        builder.setMessage("The ID you entered is not valid, "
-                + "it should be 2 letters followed by at least 4 numbers."
-                + "\nWould you like to do a test search instead?"
-                + " NOTE: You will NOT be compensated for doing a test search.")
-                .setCancelable(false)
-                .setPositiveButton("Yes", yesListener)
-                .setNegativeButton("No", noListener);
-        AlertDialog alert = builder.create();
-        alert.show();
-    }
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		boolean result = super.onPrepareOptionsMenu(menu);
 
-    public static void tryStartService(Context context) {
-        if(!serviceStarted) {
-            Intent intent = new Intent();
-            intent.setAction("applab.search.client.service.ApplabSearchService");
-            Log.d("BaseSearchActivity", "Starting Applab Search Service");
-            context.startService(intent);
-            Log.d("BaseSearchActivity", "Started Applab Search Service");
-            serviceStarted = true;
-        }
-    }
+		// Do any "on-the-fly" changes to the menu;
 
-    /**
-     * Method to retrieve the next available free ID from the local db when registering a new farmer.
-     * 
-     * @return farmerId that should be assigned to the new farmer
-     */
-    String getNextAvailableId() {
-        this.searchDatabase.open();
-        String farmerId = searchDatabase.getNextFarmerId();
-        this.searchDatabase.close();
-        return farmerId;
-    }
+		// TODO: do we want to disable any functionality while we're
+		// synchronizing?
+		// how about other removals/disables based on current display activity?
+		/*
+		 * if (SynchronizationManager.isSynchronizing()) { // Disable keyword
+		 * updates and new searches menu.setGroupEnabled(1, false); } else {
+		 * menu.setGroupEnabled(1, true); }
+		 */
+
+		return result;
+	}
+
+	/**
+	 * Regular expression check to match 2 letters followed by at least 4 but at
+	 * most 5 digits for a Farmer ID.
+	 * 
+	 * @param text
+	 *            the matcher
+	 * @return true if the matcher is an exact match of the input text
+	 */
+	boolean checkId(String farmerId) {
+		searchDatabase.open();
+		Pattern pattern = Pattern.compile("[a-zA-Z]{2}[0-9]{4,5}+");
+		Matcher matcher = pattern.matcher(farmerId);
+
+		if ((matcher.matches())
+				|| (searchDatabase.isFarmerIdInFarmerLocalCacheTable(farmerId) || searchDatabase
+						.isFarmerIdSetToUsedInAvailableFarmerIdTable(farmerId))) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Dialog confirming a test search
+	 * 
+	 * @param yesListener
+	 *            the listener to call on clicking the positive button
+	 * @param noListener
+	 *            the listener to call on clicking the negative button
+	 */
+	void showTestSearchDialog(DialogInterface.OnClickListener yesListener,
+			DialogInterface.OnClickListener noListener) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setIcon(R.drawable.help);
+		builder.setTitle("Perform Test Search?");
+		builder.setMessage(
+				"The ID you entered is not valid, "
+						+ "it should be 2 letters followed by at least 4 numbers."
+						+ "\nWould you like to do a test search instead?"
+						+ " NOTE: You will NOT be compensated for doing a test search.")
+				.setCancelable(false).setPositiveButton("Yes", yesListener)
+				.setNegativeButton("No", noListener);
+		AlertDialog alert = builder.create();
+		alert.show();
+	}
+
+	public static void tryStartService(Context context) {
+		if (!serviceStarted) {
+			Intent intent = new Intent();
+			intent.setAction("applab.search.client.service.ApplabSearchService");
+			Log.d("BaseSearchActivity", "Starting Applab Search Service");
+			context.startService(intent);
+			Log.d("BaseSearchActivity", "Started Applab Search Service");
+			serviceStarted = true;
+		}
+	}
+
+	/**
+	 * Method to retrieve the next available free ID from the local db when
+	 * registering a new farmer.
+	 * 
+	 * @return farmerId that should be assigned to the new farmer
+	 */
+	String getNextAvailableId() {
+		this.searchDatabase.open();
+		String farmerId = searchDatabase.getNextFarmerId();
+		this.searchDatabase.close();
+		return farmerId;
+	}
 }
