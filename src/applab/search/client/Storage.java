@@ -62,7 +62,7 @@ public class Storage {
 
     /**
      * Attempt to open @DATABASE_NAME database
-     *
+     * 
      * @return Database object
      * @throws SQLException
      */
@@ -86,7 +86,7 @@ public class Storage {
     /**
      * Select search menu options. Options are the search menu items that the user can select from during a search
      * activity. e.g. Animals, Crops, Farm Inputs, Regional Weather Info are menu options.
-     *
+     * 
      * @param table
      *            the currently active table to query
      * @param optionColumn
@@ -111,6 +111,7 @@ public class Storage {
             String content = cursor.getString(0);
             return content;
         }
+        
         finally {
             if (null != cursor) {
                 cursor.close();
@@ -149,7 +150,7 @@ public class Storage {
 
     /**
      * Remove all table rows
-     *
+     * 
      * @return the number of rows affected
      */
     public int deleteAll(String table) {
@@ -190,7 +191,7 @@ public class Storage {
 
         /**
          * Returns the SQL string for Menu Table creation
-         *
+         * 
          * @return String
          */
         private String getMenuTableInitializationSql() {
@@ -203,7 +204,7 @@ public class Storage {
 
         /**
          * Returns the SQL string for MenuItem Table creation
-         *
+         * 
          * @return String
          */
         private String getMenuItemTableInitializationSql() {
@@ -241,7 +242,7 @@ public class Storage {
 
     /**
      * Returns a cursor containing top level items for a given menu
-     *
+     * 
      * @param string
      * @return
      */
@@ -256,12 +257,12 @@ public class Storage {
 
     public Cursor getMenuList() {
         try {
-        Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] { Storage.MENU_ROWID_COLUMN,
-                Storage.MENU_LABEL_COLUMN }, null, null, null, null, " " +
-                Storage.MENU_LABEL_COLUMN + " ASC", null);
-        return cursor;
+            Cursor cursor = database.query(false, GlobalConstants.MENU_TABLE_NAME, new String[] { Storage.MENU_ROWID_COLUMN,
+                    Storage.MENU_LABEL_COLUMN }, null, null, null, null, " " +
+                    Storage.MENU_LABEL_COLUMN + " ASC", null);
+            return cursor;
         }
-        catch(NullPointerException ex) {
+        catch (NullPointerException ex) {
             // throws null pointer exception if the application is run for the first time!
             return null;
         }
@@ -304,7 +305,7 @@ public class Storage {
 
     /**
      * Delete all entries for this id and also where the parent id is this id (delete children too)
-     *
+     * 
      * @param table
      * @param id
      * @return
@@ -315,7 +316,7 @@ public class Storage {
 
     /**
      * Delete all entries in menu table for this id and also where the parent id this id (delete children too)
-     *
+     * 
      * @param table
      * @param id
      * @return

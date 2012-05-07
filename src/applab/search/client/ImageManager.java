@@ -140,7 +140,7 @@ public class ImageManager {
                 try {
                     Log.d("Image Download", "Getting " + imageId);
                     InputStream image = HttpHelpers.getResource(Settings.getNewServerUrl()  + "search/getsfimages?imageId="+imageId);
-                    ImageFilesUtility.writeFile(imageId + ".jpeg", image);
+                    ImageFilesUtility.writeFile(imageId + ".jpg", image);
                 } catch (IOException e) {
                     Log.e("IOException", e.getMessage());
                 }
@@ -152,7 +152,7 @@ public class ImageManager {
     public static void deleteImages(List<String> imageIds) {
         if (imageIds != null ) {
             for (String imageId : imageIds) {
-                File file = new File("/sdcard/ckwsearch/", imageId + ".jpeg");
+                File file = new File("/sdcard/ckwsearch/", imageId + ".jpg");
                 ImageFilesUtility.deleteFile(file);
                 JsonSimpleParser.incrementProgressLevel();
             }

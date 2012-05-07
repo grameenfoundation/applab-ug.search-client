@@ -3,7 +3,7 @@
 <resources>
 <string name="app_name">CKW Search</string>
 <string name="app_version">4.1.0</string>
-<string name="release_date">March 12, 2012</string>
+<string name="release_date">May 03, 2012</string>
 <string name="info">Grameen Foundation, Applab Uganda\nckw@applab.org</string>
 <string name="inbox_title">Recent Searches</string>
 <string name="server_url">Server URL</string>
@@ -13,7 +13,7 @@
 <string name="settings_activity">Preferences</string>
 <string name="search_path">mobile/oktopus/search.php</string>
 <string name="update_path">search/getsearchkeywords</string>
-<string name="server">http://test.applab.org</string>
+<string name="server">http://ckwapps.applab.org</string>
 <string name="main_menu_details">Enter farmer\'s ID in the box below:</string>
 <string name="connection_error">Unable to establish a connection</string>
 <string name="incomplete_keyword_response_error">Failed to get all keywords</string>

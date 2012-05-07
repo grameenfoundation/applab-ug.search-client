@@ -34,7 +34,7 @@ import applab.client.search.R;
 
 /**
  * Responsible for constructing, displaying option pages, and submitting search queries.
- *
+ * 
  */
 public class SearchActivity extends BaseSearchActivity {
 
@@ -70,8 +70,11 @@ public class SearchActivity extends BaseSearchActivity {
 
     /** Holds all the previously selected items in this path/breadcrumb */
     private ArrayList<BreadcrumbItem> breadcrumbItems;
-    
+
     private String keywordForContentDisplay;
+
+    /** Number od Menus available for viewing */
+    private Integer menuCount;
 
     private class BreadcrumbItem {
         String label;
@@ -221,7 +224,7 @@ public class SearchActivity extends BaseSearchActivity {
 
     private void showSearchResults(String farmerId, String location, String content) {
         Intent searchResultActivity = new Intent(getApplicationContext(), DisplaySearchResultsActivity.class);
-        
+
         searchResultActivity.putExtra("searchTitle", keywordForContentDisplay);
         searchResultActivity.putExtra("name", farmerId);
         searchResultActivity.putExtra("location", location);
@@ -236,10 +239,9 @@ public class SearchActivity extends BaseSearchActivity {
         switchToActivity(searchResultActivity);
     }
 
-
     /**
      * Builds current menu
-     *
+     * 
      * @param string
      */
     private void buildMenu() {
@@ -253,7 +255,7 @@ public class SearchActivity extends BaseSearchActivity {
 
         try {
             // Get the number of menus this user is allowed to see
-            Integer menuCount = searchDatabase.getMenuCount();
+            menuCount = searchDatabase.getMenuCount();
 
             if (pageIndex == 0) {
                 // We're on the first page
@@ -277,16 +279,17 @@ public class SearchActivity extends BaseSearchActivity {
                     // selectedItemOrMenuId is an ItemId, since we can only see one menu
                     searchCursor = searchDatabase.getChildMenuItems(selectedItemOrMenuId);
                 }
-                else if (menuCount > 1 && pageIndex == 0) {
+                else if (menuCount > 1 && pageIndex < 2) {
                     // selectedItemOrMenuId is a menuId, sine we're on the first page and there was/is more than one
                     // menu (so the first page displays the menus)
                     searchCursor = searchDatabase.getTopLevelMenuItems(selectedItemOrMenuId);
 
                 }
-                else if (menuCount > 1 && pageIndex > 0) {
+                else if (menuCount > 1 && pageIndex > 1) {
                     // selectedItemOrMenuId is an itemId
                     searchCursor = searchDatabase.getChildMenuItems(selectedItemOrMenuId);
                 }
+
                 else {
                     // not sure what's going on
                     return;
@@ -301,7 +304,7 @@ public class SearchActivity extends BaseSearchActivity {
                 // Get the item for which we want to show content
                 String contentItemId = getPreviousSelectedItemId();
 
-                if("".equals(contentItemId)) {
+                if ("".equals(contentItemId)) {
                     // no previous data
                     return;
                 }
@@ -333,7 +336,8 @@ public class SearchActivity extends BaseSearchActivity {
 
                     if ((menuCount == 1 && pageIndex == 0) || pageIndex > 0) {
                         // We got items, so they may have an attachment
-                        attachmentId = searchCursor.getString(2); // attachment id is the 3rd item
+                        // attachmentId = searchCursor.getString(2); // attachment id is the 3rd item
+                        attachmentId = menuOrItemId;
                     }
 
                     radioButtonId = addRadioButton(menuOrItemId, label, radioButtonId, attachmentId, previousSelectedItemId);
@@ -362,7 +366,7 @@ public class SearchActivity extends BaseSearchActivity {
 
     /**
      * Gets the itemId that was selected on the previous page
-     *
+     * 
      * @return
      */
     private String getPreviousSelectedItemId() {
@@ -374,7 +378,7 @@ public class SearchActivity extends BaseSearchActivity {
 
     /**
      * Adds a radio button to the radio button group
-     *
+     * 
      * @param label
      * @param radioButtonId
      * @param imagePath
@@ -389,7 +393,8 @@ public class SearchActivity extends BaseSearchActivity {
         String radioButtonText;
         radioButtonText = label;
         radioButton.setText(radioButtonText);
-        trySetImage(radioButton, attachmentId + ".jpg");
+        // trySetImage(radioButton, attachmentId + ".jpg");
+        trySetImage(radioButton, attachmentId);
 
         if (null != selectedId && selectedId.equals(menuOrItemId)) {
             radioButton.setChecked(true);
@@ -411,10 +416,10 @@ public class SearchActivity extends BaseSearchActivity {
         showSearchResults(GlobalConstants.intervieweeName, GpsManager.getInstance().getLocationAsString(), content);
     }
 
-    private void trySetImage(RadioButton radioButton, String image) {
-        if (ImageFilesUtility.imageExists(image)) {
-            radioButton.setCompoundDrawablesWithIntrinsicBounds(null, null, null, ImageFilesUtility.getImageAsDrawable(image));
-        }
+    private void trySetImage(RadioButton radioButton, String image) {        
+            if (ImageFilesUtility.imageExists(image, true)) {
+                radioButton.setCompoundDrawablesWithIntrinsicBounds(null, null, null, ImageFilesUtility.getImageAsDrawable(image, true));
+            }        
     }
 
     @Override
@@ -424,7 +429,7 @@ public class SearchActivity extends BaseSearchActivity {
 
     /**
      * If keywords have been updated, our search is invalid and we need to reset the search
-     *
+     * 
      * TODO: only do this if the current selection is still invalid
      */
     @Override
