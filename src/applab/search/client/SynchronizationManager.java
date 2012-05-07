@@ -437,6 +437,7 @@ public class SynchronizationManager {
      * @throws UnsupportedEncodingException
      */
     static AbstractHttpEntity getRequestEntity() throws UnsupportedEncodingException {
+
         String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, "2010-04-03 00:00:00");
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
         xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);

@@ -37,7 +37,7 @@ import applab.client.search.R;
 public class ImageFilesUtility {
     private static final String ROOT = "/sdcard/ckwsearch/";
     private static final String LOG_TAG = "ImageFilesUtility";
-    private static String[] SUPPORTED_FORMATS = {".jpg", ".jpeg"};
+    private static String[] SUPPORTED_FORMATS = { ".jpg", ".jpeg" };
 
     private static boolean storageReady() {
         String cardstatus = Environment.getExternalStorageState();
@@ -99,6 +99,15 @@ public class ImageFilesUtility {
         return new BitmapDrawable(bitmap);
     }
 
+    public static Drawable getImageAsDrawable(String fileName, boolean isPartialName) {
+        if (!storageReady()) {
+            return null;
+        }
+        fileName = getFullPath(fileName, true);
+        Bitmap bitmap = BitmapFactory.decodeFile(fileName);
+        return new BitmapDrawable(bitmap);
+    }
+
     public static ArrayList<String> getFilesAsArrayList() {
         ArrayList<String> fileList = new ArrayList<String>();
         File rootDirectory = new File(ROOT);
@@ -125,14 +134,37 @@ public class ImageFilesUtility {
         }
 
         fileName = getFullPath(fileName);
-        if(fileName == null) {
+        if (fileName == null) {
             return false;
         }
         return true;
     }
 
+    /**
+     * Overload to allow getting iamge by full name
+     * 
+     * @param fileName
+     * @param isFullName
+     * @return
+     */
+    public static boolean imageExists(String fileName, boolean isPartialName) {
+        if (!storageReady()) {
+            return false;
+        }
+        else if (isPartialName) {
+            fileName = getFullPath(fileName, true);
+            if (fileName == null) {
+                return false;
+            }
+            return true;
+        }
+        else {
+            return imageExists(fileName);
+        }
+    }
+
     private static String getFullPath(String fileName) {
-        for(String format : SUPPORTED_FORMATS ) {
+        for (String format : SUPPORTED_FORMATS) {
             String path = ROOT + fileName + format;
             File file = new File(path);
 
@@ -141,6 +173,22 @@ public class ImageFilesUtility {
             }
         }
         return null;
+    }
+
+    private static String getFullPath(String fileName, boolean isPartialName) {
+        if (!isPartialName) {
+            return getFullPath(fileName);
+        }
+        File dir = new File(ROOT);
+
+        for (File file : dir.listFiles()) {
+            Log.d("FILES", file.getName());
+            if (fileName != null && file.getName().contains(fileName.toLowerCase())) {
+                return file.getAbsolutePath();
+            }
+        }
+        return null;
+
     }
 
     public static String getSHA1Hash(File file) {
