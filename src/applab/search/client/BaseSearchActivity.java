@@ -290,14 +290,14 @@ public abstract class BaseSearchActivity extends ApplabActivity {
 	 *            the matcher
 	 * @return true if the matcher is an exact match of the input text
 	 */
-	boolean checkId(String farmerId) {
+	public boolean checkId(String text) {
 		searchDatabase.open();
 		Pattern pattern = Pattern.compile("[a-zA-Z]{2}[0-9]{4,5}+");
-		Matcher matcher = pattern.matcher(farmerId);
+		Matcher matcher = pattern.matcher(text);
 
 		if ((matcher.matches())
-				|| (searchDatabase.isFarmerIdInFarmerLocalCacheTable(farmerId) || searchDatabase
-						.isFarmerIdSetToUsedInAvailableFarmerIdTable(farmerId))) {
+				|| (searchDatabase.isFarmerIdInFarmerLocalCacheTable(text) || searchDatabase
+						.isFarmerIdSetToUsedInAvailableFarmerIdTable(text))) {
 			return true;
 		}
 		return false;

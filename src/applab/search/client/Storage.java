@@ -497,7 +497,6 @@ public class Storage {
                 cursor.close();
             }
         }
-
     }
 
     public String findFarmerIdFromFarmerLocalCacheTable(String farmerFirstName,
