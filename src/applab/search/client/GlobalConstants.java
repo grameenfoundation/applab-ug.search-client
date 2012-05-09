@@ -49,4 +49,6 @@ public class GlobalConstants {
 
     /** current or last known location */
     public static String location = "Unknown";
+    
+    public static String COUNTRY_CODE = "countryCode";
 }

@@ -62,7 +62,7 @@ public class SynchronizationManager {
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
     private final static String REQUEST_ELEMENT_NAME = "GetKeywordsRequest";
     private final static String VERSION_ELEMENT_NAME = "localKeywordsVersion";
-    private final static String CURRENT_FARMER_ID_COUNT = "currentFarmerIdCount"; 
+    private final static String CURRENT_FARMER_ID_COUNT = "currentFarmerIdCount";
     private final static String FARMER_CACHE_LAST_UPDATE_DATE = "localCacheVersion";
     private final static String CURRENT_MENU_IDS = "menuIds";
     public Timer timer;
@@ -406,16 +406,19 @@ public class SynchronizationManager {
             submitPendingUsageLogs(inboxAdapter);
 
             inboxAdapter.close();
-            
+
+            // Get Person country code
+            getCountryCode();
+
             // Get New Farmer Ids
             getNewFarmerIds();
-            
+
             // Get Local Farmer Cache
             getFamerLocalCache();
-            
+
             // Finally update keywords
             updateKeywords();
-            
+
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -429,7 +432,7 @@ public class SynchronizationManager {
             looper.quit();
         }
     }
-    
+
     /**
      * Sets the version in the update request entity
      * 
@@ -450,7 +453,7 @@ public class SynchronizationManager {
         xmlRequest.writeEndElement();
         return xmlRequest.getEntity();
     }
-    
+
     static AbstractHttpEntity getFarmerIdsRequestEntity(int currentFarmerIdCount) throws UnsupportedEncodingException {
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
         xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
@@ -460,7 +463,7 @@ public class SynchronizationManager {
         xmlRequest.writeEndElement();
         return xmlRequest.getEntity();
     }
-    
+
     static AbstractHttpEntity getFarmerCacheRequestEntity() throws UnsupportedEncodingException {
         String farmerCacheVersion = PropertyStorage.getLocal().getValue(GlobalConstants.FARMER_CACHE_VERSION_KEY, "2012-04-03 00:00:00");
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
@@ -468,6 +471,14 @@ public class SynchronizationManager {
         xmlRequest.writeStartElement(FARMER_CACHE_LAST_UPDATE_DATE);
         xmlRequest.writeText(farmerCacheVersion);
         xmlRequest.writeEndElement();
+        xmlRequest.writeEndElement();
+        return xmlRequest.getEntity();
+    }
+
+    static AbstractHttpEntity getCountryCodeRequestEntity() throws UnsupportedEncodingException {
+
+        XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
+        xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
         xmlRequest.writeEndElement();
         return xmlRequest.getEntity();
     }
@@ -506,20 +517,29 @@ public class SynchronizationManager {
         JsonSimpleParser keywordParser = new JsonSimpleParser(this.progressMessageHandler, this.internalMessageHandler, keywordStream);
         keywordParser.run();
     }
-    
+
     private void parseFarmerIds(InputStream farmerIdStream) throws XmlPullParserException, ParseException {
         // Call FarmerIdParser to parse the farmerIds result and store the contents in our
         // local database
         // TODO: integrate this code into our synchronization manager?
-        JsonSimpleFarmerIdParser farmerIdParser = new JsonSimpleFarmerIdParser(this.progressMessageHandler, this.internalMessageHandler, farmerIdStream);
+        JsonSimpleFarmerIdParser farmerIdParser = new JsonSimpleFarmerIdParser(this.progressMessageHandler, this.internalMessageHandler,
+                farmerIdStream);
         farmerIdParser.run();
     }
-    
+
     private void parseFarmerCache(InputStream farmerCacheStream) throws XmlPullParserException, ParseException {
         // Call FarmerCacheParser to parse the farmerCache result and store the contents in our
         // local database
-        JsonSimpleFarmerCacheParser farmerCacheParser = new JsonSimpleFarmerCacheParser(this.progressMessageHandler, this.internalMessageHandler, farmerCacheStream);
+        JsonSimpleFarmerCacheParser farmerCacheParser = new JsonSimpleFarmerCacheParser(this.progressMessageHandler,
+                this.internalMessageHandler, farmerCacheStream);
         farmerCacheParser.run();
+    }
+
+    private void parseCountryCode(InputStream countryCodeStream) throws XmlPullParserException, ParseException {
+        // Call FarmerCacheParser to parse the farmerCache result and store the contents in our
+        // local database
+        JsonSimpleCountryCodeParser countryCodeParser = new JsonSimpleCountryCodeParser(this.progressMessageHandler, countryCodeStream);
+        countryCodeParser.run();
     }
 
     /**
@@ -628,9 +648,9 @@ public class SynchronizationManager {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
     }
-    
+
     public void getNewFarmerIds() throws XmlPullParserException, ParseException {
-        
+
         String url = Settings.getNewServerUrl()
                 + ApplabActivity.getGlobalContext().getString(
                         R.string.get_farmer_ids_path);
@@ -658,7 +678,7 @@ public class SynchronizationManager {
             if (downloadSuccessful && inputStream != null) {
                 parseFarmerIds(inputStream);
             }
-            
+
             if (inputStream != null) {
                 inputStream.close();
                 file.delete();
@@ -666,9 +686,9 @@ public class SynchronizationManager {
         }
         catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
-        }        
+        }
     }
-    
+
     private void getFamerLocalCache() throws XmlPullParserException, ParseException {
         String url = Settings.getNewServerUrl()
                 + ApplabActivity.getGlobalContext().getString(
@@ -681,7 +701,7 @@ public class SynchronizationManager {
 
             if (searchDatabase == null) {
                 searchDatabase = new Storage(ApplabActivity.getGlobalContext());
-            }            
+            }
             farmerCacheStream = HttpHelpers.postJsonRequestAndGetStream(url,
                     (StringEntity)getFarmerCacheRequestEntity(), networkTimeout);
 
@@ -692,11 +712,11 @@ public class SynchronizationManager {
             farmerCacheStream.close();
             File file = new File(filePath);
             FileInputStream inputStream = new FileInputStream(file);
-            
-            if (downloadSuccessful && inputStream != null) {                             
+
+            if (downloadSuccessful && inputStream != null) {
                 parseFarmerCache(inputStream);
             }
-            
+
             if (inputStream != null) {
                 inputStream.close();
                 file.delete();
@@ -705,7 +725,38 @@ public class SynchronizationManager {
         catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
-        
+
+    }
+
+    private void getCountryCode() throws XmlPullParserException, ParseException {
+
+        // Get country code of CKW only if its has never been set
+        String countryCode = PropertyStorage.getLocal().getValue(GlobalConstants.COUNTRY_CODE, "NONE");
+        if ("NONE".equalsIgnoreCase(countryCode)) {
+            String url = Settings.getNewServerUrl()
+                    + ApplabActivity.getGlobalContext().getString(
+                            R.string.get_country_code_path);
+
+            int networkTimeout = 3 * 60 * 1000;
+
+            InputStream countryCodeStream;
+            try {
+
+                countryCodeStream = HttpHelpers.postJsonRequestAndGetStream(url,
+                        (StringEntity)getCountryCodeRequestEntity(), networkTimeout);
+
+                if (countryCodeStream != null) {
+                    parseCountryCode(countryCodeStream);
+                }
+
+                if (countryCodeStream != null) {
+                    countryCodeStream.close();
+                }
+            }
+            catch (IOException e) {
+                sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
+            }
+        }
     }
 
     private static String getMenuIds() {

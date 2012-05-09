@@ -12,6 +12,7 @@
 <string name="settings_activity">Preferencias</string>
 <string name="search_path">mobile/oktopus/search.php</string>
 <string name="update_path">search/getKeywords</string>
+<string name="get_country_code_path">search/getCountryCode</string>
 <string name="server">http://ckwapps.applab.org</string>
 <string name="main_menu_details">Digite el ID del productor en el siguiente campo:</string>
 <string name="connection_error">No se pudo establecer la conexion</string>
