@@ -725,7 +725,6 @@ public class SynchronizationManager {
         catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
-
     }
 
     private void getCountryCode() throws XmlPullParserException, ParseException {

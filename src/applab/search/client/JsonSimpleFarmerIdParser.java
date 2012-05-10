@@ -119,7 +119,7 @@ public class JsonSimpleFarmerIdParser {
     public void addRecord(String rowId, String farmerId, int status) {
         ContentValues addValues = new ContentValues();
 
-        addValues.put("id", rowId);
+        addValues.put("id", farmerId);
         addValues.put("farmer_id", farmerId);
         addValues.put("status", status);
 
@@ -158,6 +158,9 @@ public class JsonSimpleFarmerIdParser {
         @Override
         public boolean endObject() throws ParseException, IOException {
             if (null != this.dataObject) {
+                if (null == this.dataObject.getId() || this.dataObject.getId().length() <= 0) {
+                    this.dataObject.setId(this.dataObject.getFarmerId());
+                }
                 this.dataObject.setStatus(0);
                 saveObject(this.dataObject);
             }
@@ -167,6 +170,8 @@ public class JsonSimpleFarmerIdParser {
 
         private void saveObject(DataObject dataObjectToSave) {
             try {
+                //String debugRecAdded = String.format("ID: %s | FID:%s | STATUS: %d",dataObjectToSave.getId(), dataObjectToSave.getFarmerId(), dataObjectToSave.getStatus());
+                //Log.d(LOG_TAG, "Added Farmer ID: " + debugRecAdded);
                 addRecord(dataObjectToSave.getId(), dataObjectToSave.getFarmerId(), dataObjectToSave.getStatus());
                 addedNodes++;                
             }
@@ -183,10 +188,10 @@ public class JsonSimpleFarmerIdParser {
         @Override
         public boolean primitive(Object value) throws ParseException, IOException {
             if (null != key && null != dataObject) {
-                if (key.equals(ID)) {
+                if (key.equalsIgnoreCase(ID)) {
                     dataObject.setId(String.valueOf(value));
                 }
-                else if ( key.equals(FARMER_ID)) {
+                else if ( key.equalsIgnoreCase(FARMER_ID)) {
                     dataObject.setFarmerId(String.valueOf(value));
                 }
             }

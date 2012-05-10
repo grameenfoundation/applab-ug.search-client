@@ -53,7 +53,7 @@ public class Storage {
     public static final String FARMER_LOCAL_CACHE_FIRST_NAME = "first_name";
     public static final String FARMER_LOCAL_CACHE_MIDDLE_NAME = "middle_name";
     public static final String FARMER_LOCAL_CACHE_LAST_NAME = "last_name";
-    public static final String FARMER_LOCAL_CACHE_DATE_OF_BIRTH = "date_of_birth";
+    public static final String FARMER_LOCAL_CACHE_AGE = "age";
     public static final String FARMER_LOCAL_CACHE_FATHER_NAME = "father_name";
 
     private static final String DATABASE_NAME = "search";
@@ -292,7 +292,7 @@ public class Storage {
                     + Storage.FARMER_LOCAL_CACHE_FIRST_NAME + " CHAR(16), "
                     + Storage.FARMER_LOCAL_CACHE_MIDDLE_NAME + " CHAR(16), "
                     + Storage.FARMER_LOCAL_CACHE_LAST_NAME + " CHAR(16), "
-                    + Storage.FARMER_LOCAL_CACHE_DATE_OF_BIRTH + " CHAR(16), "
+                    + Storage.FARMER_LOCAL_CACHE_AGE + " INTEGER, "
                     + Storage.FARMER_LOCAL_CACHE_FATHER_NAME + " CHAR(16) ");
             sqlCommand.append(" );");
             return sqlCommand.toString();

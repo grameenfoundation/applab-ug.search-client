@@ -42,7 +42,7 @@ import applab.client.PropertyStorage;
 public class JsonSimpleFarmerCacheParser {
     /** for debugging purposes in adb logcat */
     private static final String LOG_TAG = "JsonSimpleFarmerCacheParser";
-    private static final String VERSION_ATTRIBUTE_NAME = "LastUpdatedDate";
+    private static final String VERSION_ATTRIBUTE_NAME = "Version";
     private Storage storage;
 
     private InputStream farmerCacheStream;
@@ -121,7 +121,7 @@ public class JsonSimpleFarmerCacheParser {
      * @param farmerId
      * @param status
      */
-    public void addRecord(String rowId, String farmerId, String firstName, String middleName, String lastName, String dateOfBirthString,
+    public void addRecord(String rowId, String farmerId, String firstName, String middleName, String lastName, int age,
                           String parentName) {
         ContentValues addValues = new ContentValues();
 
@@ -130,7 +130,7 @@ public class JsonSimpleFarmerCacheParser {
         addValues.put("first_name", firstName);
         addValues.put("middle_name", middleName);
         addValues.put("last_name", lastName);
-        addValues.put("date_of_birth", dateOfBirthString);
+        addValues.put("age", age);
         addValues.put("father_name", parentName);
         storage.insertContent(GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME, addValues);
     }
@@ -163,13 +163,13 @@ public class JsonSimpleFarmerCacheParser {
 
         // Data object
         private DataObject dataObject = null;
-        private static final String ID = "Id";
-        private static final String FARMER_ID = "FId";
-        private static final String FIRST_NAME = "FName";
-        private static final String MIDDLE_NAME = "MName";
-        private static final String LAST_NAME = "LName";
-        private static final String DATE_OF_BIRTH = "Dob";
-        private static final String PARENT_NAME = "PName";
+        private static final String ID = "sfId";
+        private static final String FARMER_ID = "fId";
+        private static final String FIRST_NAME = "fName";
+        private static final String MIDDLE_NAME = "fName";
+        private static final String LAST_NAME = "lName";
+        private static final String AGE = "age";
+        private static final String PARENT_NAME = "pName";
 
         // Version
         private String version;
@@ -218,9 +218,10 @@ public class JsonSimpleFarmerCacheParser {
         }
 
         private void saveObject(DataObject dataObjectToSave) {
-            try {
+            try {     
+                
                 addRecord(dataObjectToSave.getId(), dataObjectToSave.getFarmerId(), dataObjectToSave.getFirstName(),
-                        dataObjectToSave.getMiddleName(), dataObjectToSave.getLastName(), dataObjectToSave.getDateOfBirthString(),
+                        dataObjectToSave.getMiddleName(), dataObjectToSave.getLastName(), dataObjectToSave.getAge(),
                         dataObjectToSave.getParentName());
                 addedNodes++;
             }
@@ -237,7 +238,7 @@ public class JsonSimpleFarmerCacheParser {
         @Override
         public boolean primitive(Object value) throws ParseException, IOException {
             if (null != key) {
-                if (key.equals(VERSION_ATTRIBUTE_NAME)) {
+                if (key.equalsIgnoreCase(VERSION_ATTRIBUTE_NAME)) {
                     versionFound = true;
                     this.version = value.toString();
                     return true;
@@ -245,26 +246,33 @@ public class JsonSimpleFarmerCacheParser {
                 else {
                     if (null != dataObject) {
 
-                        if (key.equals(ID)) {
+                        if (key.equalsIgnoreCase(ID)) {
                             dataObject.setId(String.valueOf(value));
                         }
-
-                        else if (key.equals(FARMER_ID)) {
+                        else if (key.equalsIgnoreCase(FARMER_ID)) {
                             dataObject.setFarmerId(String.valueOf(value));
                         }
-                        else if (key.equals(FIRST_NAME)) {
+                        else if (key.equalsIgnoreCase(FIRST_NAME)) {
                             dataObject.setFirstName(String.valueOf(value));
                         }
-                        else if (key.equals(MIDDLE_NAME)) {
+                        else if (key.equalsIgnoreCase(MIDDLE_NAME)) {
                             dataObject.setMiddleName(String.valueOf(value));
                         }
-                        else if (key.equals(LAST_NAME)) {
+                        else if (key.equalsIgnoreCase(LAST_NAME)) {
                             dataObject.setLastName(String.valueOf(value));
                         }
-                        else if (key.equals(DATE_OF_BIRTH)) {
-                            dataObject.setDateOfBirthString(String.valueOf(value));
+                        else if (key.equalsIgnoreCase(AGE)) {
+                            int theAge = 0;
+                            try {
+                                theAge = Integer.parseInt(String.valueOf(value));
+                            }
+                            catch (Exception ex) {
+                                theAge = 0;
+                            }
+                                
+                            dataObject.setAge(theAge);
                         }
-                        else if (key.equals(PARENT_NAME)) {
+                        else if (key.equalsIgnoreCase(PARENT_NAME)) {
                             dataObject.setParentName(String.valueOf(value));
                         }
                     }
@@ -302,7 +310,7 @@ public class JsonSimpleFarmerCacheParser {
             private String firstName;
             private String middleName;
             private String lastName;
-            private String dateOfBirthString;
+            private int age;
             private String parentName;
 
             public String getFarmerId() {
@@ -353,12 +361,12 @@ public class JsonSimpleFarmerCacheParser {
                 this.parentName = parentName;
             }
 
-            public String getDateOfBirthString() {
-                return dateOfBirthString;
+            public int getAge() {
+                return age;
             }
 
-            public void setDateOfBirthString(String dateOfBirthString) {
-                this.dateOfBirthString = dateOfBirthString;
+            public void setAge(int age) {
+                this.age = age;
             }
         }
     }

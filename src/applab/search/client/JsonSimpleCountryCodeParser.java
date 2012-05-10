@@ -15,22 +15,12 @@ package applab.search.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Set;
-
 import javax.xml.parsers.FactoryConfigurationError;
 import org.json.simple.parser.ContentHandler;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import android.content.ContentValues;
-import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
-import applab.client.ApplabActivity;
 import applab.client.PropertyStorage;
 
 /**
@@ -86,7 +76,7 @@ public class JsonSimpleCountryCodeParser {
      */
     private class CountryCodeParseHandler implements ContentHandler {
 
-        private static final String COUNTRY_CODE = "CountryCode";
+        private static final String COUNTRY_CODE = "countryCode";
         private boolean end;
         private String key;
 
