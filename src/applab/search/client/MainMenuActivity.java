@@ -166,10 +166,10 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                     Bundle bundle = data.getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT);
                     bundle.putString(FarmerRegistrationAdapter.KEY_LOCATION, GpsManager.getInstance().getLocationAsString());
 
-                    String message = "Registration successful.";
+                    String message = getResources().getString(R.string.registration_successful);
                     long result = this.farmerRegController.saveNewFarmerRegistration(bundle);
                     if (result < 0) {
-                        message = "Failed to save farmer registration record.";
+                        message = getResources().getString(R.string.registration_failed);
                     }
 
                     BrowserResultDialog.show(this, message, new DialogInterface.OnClickListener() {
@@ -183,7 +183,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                     // reset the Farmer ID
                     GlobalConstants.intervieweeName = "";
                     // Show error dialog
-                    BrowserResultDialog.show(this, "Unable to register farmer. \nCheck the ID or try again later.");
+                    BrowserResultDialog.show(this, getResources().getString(R.string.registration_unable));
                 }
 
                 break;

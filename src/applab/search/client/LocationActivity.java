@@ -123,8 +123,8 @@ public class LocationActivity extends Activity implements LocationListener {
         String lon = formatGps(arg0.getLongitude(), "lon");
         String accuracy = String.valueOf(arg0.getAccuracy());
         String alt = String.valueOf(arg0.getAltitude());
-        mTextView.setText("Latitude = " + lat + "\nLongitude = " + lon
-                + "\nAltitude = " + alt + "m" + "\nAccuracy = " + accuracy
+        mTextView.setText(R.string.latitude + " = " + lat + "\n" + R.string.longitude + " = " + lon
+                + "\n" + R.string.altitude + " = " + alt + "m" + "\n" + R.string.accuracy + " = " + accuracy
                 + "m");
 
     }
@@ -135,16 +135,15 @@ public class LocationActivity extends Activity implements LocationListener {
         lon = formatGps(arg0.getLongitude(), "lon");
         accuracy = String.valueOf(arg0.getAccuracy());
         alt = String.valueOf(arg0.getAltitude());
-        mLocationDialog.setMessage("Accuracy = " + accuracy + "m");
+        mLocationDialog.setMessage(R.string.accuracy + " = " + accuracy + "m");
     }
 
     public void onProviderDisabled(String arg0) {
         // mStatus.setText("Provider disabled "+ arg0);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder
-                .setMessage(
-                        "GPS is disabled on this phone. \nPlease enable it.")
-                .setCancelable(false).setPositiveButton("OK",
+                .setMessage(R.string.gps_disabled)
+                .setCancelable(false).setPositiveButton(R.string.ok,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 dialog.cancel();
@@ -203,14 +202,17 @@ public class LocationActivity extends Activity implements LocationListener {
                     case DialogInterface.BUTTON1:
                     if (accuracy != null) {
                         // skip = false;
-                        mTextView.setText("Latitude = " + lat
-                                + "\nLongitude = " + lon + "\nAltitude = "
-                                + alt + "m" + "\nAccuracy = " + accuracy + "m");
+                        mTextView.setText(R.string.latitude + " = " + lat
+                                + "\n" + R.string.longitude + " = " + lon 
+                                + "\n" + R.string.altitude + " = " + alt + "m" 
+                                + "\n" + R.string.accuracy + " = " + accuracy + "m");
 
                     }
                     else {
                         mTextView
-                                .setText("Latitude = Unknown\nLongitude = Unknown\nAltitude = Unknown\nAccuracy = Unknown");
+                                .setText(R.string.latitude + " = " + R.string.unknown + "\n" + 
+                                		R.string.longitude + " = " + R.string.unknown + "\n" +
+                                		R.string.accuracy + " = " + R.string.unknown);
 
                     }
                     cancel();

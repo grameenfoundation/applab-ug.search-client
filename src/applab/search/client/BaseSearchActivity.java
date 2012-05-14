@@ -259,28 +259,26 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         return matcher.matches();
     }
 
-    /**
-     * Dialog confirming a test search
-     * 
-     * @param yesListener
-     *            the listener to call on clicking the positive button
-     * @param noListener
-     *            the listener to call on clicking the negative button
-     */
-    void showTestSearchDialog(DialogInterface.OnClickListener yesListener, DialogInterface.OnClickListener noListener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setIcon(R.drawable.help);
-        builder.setTitle("Perform Test Search?");
-        builder.setMessage("The ID you entered is not valid, "
-                + "it should be 2 letters followed by at least 4 numbers."
-                + "\nWould you like to do a test search instead?"
-                + " NOTE: You will NOT be compensated for doing a test search.")
-                .setCancelable(false)
-                .setPositiveButton("Yes", yesListener)
-                .setNegativeButton("No", noListener);
-        AlertDialog alert = builder.create();
-        alert.show();
-    }
+	/**
+	 * Dialog confirming a test search
+	 * 
+	 * @param yesListener
+	 *            the listener to call on clicking the positive button
+	 * @param noListener
+	 *            the listener to call on clicking the negative button
+	 */
+	
+	 void showTestSearchDialog(DialogInterface.OnClickListener yesListener, DialogInterface.OnClickListener noListener) {
+	        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+	        builder.setIcon(R.drawable.help);
+	        builder.setTitle(R.string.test_search_title);
+	        builder.setMessage(R.string.test_search_message)
+	                .setCancelable(false)
+	                .setPositiveButton(R.string.yes_text, yesListener)
+	                .setNegativeButton(R.string.no_text, noListener);
+	        AlertDialog alert = builder.create();
+	        alert.show();
+	    }
 
     public static void tryStartService(Context context) {
         if(!serviceStarted) {

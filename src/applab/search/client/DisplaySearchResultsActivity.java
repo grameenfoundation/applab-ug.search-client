@@ -191,7 +191,7 @@ public class DisplaySearchResultsActivity extends BaseSearchActivity {
                     }
                 };
                 ErrorDialogManager.show(R.string.delete_alert1, null,
-                        okListener, "Yes", null, "No");
+                        okListener,getResources().getString(R.string.yes_text), null, getResources().getString(R.string.no_text));
             }
         });
     }

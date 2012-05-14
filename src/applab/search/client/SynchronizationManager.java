@@ -155,7 +155,7 @@ public class SynchronizationManager {
         if (processAlreadyRunning) {
             // SynchronizationManager.singleton.attachActivity(context, completionCallback);
             Toast notification = Toast.makeText(context,
-                    "Keywords are already being updated in the background. You will see 'Keywords Updated' when it is complete.",
+            		context.getResources().getString(R.string.keywords_updating),
                     Toast.LENGTH_LONG);
             notification.show();
         }
