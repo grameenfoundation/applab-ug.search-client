@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.text.InputFilter;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.view.Window;
@@ -108,6 +109,22 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
         this.aginfoButton = (Button)findViewById(R.id.aginfo_button);
         this.farmerNameEditBox.setFilters(new InputFilter[] { getFarmerInputFilter() });
 
+        // set test for main menu buttons basing on Locale
+        this.nextButton.setText(R.string.next_button);
+        this.inboxButton.setText(R.string.inbox_button);
+        this.forgotButton.setText(R.string.forgot_button);
+        this.registerButton.setText(R.string.register_new_farmer);
+        this.aginfoButton.setText(R.string.ag_info_button);
+
+        // toggle showing of register farmer button
+        String showFarmerRegistrationButton = getResources().getString(R.string.show_farmer_registration);
+        this.registerButton.setVisibility(showFarmerRegistrationButton.equalsIgnoreCase("yes") ? View.VISIBLE : View.GONE);
+
+        // toggle showing of forgot farmer button
+        String showForgotFarmerButton = getResources().getString(R.string.show_forgot_farmer);
+        this.forgotButton.setVisibility(showForgotFarmerButton.equalsIgnoreCase("yes") ? View.VISIBLE : View.GONE);
+
+        
         if (!StorageManager.hasKeywords()) {
             this.inboxButton.setEnabled(false);
             this.nextButton.setEnabled(false);
@@ -133,7 +150,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
             }
         });
 
-        this.nextButton.setText("Start New Search");
+        this.nextButton.setText(R.string.start_new_search);
         this.nextButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
                 GpsManager.getInstance().update();
@@ -191,36 +208,42 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                 if (resultCode == RESULT_OK) {
                     // reset the Farmer ID
                     GlobalConstants.intervieweeName = "";
-                    BrowserResultDialog.show(this, "Subscriptions updated successfully");
+                    BrowserResultDialog.show(this, getResources().getString(R.string.subscriptions_succesful));
+
                 }
                 else if (resultCode == RESULT_CANCELED) {
                     // reset the Farmer ID
                     GlobalConstants.intervieweeName = "";
-                    BrowserResultDialog.show(this, "Subscription was unsuccessful.\nPlease try again later.");
+                    BrowserResultDialog
+                            .show(this, getResources().getString(R.string.subscriptions_failed));
+
                 }
                 break;
             case FORGOT_ID_CODE:
                 if (resultCode == RESULT_OK) {
                     if (data != null) {
-                        final String farmerId = data.getStringExtra(BrowserActivity.EXTRA_DATA_INTENT);
-                        BrowserResultDialog.show(this, "Selected ID: " + farmerId, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                GlobalConstants.intervieweeName = farmerId;
-                                switchToActivity(SearchActivity.class);
-                                dialog.cancel();
-                            }
-                        });
+                        final String farmerId = data
+                                .getStringExtra(BrowserActivity.EXTRA_DATA_INTENT);
+                        BrowserResultDialog.show(this, getResources().getString(R.string.selected_ID) + " : " + farmerId,
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,
+                                                        int id) {
+                                        GlobalConstants.intervieweeName = farmerId;
+                                        switchToActivity(SearchActivity.class);
+                                        dialog.cancel();
+                                    }
+                                });
                     }
                 }
                 else if (resultCode == RESULT_CANCELED) {
                     // reset the Farmer ID
                     GlobalConstants.intervieweeName = "";
-                    BrowserResultDialog.show(this, "Unable to find ID. Try again later.");
+                    BrowserResultDialog.show(this, getResources().getString(R.string.ID_not_found));
                 }
                 break;
             case ApplicationUpdateManager.INSTALL_APPLICATION:
-            	ApplicationUpdateManager.setFinishedInstall(true);
-            	break;
+                ApplicationUpdateManager.setFinishedInstall(true);
+                break;
             default:
                 break;
         }
@@ -266,7 +289,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                 }
             }
             else {
-                showToast("Invalid Farmer ID.");
+                showToast(getResources().getString(R.string.invalid_Farmer_ID));
             }
         }
         else {
@@ -346,7 +369,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                 startActivityForResult(webActivity, this.requestCode);
             }
             else {
-                errorMessage = "Failed to get the farmer registration form. Please try again.";
+                errorMessage = getResources().getString(R.string.form_registration_failed);
             }
 
             // Dismiss the progress window.
@@ -370,7 +393,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
     protected Dialog onCreateDialog(int id) {
         progressDialog = new ProgressDialog(this);
         progressDialog.setTitle(getTitle());
-        progressDialog.setMessage("Loading Form. Please wait ...");
+        progressDialog.setMessage(getResources().getString(R.string.form_loading));
         progressDialog.setIndeterminate(true);
         progressDialog.setCancelable(false);
 

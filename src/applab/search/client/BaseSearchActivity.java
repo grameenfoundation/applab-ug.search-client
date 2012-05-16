@@ -21,9 +21,9 @@ import applab.client.search.R;
  * Base class for all Search activities, consolidates code around synchronization, menus, progress dialogs, etc.
  * 
  */
-public abstract class BaseSearchActivity extends ApplabActivity { 
+public abstract class BaseSearchActivity extends ApplabActivity {
     private static boolean serviceStarted;
-    
+
     protected BaseSearchActivity() {
         super();
     }
@@ -55,7 +55,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
         super.onCreate(savedInstanceState);
         tryStartService(ApplabActivity.getGlobalContext());
     }
-    
+
     /**
      * Take care of some setup when resuming any activity. We use onResume() rather than onCreate() because from
      * Activity Life Cycle, onResume seems to be called just before the app loading completes, while onCreate may be
@@ -130,11 +130,13 @@ public abstract class BaseSearchActivity extends ApplabActivity {
 
     /**
      * override if you do not want to show the farmer ID in the activity title bar
+     * 
      * @return
      */
-        protected boolean showFarmerId() {
-            return true;
-       }
+    protected boolean showFarmerId() {
+        return true;
+    }
+
     // helper methods for Android menu management
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -154,7 +156,7 @@ public abstract class BaseSearchActivity extends ApplabActivity {
     }
 
     protected void refreshKeywords() {
-        
+
     }
 
     @Override
@@ -221,7 +223,8 @@ public abstract class BaseSearchActivity extends ApplabActivity {
                 ErrorDialogManager.show(R.string.delete_alert, this, okListener, null);
                 return true;
             case GlobalConstants.CHECK_FOR_UPDATES_ID:
-                Toast updateToast = Toast.makeText(this.getApplicationContext(), getApplicationContext().getString(R.string.background_update_confirmation),
+                Toast updateToast = Toast.makeText(this.getApplicationContext(),
+                        getApplicationContext().getString(R.string.background_update_confirmation),
                         Toast.LENGTH_LONG);
                 updateToast.show();
                 new ApplicationUpdateManager().runOnce(this.getApplicationContext());
@@ -254,34 +257,34 @@ public abstract class BaseSearchActivity extends ApplabActivity {
      * @return true if the matcher is an exact match of the input text
      */
     boolean checkId(String text) {
-        Pattern pattern = Pattern.compile("[a-zA-Z]{2}[0-9]{4,5}+");
+        Pattern pattern = Pattern.compile(getResources().getString(R.string.farmer_id_regex));
         Matcher matcher = pattern.matcher(text);
         return matcher.matches();
     }
 
-	/**
-	 * Dialog confirming a test search
-	 * 
-	 * @param yesListener
-	 *            the listener to call on clicking the positive button
-	 * @param noListener
-	 *            the listener to call on clicking the negative button
-	 */
-	
-	 void showTestSearchDialog(DialogInterface.OnClickListener yesListener, DialogInterface.OnClickListener noListener) {
-	        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-	        builder.setIcon(R.drawable.help);
-	        builder.setTitle(R.string.test_search_title);
-	        builder.setMessage(R.string.test_search_message)
-	                .setCancelable(false)
-	                .setPositiveButton(R.string.yes_text, yesListener)
-	                .setNegativeButton(R.string.no_text, noListener);
-	        AlertDialog alert = builder.create();
-	        alert.show();
-	    }
+    /**
+     * Dialog confirming a test search
+     * 
+     * @param yesListener
+     *            the listener to call on clicking the positive button
+     * @param noListener
+     *            the listener to call on clicking the negative button
+     */
+
+    void showTestSearchDialog(DialogInterface.OnClickListener yesListener, DialogInterface.OnClickListener noListener) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setIcon(R.drawable.help);
+        builder.setTitle(R.string.test_search_title);
+        builder.setMessage(R.string.test_search_message)
+                .setCancelable(false)
+                .setPositiveButton(R.string.yes_text, yesListener)
+                .setNegativeButton(R.string.no_text, noListener);
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
 
     public static void tryStartService(Context context) {
-        if(!serviceStarted) {
+        if (!serviceStarted) {
             Intent intent = new Intent();
             intent.setAction("applab.search.client.service.ApplabSearchService");
             Log.d("BaseSearchActivity", "Starting Applab Search Service");
