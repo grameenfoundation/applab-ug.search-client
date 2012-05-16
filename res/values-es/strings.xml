@@ -62,12 +62,12 @@
 <string name="menu_back">Finalizado</string>
 <string name="menu_exit">Salir</string>
 <string name="menu_settings">Ajustes</string>
-<string name="menu_check_for_updates">Actualizar todas las aplicaciones</string>
+<string name="menu_check_for_updates">Actualizar aplicaciones</string>
 <string name="background_update_confirmation">La actualizacion de la aplicacion ha sido iniciada. Si hay nuevas aplicaciones, sera notificado para que las instale.</string>
 <string name="refresh_confirm">Esta accion terminara su actual busqueda.\nContinuar?</string>
 <!-- Strings added for CKW-3013-->
 <string name="test_search_title">Realizar una busqueda de prueba?</string>
-<string name="test_search_message">El ID no es valido, debe tener 2 letras seguido de por lo menos 4 numeros.\nDesea realizar una busqueda de prueba?"</string>
+<string name="test_search_message">El ID no es valido, debe ser un numero de cedula o 2 letras seguido de por lo menos 4 numeros.\nDesea realizar una busqueda de prueba?.NOTA: Las busquedas de prueba no son compensadas"</string>
 <string name="yes_text">Si</string>
 <string name="no_text">No</string>
 <string name="gps_disabled">GPS esta deshabilitado. \nPor favor habilitelo.</string>
@@ -89,8 +89,14 @@
 <string name="invalid_Farmer_ID">ID de Productor invalido</string>
 <string name="form_registration_failed">No se pudo obtener la forma para el registro. Por favor intente de nuevo.</string>
 <string name="form_loading">Cargando forma. Un momento por favor ...</string>
-<string name="retry">Inteintar de nuevo</string>
+<string name="retry">Intentar de nuevo</string>
 <string name="settings">Ajustes</string>
 <string name="URL_invalid">URL invalida</string>
-<string name="keywords_updating">Palabras clave estan siendo actualizadas. El mensaje Palabras clave actualizadas aparecera cuando finalize</string>
+<string name="keywords_updating">Palabras clave en proceso de actualizacion</string>
+<string name="ag_info_button">Subscripcion</string>
+<string name="register_new_farmer">Registro</string>
+<string name="find_farmer_id">Obtener ID</string>
+<string name="first_name">Nombre</string>
+<string name="search_button">Buscar</string>
+<string name ="forgot_button">Obtener ID</string>
 </resources>

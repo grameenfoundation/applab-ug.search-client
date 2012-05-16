@@ -13,7 +13,7 @@
 <string name="settings_activity">Preferences</string>
 <string name="search_path">mobile/oktopus/search.php</string>
 <string name="update_path">search/getsearchkeywords</string>
-<string name="server">http://ckwapps.applab.org</string>
+<string name="server">http://test.applab.org</string>
 <string name="main_menu_details">Enter farmer\'s ID in the box below:</string>
 <string name="connection_error">Unable to establish a connection</string>
 <string name="incomplete_keyword_response_error">Failed to get all keywords</string>
@@ -73,7 +73,7 @@
 <string name="refresh_confirm">This action will discard your current search.\nContinue?</string>
 <!-- Strings added for CKW-3013-->
 <string name="test_search_title">Perform Test Search?</string>
-<string name="test_search_message">The ID you entered is not valid, it should be 2 letters followed by at least 4 numbers.\nWould you like to do a test search instead? NOTE: You will NOT be compensated for doing a test search."</string>
+<string name="test_search_message">The ID you entered is not valid, it should be 2 letters followed by at least 4 numbers.\nWould you like to do a test search instead? NOTE: You will NOT be compensated for doing a test search.</string>
 <string name="yes_button">Yes</string>
 <string name="no_button">No</string>
 <string name="gps_disabled">GPS is disabled on this phone. \nPlease enable it.</string>
@@ -99,5 +99,12 @@
 <string name="settings">Settings</string>
 <string name="URL_invalid">Sorry, invalid URL!</string>
 <string name="keywords_updating">Keywords are already being updated in the background. You will see Keywords Updated when it is complete.</string>
-
+<string name="ag_info_button">AgInfo subscription</string>
+<string name="register_new_farmer">Register New Farmer</string>
+<string name="find_farmer_id">Find Farmer ID</string>
+<string name="first_name">First Name</string>
+<string name="search_button">Search</string>
+<string name ="forgot_button">Forgot Farmer\'s ID</string>
+<string name="yes_text">Yes</string>
+<string name="no_text">No</string>
 </resources>
