@@ -166,7 +166,7 @@ public class JsonSimpleFarmerCacheParser {
         private static final String ID = "sfId";
         private static final String FARMER_ID = "fId";
         private static final String FIRST_NAME = "fName";
-        private static final String MIDDLE_NAME = "fName";
+        private static final String MIDDLE_NAME = "mName";
         private static final String LAST_NAME = "lName";
         private static final String AGE = "age";
         private static final String PARENT_NAME = "pName";
