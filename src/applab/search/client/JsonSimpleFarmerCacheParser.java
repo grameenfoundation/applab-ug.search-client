@@ -210,7 +210,7 @@ public class JsonSimpleFarmerCacheParser {
 
         @Override
         public boolean endObject() throws ParseException, IOException {
-            if (null != this.dataObject) {
+            if (null != this.dataObject && null != this.dataObject.getId()) {
                 saveObject(this.dataObject);
             }
             this.dataObject = null;
@@ -238,6 +238,8 @@ public class JsonSimpleFarmerCacheParser {
         @Override
         public boolean primitive(Object value) throws ParseException, IOException {
             if (null != key) {
+                Log.d("INFO", key);
+                Log.d("INFO", String.valueOf(value));
                 if (key.equalsIgnoreCase(VERSION_ATTRIBUTE_NAME)) {
                     versionFound = true;
                     this.version = value.toString();
@@ -282,8 +284,7 @@ public class JsonSimpleFarmerCacheParser {
         }
 
         @Override
-        public boolean startArray() throws ParseException, IOException {
-            this.dataObject = new DataObject();
+        public boolean startArray() throws ParseException, IOException {            
             return true;
         }
 
@@ -294,6 +295,7 @@ public class JsonSimpleFarmerCacheParser {
 
         @Override
         public boolean startObject() throws ParseException, IOException {
+            this.dataObject = new DataObject();
             return true;
         }
 

@@ -20,6 +20,7 @@ public class FindFarmerIdActivity extends BaseSearchActivity {
 	private EditText farmerFatherName;
 	private TextView farmerIdResult;
 
+	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		this.farmerLocalCache = new Storage(this);
