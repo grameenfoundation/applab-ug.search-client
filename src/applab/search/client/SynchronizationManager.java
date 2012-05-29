@@ -560,6 +560,9 @@ public class SynchronizationManager {
             // Write the keywords to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir()
                     + "/keywords.tmp";
+            
+            // TODO: Dont forget to remove this, only moved it for testing purposes
+           // String filePath = "/sdcard/ckwsearch/keywords.tmp"; 
             Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath);
             keywordStream.close();
             File file = new File(filePath);
