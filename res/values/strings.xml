@@ -74,4 +74,5 @@
 <string name="background_update_confirmation">Application update has been launched. If there are new applications, you will be prompted to install them.</string>
 <string name="refresh_confirm">This action will discard your current search.\nContinue?</string>
 <string name="server">http://test.applab.org</string>
+
 </resources>

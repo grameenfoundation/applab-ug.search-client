@@ -70,7 +70,7 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
-        setTitle("Settings");
+        setTitle(getResources().getString(R.string.settings));
         updateServer();
     }
 
@@ -89,7 +89,7 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
         else {
             editTextPreferences.setText((String)editTextPreferences
                     .getSummary());
-            Toast.makeText(getApplicationContext(), "Sorry, invalid URL!",
+            Toast.makeText(getApplicationContext(), getResources().getString(R.string.URL_invalid),
                     Toast.LENGTH_SHORT).show();
         }
     }

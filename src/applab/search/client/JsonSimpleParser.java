@@ -95,11 +95,19 @@ public class JsonSimpleParser {
             this.storage.open();
 
             while (!this.keywordHandler.isEnd()) {
+                try {
                 jsonParser.parse(new InputStreamReader(this.keywordStream), (org.json.simple.parser.ContentHandler)this.keywordHandler,
                         true);
-                if (this.keywordHandler.versionFound()) {
-                    keywordVersion = this.keywordHandler.getVersion();
                 }
+                catch (ParseException e) {
+                    Log.e(LOG_TAG, "Failed to finish Parsing Keywords, attempting to proceed with next steps");
+                    
+                    // Hack to bypass EOF ParseExceptions
+                    break;
+                }                
+            }
+            if (this.keywordHandler.versionFound()) {
+                keywordVersion = this.keywordHandler.getVersion();
             }
 
             // Update and delete images
@@ -320,12 +328,16 @@ public class JsonSimpleParser {
         @Override
         public boolean primitive(Object value) throws ParseException, IOException {
             if (key != null) {
+                
+                
+               /* // Debugging statements
                 Log.d(LOG_TAG, "Key: " + key);
                 if(value != null) {
                     Log.d(LOG_TAG, "Value: " + value.toString());
                 } else {
                     Log.d(LOG_TAG, "Null value");
-                }
+                }   
+                */             
 
                 if (key.equals("Version")) {
                     versionFound = true;
@@ -336,7 +348,7 @@ public class JsonSimpleParser {
                 }
                 else if(key.equals("Total")) {
                     nodeCount = Integer.parseInt(value.toString());
-                    Log.d(LOG_TAG, "Total nodes: " + nodeCount);
+                    //Log.d(LOG_TAG, "Total nodes: " + nodeCount);
 
                     bundle = new Bundle();
 

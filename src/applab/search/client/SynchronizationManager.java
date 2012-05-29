@@ -157,7 +157,7 @@ public class SynchronizationManager {
         if (processAlreadyRunning) {
             // SynchronizationManager.singleton.attachActivity(context, completionCallback);
             Toast notification = Toast.makeText(context,
-                    "Keywords are already being updated in the background. You will see 'Keywords Updated' when it is complete.",
+            		context.getResources().getString(R.string.keywords_updating),
                     Toast.LENGTH_LONG);
             notification.show();
         }
@@ -626,6 +626,9 @@ public class SynchronizationManager {
             // Write the keywords to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir()
                     + "/keywords.tmp";
+            
+            // TODO: Dont forget to remove this, only moved it for testing purposes
+           // String filePath = "/sdcard/ckwsearch/keywords.tmp"; 
             Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath);
             keywordStream.close();
             File file = new File(filePath);

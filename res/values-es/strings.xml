@@ -14,6 +14,7 @@
 <string name="update_path">search/getKeywords</string>
 <string name="get_country_code_path">search/getCountryCode</string>
 <string name="server">http://ckwapps.applab.org</string>
+
 <string name="main_menu_details">Digite el ID del productor en el siguiente campo:</string>
 <string name="connection_error">No se pudo establecer la conexion</string>
 <string name="incomplete_keyword_response_error">Hubo un fallo en la obtencion de las palabras clave</string>
@@ -72,3 +73,4 @@
 <string name="background_update_confirmation">La actualizacion de la aplicacion ha sido iniciada. Si hay nuevas aplicaciones, sera notificado para que las instale.</string>
 <string name="refresh_confirm">Esta accion terminara su actual busqueda.\nContinuar?</string>
 </resources>
+

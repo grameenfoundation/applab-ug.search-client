@@ -23,6 +23,7 @@ import applab.client.search.R;
  * 
  */
 public abstract class BaseSearchActivity extends ApplabActivity {
+
 	private static boolean serviceStarted;
 
 	/** database where everything is stored */
@@ -350,4 +351,5 @@ public abstract class BaseSearchActivity extends ApplabActivity {
 		this.searchDatabase.close();
 		return farmerId;
 	}
+
 }

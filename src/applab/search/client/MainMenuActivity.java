@@ -43,6 +43,7 @@ import applab.client.search.R;
  * 
  */
 public class MainMenuActivity extends BaseSearchActivity implements Runnable {
+
 	private static final int REGISTRATION_CODE = 2;
 	private static final int UPDATE_CODE = 4;
 	private static final int FORGOT_ID_CODE = 3;
@@ -443,4 +444,5 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
 			DataConnectionManager.getInstance().onStart(this);
 		}
 	}
+
 }

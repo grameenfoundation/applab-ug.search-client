@@ -183,7 +183,7 @@ public class ImageFilesUtility {
 
         for (File file : dir.listFiles()) {
             Log.d("FILES", file.getName());
-            if (fileName != null && file.getName().contains(fileName.toLowerCase())) {
+            if (fileName != null && file.getName().toLowerCase().contains(fileName.toLowerCase())) {
                 return file.getAbsolutePath();
             }
         }
