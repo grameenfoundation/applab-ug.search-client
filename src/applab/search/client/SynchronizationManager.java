@@ -561,8 +561,8 @@ public class SynchronizationManager {
             String filePath = ApplabActivity.getGlobalContext().getCacheDir()
                     + "/keywords.tmp";
             
-            // TODO: Dont forget to remove this, only moved it for testing purposes
-           // String filePath = "/sdcard/ckwsearch/keywords.tmp"; 
+            //TODO: Dont forget to remove this, only moved it for testing purposes
+            //String filePath = "/sdcard/ckwsearch/keywords.tmp"; 
             Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath);
             keywordStream.close();
             File file = new File(filePath);
