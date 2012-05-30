@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <resources>
 <string name="app_name">CKW Search</string>
-<string name="app_version">4.1.1</string>
-<string name="release_date">May 14, 2012</string>
+<string name="app_version">4.1.2</string>
+<string name="release_date">May 31, 2012</string>
 <string name="info">Grameen Foundation, Applab \nckw@applab.org</string>
 <string name="inbox_title">Recent Searches</string>
 <string name="server_url">Server URL</string>
