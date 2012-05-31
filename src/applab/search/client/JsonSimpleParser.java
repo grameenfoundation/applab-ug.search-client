@@ -15,6 +15,7 @@ package applab.search.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.SequenceInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class JsonSimpleParser {
     /** handler to which progress updates are sent */
     private static Handler progressHandler;
 
-    private InputStream keywordStream;
+    private SequenceInputStream keywordStreams;
 
     /** handler to which responses are sent */
     private Handler responseHandler;
@@ -64,8 +65,8 @@ public class JsonSimpleParser {
     public ArrayList<String> deletedImages;
 
     public JsonSimpleParser(Handler progressHandler,
-            Handler responseHandler, InputStream newKeywordStream) {
-        this.keywordStream = newKeywordStream;
+            Handler responseHandler, SequenceInputStream newKeywordStreams) {
+        this.keywordStreams = newKeywordStreams;
         this.responseHandler = responseHandler;
         JsonSimpleParser.progressHandler = progressHandler;
         this.keywordHandler = new KeywordParseHandler();
@@ -96,7 +97,8 @@ public class JsonSimpleParser {
 
             while (!this.keywordHandler.isEnd()) {
                 try {
-                jsonParser.parse(new InputStreamReader(this.keywordStream), (org.json.simple.parser.ContentHandler)this.keywordHandler,
+                    // parse keywords streams built from multiple stream files starting with the first stream till the last
+                    jsonParser.parse(new InputStreamReader(this.keywordStreams), (org.json.simple.parser.ContentHandler)this.keywordHandler,
                         true);
                 }
                 catch (ParseException e) {
