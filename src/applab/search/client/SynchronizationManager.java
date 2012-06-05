@@ -435,7 +435,7 @@ public class SynchronizationManager {
      * @return XML request entity
      * @throws UnsupportedEncodingException
      */
-    static AbstractHttpEntity getRequestEntity() throws UnsupportedEncodingException {
+    static AbstractHttpEntity getRequestEntity(Context context) throws UnsupportedEncodingException {
         String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, DEFAULT_KEYWORDS_VERSION);
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
         xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
@@ -443,7 +443,7 @@ public class SynchronizationManager {
         xmlRequest.writeText(keywordsVersion);
         xmlRequest.writeEndElement();
         xmlRequest.writeStartElement(CURRENT_MENU_IDS);
-        xmlRequest.writeText(getMenuIds());
+        xmlRequest.writeText(getMenuIds(context));
         xmlRequest.writeEndElement();
         xmlRequest.writeEndElement();
         return xmlRequest.getEntity();
@@ -569,7 +569,7 @@ public class SynchronizationManager {
                 inputStreams.add(assetManager.open("keywords-3.txt"));
 
                 if (inputStreams.isEmpty() || inputStreams.firstElement() == null) {
-                    updateKeywordsFromRemoteSource();
+                    updateKeywordsFromRemoteSource(context);
                 }
                 else {
                     sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
@@ -583,7 +583,7 @@ public class SynchronizationManager {
                 }
             }
             else {
-                updateKeywordsFromRemoteSource();
+                updateKeywordsFromRemoteSource(context);
             }
 
         }
@@ -600,7 +600,7 @@ public class SynchronizationManager {
      * @throws XmlPullParserException
      * @throws ParseException
      */
-    private void updateKeywordsFromRemoteSource() throws UnsupportedEncodingException, IOException, XmlPullParserException, ParseException {
+    private void updateKeywordsFromRemoteSource(Context context) throws UnsupportedEncodingException, IOException, XmlPullParserException, ParseException {
 
         String url = Settings.getNewServerUrl()
                 + ApplabActivity.getGlobalContext().getString(
@@ -608,7 +608,7 @@ public class SynchronizationManager {
         int networkTimeout = 5 * 60 * 1000;
         InputStream keywordStream;
         keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                (StringEntity)getRequestEntity(), networkTimeout);
+                (StringEntity)getRequestEntity(context), networkTimeout);
 
         // Write the keywords to disk, and then open a FileStream
         String filePath = ApplabActivity.getGlobalContext().getCacheDir()
@@ -637,10 +637,11 @@ public class SynchronizationManager {
 
     }
 
-    private static String getMenuIds() {
+    private static String getMenuIds(Context context) {
         ArrayList<String> menuIds = new ArrayList<String>();
         if (searchDatabase == null) {
-            searchDatabase = new Storage(ApplabActivity.getGlobalContext());
+            searchDatabase = new Storage(context);
+            searchDatabase.open();
         }
         menuIds = searchDatabase.getLocalMenuIds();
         return StringHelpers.commaSeparateValues(menuIds);

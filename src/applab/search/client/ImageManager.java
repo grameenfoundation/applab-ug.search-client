@@ -43,7 +43,7 @@ public class ImageManager {
 
     /**
      * Submits an image update request and retrieves XML containing image data from remote server
-     *
+     * 
      * @return
      */
     public static InputStream getImageXml() {
@@ -101,7 +101,8 @@ public class ImageManager {
                 for (Entry<String, File> localImage : localImageList.entrySet()) {
                     File file = localImage.getValue();
                     String sha1Hash = localImage.getKey();
-                    // Confirm this is the file we intend to delete (a new file with the same name may have been downloaded)
+                    // Confirm this is the file we intend to delete (a new file with the same name may have been
+                    // downloaded)
                     if (ImageFilesUtility.getSHA1Hash(file).equalsIgnoreCase(sha1Hash)) {
                         ImageFilesUtility.deleteFile(file);
                     }
@@ -134,14 +135,18 @@ public class ImageManager {
         return hashPathPairs;
     }
 
-    public static void getImages (List<String> imageIds) {
+    public static void getImages(List<String> imageIds) {
         if (imageIds != null) {
             for (String imageId : imageIds) {
                 try {
-                    Log.d("Image Download", "Getting " + imageId);
-                    InputStream image = HttpHelpers.getResource(Settings.getNewServerUrl()  + "search/getsfimages?imageId="+imageId);
-                    ImageFilesUtility.writeFile(imageId + ".jpg", image);
-                } catch (IOException e) {
+                    // Only download image if image does not already exist!
+                    if (!ImageFilesUtility.imageExists(imageId.toLowerCase(), false)) {
+                        Log.d("Image Download", "Getting " + imageId);
+                        InputStream image = HttpHelpers.getResource(Settings.getNewServerUrl() + "search/getsfimages?imageId=" + imageId);
+                        ImageFilesUtility.writeFile(imageId + ".jpg", image);
+                    }
+                }
+                catch (IOException e) {
                     Log.e("IOException", e.getMessage());
                 }
                 JsonSimpleParser.incrementProgressLevel();
@@ -150,7 +155,7 @@ public class ImageManager {
     }
 
     public static void deleteImages(List<String> imageIds) {
-        if (imageIds != null ) {
+        if (imageIds != null) {
             for (String imageId : imageIds) {
                 File file = new File("/sdcard/ckwsearch/", imageId + ".jpg");
                 ImageFilesUtility.deleteFile(file);

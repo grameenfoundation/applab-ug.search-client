@@ -263,6 +263,7 @@ public class Storage {
             return cursor;
         }
         catch (NullPointerException ex) {
+            Log.d("LOG_STORAGE", ex.getMessage());
             // throws null pointer exception if the application is run for the first time!
             return null;
         }
