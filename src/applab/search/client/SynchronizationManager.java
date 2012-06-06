@@ -67,8 +67,10 @@ public class SynchronizationManager {
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
     private final static String REQUEST_ELEMENT_NAME = "GetKeywordsRequest";
     private final static String VERSION_ELEMENT_NAME = "localKeywordsVersion";
+    private final static String IMAGES_VERSION_ELEMENT_NAME = "localImagesVersion";
     private final static String CURRENT_MENU_IDS = "menuIds";
     private final static String DEFAULT_KEYWORDS_VERSION = "2010-04-04 00:00:00";
+    private final static String DEFAULT_IMAGES_VERSION = "2010-04-04 00:00:00";
     public Timer timer;
     private boolean isSynchronizing;
     private static Boolean synchronizeNow; // This tells us to start sync
@@ -431,16 +433,20 @@ public class SynchronizationManager {
 
     /**
      * Sets the version in the update request entity
-     * 
+     * Passes the keywords version, images version and current MenuIds
      * @return XML request entity
      * @throws UnsupportedEncodingException
      */
     static AbstractHttpEntity getRequestEntity(Context context) throws UnsupportedEncodingException {
         String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, DEFAULT_KEYWORDS_VERSION);
+        String imagesVersion = PropertyStorage.getLocal().getValue(GlobalConstants.IMAGES_VERSION_KEY, DEFAULT_IMAGES_VERSION);
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
         xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
         xmlRequest.writeStartElement(VERSION_ELEMENT_NAME);
         xmlRequest.writeText(keywordsVersion);
+        xmlRequest.writeEndElement();
+        xmlRequest.writeStartElement(IMAGES_VERSION_ELEMENT_NAME);
+        xmlRequest.writeText(imagesVersion);
         xmlRequest.writeEndElement();
         xmlRequest.writeStartElement(CURRENT_MENU_IDS);
         xmlRequest.writeText(getMenuIds(context));

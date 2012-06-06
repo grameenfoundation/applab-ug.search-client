@@ -30,6 +30,9 @@ public class GlobalConstants {
     public static final int SETUP_DIALOG = 3;
 
     public static final String KEYWORDS_VERSION_KEY = "keywordsVersion";
+    
+    /* Images version separated to allow for different versions incase images and keywords versions differ */
+    public static final String IMAGES_VERSION_KEY = "imagesVersion";
 
     public static final String FARMER_REG_FORM_HASH = "farmerRegistrationFormHash";
 

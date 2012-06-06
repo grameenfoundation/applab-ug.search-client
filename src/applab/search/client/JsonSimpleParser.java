@@ -41,7 +41,6 @@ import applab.client.PropertyStorage;
 public class JsonSimpleParser {
     /** for debugging purposes in adb logcat */
     private static final String LOG_TAG = "JsonSimpleParser";
-    private static final String VERSION_ATTRIBUTE_NAME = "Version";
     private static int progressLevel = 0;
     private Storage storage;
 
@@ -58,6 +57,7 @@ public class JsonSimpleParser {
     private KeywordParseHandler keywordHandler;
     private static Integer nodeCount;
     private String keywordVersion;
+    private String imagesVersion;
     private Integer addedNodes;
     private Integer deletedNodes;
     public ArrayList<String> menuIdsCollection;
@@ -83,8 +83,8 @@ public class JsonSimpleParser {
     }
 
     /**
-     * Obsoleted: loading the xml file into DOM takes a lot of memory. Now using walk() instead, which uses
-     * XMLPullParser
+     * Parses JSON result with keywords including, menus, added, deleted and updated menu items
+     * and added and deleted images
      * @throws ParseException
      */
     public void run() throws ParseException {
@@ -108,20 +108,21 @@ public class JsonSimpleParser {
                     break;
                 }                
             }
-            if (this.keywordHandler.versionFound()) {
-                keywordVersion = this.keywordHandler.getVersion();
+            if (this.keywordHandler.keywordVersionFound()) {
+                keywordVersion = this.keywordHandler.getKeywordVersion();
+            }        
+            
+            if (this.keywordHandler.imagesVersionFound()) {
+                imagesVersion = this.keywordHandler.getImagesVersion();
             }
-
-            // Update and delete images
-            ImageManager.updatePhoneImages(updatedImages, deletedImages);
-
+                        
             // Delete menus that we do not need
-            deleteOldMenus();
-
-            if (nodeCount == null || keywordVersion == null) {
+            deleteOldMenus();          
+                          
+            if (nodeCount == null || keywordVersion == null || imagesVersion == null) {
                 this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
             }
-            else if (keywordVersion != "") {
+            if (keywordVersion != "") {
                 JsonSimpleParser.storeKeywordsVersion(keywordVersion);
                 Log.d(LOG_TAG, "Stored version: " + keywordVersion);
 
@@ -129,6 +130,14 @@ public class JsonSimpleParser {
                 Log.d(LOG_TAG, "Finished Parsing Keywords ... Added: " + addedNodes + ", Deleted: " + deletedNodes);
                 this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_SUCCESS);
             }
+
+            // Update and delete images
+            ImageManager.updatePhoneImages(updatedImages, deletedImages); 
+            if (imagesVersion != "") {
+                JsonSimpleParser.storeImagesVersion(imagesVersion);
+                Log.d(LOG_TAG, "Stored Images version: " + imagesVersion);
+            }
+            
         }
         catch (IOException e) {
             this.responseHandler.sendEmptyMessage(GlobalConstants.KEYWORD_PARSE_ERROR);
@@ -197,29 +206,12 @@ public class JsonSimpleParser {
         progressHandler.sendMessage(message);
     }
 
-    /**
-     * Record last update version in preferences
-     *
-     * @param document
-     */
-    static void storeKeywordsVersion(Document document) {
-        String version = getKeywordsVersion(document);
-        storeKeywordsVersion(version);
-    }
-
     static void storeKeywordsVersion(String version) {
         PropertyStorage.getLocal().setValue(GlobalConstants.KEYWORDS_VERSION_KEY, version);
     }
-
-    static String getKeywordsVersion(Document document) {
-        Element rootNode = document.getDocumentElement();
-        if (rootNode != null) {
-            String version = rootNode.getAttribute(VERSION_ATTRIBUTE_NAME);
-            if (version.length() > 0) {
-                return version;
-            }
-        }
-        return "";
+    
+    static void storeImagesVersion(String version) {
+        PropertyStorage.getLocal().setValue(GlobalConstants.IMAGES_VERSION_KEY, version);
     }
 
     /**
@@ -227,9 +219,13 @@ public class JsonSimpleParser {
      *
      */
     private class KeywordParseHandler implements ContentHandler {
-        // Version
-        private String version;
-        private boolean versionFound = false;
+        // Keyword Version
+        private String keywordVersion;
+        private boolean keywordVersionFound = false;
+        
+        // Images Version
+        private String imagesVersion;
+        private boolean imagesVersionFound = false;
 
         // Data object
         private DataObject dataObject = null;
@@ -242,16 +238,24 @@ public class JsonSimpleParser {
         private boolean end;
         private String key;
 
-        public String getVersion() {
-            return version;
+        public String getKeywordVersion() {
+            return keywordVersion;
+        }
+        
+        public String getImagesVersion() {
+            return imagesVersion;
         }
 
         public boolean isEnd() {
             return end;
         }
 
-        public boolean versionFound() {
-            return versionFound;
+        public boolean keywordVersionFound() {
+            return keywordVersionFound;
+        }
+        
+        public boolean imagesVersionFound() {
+            return imagesVersionFound;
         }
 
         @Override
@@ -329,25 +333,17 @@ public class JsonSimpleParser {
 
         @Override
         public boolean primitive(Object value) throws ParseException, IOException {
-            if (key != null) {
-                
-                
-               /* // Debugging statements
-                Log.d(LOG_TAG, "Key: " + key);
-                if(value != null) {
-                    Log.d(LOG_TAG, "Value: " + value.toString());
-                } else {
-                    Log.d(LOG_TAG, "Null value");
-                }   
-                */             
-
+            if (key != null) {              
+                            
                 if (key.equals("Version")) {
-                    versionFound = true;
-                    this.version = value.toString();
+                    keywordVersionFound = true;
+                    imagesVersionFound = true;
+                    this.keywordVersion = value.toString();
+                    this.imagesVersion = value.toString();
                     key = null;
                     Log.d(LOG_TAG, "Keyword version: " + keywordVersion);
                     return true;
-                }
+                }              
                 else if(key.equals("Total")) {
                     nodeCount = Integer.parseInt(value.toString());
                     //Log.d(LOG_TAG, "Total nodes: " + nodeCount);
