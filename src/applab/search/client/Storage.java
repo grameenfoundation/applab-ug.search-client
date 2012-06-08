@@ -43,7 +43,7 @@ public class Storage {
     public static final String MENU_ITEM_ATTACHMENTID_COLUMN = "attachment_id";
 
     private static final String DATABASE_NAME = "search";
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 7;
     private static final int SEQUENCES = 32;
 
     /** keep track of batch size to enable batch inserts **/
