@@ -562,10 +562,16 @@ public class SynchronizationManager {
     public void updateKeywords(Context context) throws XmlPullParserException, ParseException {
 
         try {
+            // get URL to check if the connection should be made to test.applab.org,
+            // if yes, always download from remote source
+            String url = Settings.getNewServerUrl()
+                    + ApplabActivity.getGlobalContext().getString(
+                            R.string.update_path);
             String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, DEFAULT_KEYWORDS_VERSION);
 
-            // check if its the first time for keywords to run, if yes, load keywords from bundled file
-            if (DEFAULT_KEYWORDS_VERSION == keywordsVersion) {
+            // check if its the first time for keywords to run 
+            // and connection is not set to point to test.applab.org, if yes, load keywords from bundled file
+            if (DEFAULT_KEYWORDS_VERSION == keywordsVersion  && !url.contains("test") ) {
                 AssetManager assetManager = context.getAssets();
 
                 // Add split keywords file into vector
@@ -575,7 +581,7 @@ public class SynchronizationManager {
                 inputStreams.add(assetManager.open("keywords-3.txt"));
 
                 if (inputStreams.isEmpty() || inputStreams.firstElement() == null) {
-                    updateKeywordsFromRemoteSource(context);
+                    updateKeywordsFromRemoteSource(context, url);
                 }
                 else {
                     sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
@@ -589,7 +595,7 @@ public class SynchronizationManager {
                 }
             }
             else {
-                updateKeywordsFromRemoteSource(context);
+                updateKeywordsFromRemoteSource(context, url);
             }
 
         }
@@ -606,11 +612,8 @@ public class SynchronizationManager {
      * @throws XmlPullParserException
      * @throws ParseException
      */
-    private void updateKeywordsFromRemoteSource(Context context) throws UnsupportedEncodingException, IOException, XmlPullParserException, ParseException {
-
-        String url = Settings.getNewServerUrl()
-                + ApplabActivity.getGlobalContext().getString(
-                        R.string.update_path);
+    private void updateKeywordsFromRemoteSource(Context context, String url) throws UnsupportedEncodingException, IOException, XmlPullParserException, ParseException {
+        
         int networkTimeout = 5 * 60 * 1000;
         InputStream keywordStream;
         keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
