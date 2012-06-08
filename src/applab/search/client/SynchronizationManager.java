@@ -15,11 +15,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.SequenceInputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Vector;
 
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.StringEntity;
@@ -28,6 +32,7 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.AssetManager;
 import android.database.SQLException;
 import android.os.Handler;
 import android.os.Looper;
@@ -64,7 +69,10 @@ public class SynchronizationManager {
     private final static String VERSION_ELEMENT_NAME = "localKeywordsVersion";
     private final static String CURRENT_FARMER_ID_COUNT = "currentFarmerIdCount";
     private final static String FARMER_CACHE_LAST_UPDATE_DATE = "localCacheVersion";
+    private final static String IMAGES_VERSION_ELEMENT_NAME = "localImagesVersion";
     private final static String CURRENT_MENU_IDS = "menuIds";
+    private final static String DEFAULT_KEYWORDS_VERSION = "2010-04-04 00:00:00";
+    private final static String DEFAULT_IMAGES_VERSION = "2010-04-04 00:00:00";
     public Timer timer;
     private boolean isSynchronizing;
     private static Boolean synchronizeNow; // This tells us to start sync
@@ -157,7 +165,7 @@ public class SynchronizationManager {
         if (processAlreadyRunning) {
             // SynchronizationManager.singleton.attachActivity(context, completionCallback);
             Toast notification = Toast.makeText(context,
-            		context.getResources().getString(R.string.keywords_updating),
+                    context.getResources().getString(R.string.keywords_updating),
                     Toast.LENGTH_LONG);
             notification.show();
         }
@@ -375,7 +383,7 @@ public class SynchronizationManager {
      * 
      * @throws XmlPullParserException
      */
-    private void performBackgroundSynchronization() throws XmlPullParserException {
+    private void performBackgroundSynchronization(Context context) throws XmlPullParserException {
         Boolean setupLooper = true;
         if (this.launchedFromTimer) {
             setupLooper = false;
@@ -395,8 +403,10 @@ public class SynchronizationManager {
             SynchronizationManager.singleton.isSynchronizing = true;
 
             // First submit pending farmer registrations and get latest registration form
+
             String serverUrl = Settings.getServerUrl();
-            FarmerRegistrationController farmerRegController = new FarmerRegistrationController();
+            FarmerRegistrationController farmerRegController = new
+                    FarmerRegistrationController();
             farmerRegController.postFarmerRegistrationData(serverUrl);
             farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
 
@@ -417,8 +427,7 @@ public class SynchronizationManager {
             getFamerLocalCache();
 
             // Finally update keywords
-            updateKeywords();
-
+            updateKeywords(context);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -435,20 +444,23 @@ public class SynchronizationManager {
 
     /**
      * Sets the version in the update request entity
-     * 
+     * Passes the keywords version, images version and current MenuIds
      * @return XML request entity
      * @throws UnsupportedEncodingException
      */
-    static AbstractHttpEntity getRequestEntity() throws UnsupportedEncodingException {
-
-        String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, "2010-04-03 00:00:00");
+    static AbstractHttpEntity getRequestEntity(Context context) throws UnsupportedEncodingException {
+        String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, DEFAULT_KEYWORDS_VERSION);
+        String imagesVersion = PropertyStorage.getLocal().getValue(GlobalConstants.IMAGES_VERSION_KEY, DEFAULT_IMAGES_VERSION);
         XmlEntityBuilder xmlRequest = new XmlEntityBuilder();
         xmlRequest.writeStartElement(REQUEST_ELEMENT_NAME, XML_NAME_SPACE);
         xmlRequest.writeStartElement(VERSION_ELEMENT_NAME);
         xmlRequest.writeText(keywordsVersion);
         xmlRequest.writeEndElement();
+        xmlRequest.writeStartElement(IMAGES_VERSION_ELEMENT_NAME);
+        xmlRequest.writeText(imagesVersion);
+        xmlRequest.writeEndElement();
         xmlRequest.writeStartElement(CURRENT_MENU_IDS);
-        xmlRequest.writeText(getMenuIds());
+        xmlRequest.writeText(getMenuIds(context));
         xmlRequest.writeEndElement();
         xmlRequest.writeEndElement();
         return xmlRequest.getEntity();
@@ -510,11 +522,12 @@ public class SynchronizationManager {
         }
     }
 
-    private void parseKeywords(InputStream keywordStream) throws XmlPullParserException, ParseException {
+    private void parseKeywords(Vector<InputStream> keywordStreams) throws XmlPullParserException, ParseException {
         // Call KeywordParser to parse the keywords result and store the contents in our
         // local database
         // TODO: integrate this code into our synchronization manager?
-        JsonSimpleParser keywordParser = new JsonSimpleParser(this.progressMessageHandler, this.internalMessageHandler, keywordStream);
+        SequenceInputStream sequenceInputStream = new SequenceInputStream(keywordStreams.elements());
+        JsonSimpleParser keywordParser = new JsonSimpleParser(this.progressMessageHandler, this.internalMessageHandler, sequenceInputStream);
         keywordParser.run();
     }
 
@@ -596,7 +609,7 @@ public class SynchronizationManager {
             // and if not, start the heavy lifting from our background thread
             if (doSynchronization) {
                 try {
-                    this.synchronizationManager.performBackgroundSynchronization();
+                    this.synchronizationManager.performBackgroundSynchronization(this.synchronizationManager.currentContext);
                 }
                 catch (Exception e) {
                     e.printStackTrace();
@@ -610,42 +623,45 @@ public class SynchronizationManager {
      * @throws XmlPullParserException
      * @throws ParseException
      */
-    public void updateKeywords() throws XmlPullParserException, ParseException {
-        String url = Settings.getNewServerUrl()
-                + ApplabActivity.getGlobalContext().getString(
-                        R.string.update_path);
+    public void updateKeywords(Context context) throws XmlPullParserException, ParseException {
 
-        int networkTimeout = 5 * 60 * 1000;
-
-        InputStream keywordStream;
         try {
+            // get URL to check if the connection should be made to test.applab.org,
+            // if yes, always download from remote source
+            String url = Settings.getNewServerUrl()
+                    + ApplabActivity.getGlobalContext().getString(
+                            R.string.update_path);
+            String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, DEFAULT_KEYWORDS_VERSION);
 
-            keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                    (StringEntity)getRequestEntity(), networkTimeout);
+            // check if its the first time for keywords to run 
+            // and connection is not set to point to test.applab.org, if yes, load keywords from bundled file
+            if (DEFAULT_KEYWORDS_VERSION == keywordsVersion  && !url.contains("test") ) {
+                AssetManager assetManager = context.getAssets();
 
-            // Write the keywords to disk, and then open a FileStream
-            String filePath = ApplabActivity.getGlobalContext().getCacheDir()
-                    + "/keywords.tmp";
-            
-            // TODO: Dont forget to remove this, only moved it for testing purposes
-           // String filePath = "/sdcard/ckwsearch/keywords.tmp"; 
-            Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath);
-            keywordStream.close();
-            File file = new File(filePath);
-            FileInputStream inputStream = new FileInputStream(file);
+                // Add split keywords file into vector
+                Vector<InputStream> inputStreams = new Vector<InputStream>();
+                inputStreams.add(assetManager.open("keywords-1.txt"));
+                inputStreams.add(assetManager.open("keywords-2.txt"));
+                inputStreams.add(assetManager.open("keywords-3.txt"));
 
-            if (downloadSuccessful && inputStream != null) {
-                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
-                parseKeywords(inputStream);
+                if (inputStreams.isEmpty() || inputStreams.firstElement() == null) {
+                    updateKeywordsFromRemoteSource(context, url);
+                }
+                else {
+                    sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
+                    parseKeywords(inputStreams);
+
+                    for (InputStream stream : inputStreams) {
+                        if (stream != null) {
+                            stream.close();
+                        }
+                    }
+                }
             }
             else {
-                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
+                updateKeywordsFromRemoteSource(context, url);
             }
 
-            if (inputStream != null) {
-                inputStream.close();
-                file.delete();
-            }
         }
         catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
@@ -761,10 +777,53 @@ public class SynchronizationManager {
         }
     }
 
-    private static String getMenuIds() {
+    /**
+     * Update keywords from remote source, after the initial download is done
+     * 
+     * @throws UnsupportedEncodingException
+     * @throws IOException
+     * @throws XmlPullParserException
+     * @throws ParseException
+     */
+    private void updateKeywordsFromRemoteSource(Context context, String url) throws UnsupportedEncodingException, IOException, XmlPullParserException, ParseException {
+        
+        int networkTimeout = 5 * 60 * 1000;
+        InputStream keywordStream;
+        keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
+                (StringEntity)getRequestEntity(context), networkTimeout);
+
+        // Write the keywords to disk, and then open a FileStream
+        String filePath = ApplabActivity.getGlobalContext().getCacheDir()
+                + "/keywords.tmp";
+        Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath);
+        keywordStream.close();
+        File file = new File(filePath);
+        FileInputStream inputStream = new FileInputStream(file);
+
+        if (downloadSuccessful && inputStream != null) {
+            sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
+
+            // Create Vector of input streams with one element
+            Vector<InputStream> inputStreams = new Vector<InputStream>();
+            inputStreams.add(inputStream);
+            parseKeywords(inputStreams);
+        }
+        else {
+            sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
+        }
+
+        if (inputStream != null) {
+            inputStream.close();
+            file.delete();
+        }
+
+    }
+
+    private static String getMenuIds(Context context) {
         ArrayList<String> menuIds = new ArrayList<String>();
         if (searchDatabase == null) {
-            searchDatabase = new Storage(ApplabActivity.getGlobalContext());
+            searchDatabase = new Storage(context);
+            searchDatabase.open();
         }
         menuIds = searchDatabase.getLocalMenuIds();
         return StringHelpers.commaSeparateValues(menuIds);

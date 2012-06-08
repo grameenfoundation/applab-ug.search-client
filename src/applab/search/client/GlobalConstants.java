@@ -31,7 +31,9 @@ public class GlobalConstants {
 
     public static final String KEYWORDS_VERSION_KEY = "keywordsVersion";
     public final static String FARMER_CACHE_VERSION_KEY = "lastUpdateDate";
-
+    
+    /* Images version separated to allow for different versions incase images and keywords versions differ */
+    public static final String IMAGES_VERSION_KEY = "imagesVersion";
     public static final String FARMER_REG_FORM_HASH = "farmerRegistrationFormHash";
 
     /** The new tables **/

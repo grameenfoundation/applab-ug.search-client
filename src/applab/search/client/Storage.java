@@ -353,9 +353,8 @@ public class Storage {
                     null, " " + Storage.MENU_LABEL_COLUMN + " ASC", null);
             return cursor;
         }
-        catch (NullPointerException ex) {
-            // throws null pointer exception if the application is run for the
-            // first time!
+        catch (NullPointerException ex) {       
+            // throws null pointer exception if the application is run for the first time!
             return null;
         }
     }
