@@ -682,7 +682,9 @@ public class SynchronizationManager {
             if (searchDatabase == null) {
                 searchDatabase = new Storage(ApplabActivity.getGlobalContext());
             }
+            searchDatabase.open();
             int unsedfarmerIdCount = searchDatabase.getUnusedFarmerIdCount();
+            searchDatabase.close();
             farmerIdsStream = HttpHelpers.postJsonRequestAndGetStream(url,
                     (StringEntity)getFarmerIdsRequestEntity(unsedfarmerIdCount), networkTimeout);
 
@@ -718,9 +720,6 @@ public class SynchronizationManager {
         InputStream farmerCacheStream;
         try {
 
-            if (searchDatabase == null) {
-                searchDatabase = new Storage(ApplabActivity.getGlobalContext());
-            }
             farmerCacheStream = HttpHelpers.postJsonRequestAndGetStream(url,
                     (StringEntity)getFarmerCacheRequestEntity(), networkTimeout);
 
@@ -823,9 +822,10 @@ public class SynchronizationManager {
         ArrayList<String> menuIds = new ArrayList<String>();
         if (searchDatabase == null) {
             searchDatabase = new Storage(context);
-            searchDatabase.open();
         }
+        searchDatabase.open();
         menuIds = searchDatabase.getLocalMenuIds();
+        searchDatabase.close();
         return StringHelpers.commaSeparateValues(menuIds);
     }
 }

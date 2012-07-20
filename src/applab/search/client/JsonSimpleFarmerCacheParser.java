@@ -107,6 +107,10 @@ public class JsonSimpleFarmerCacheParser {
         catch (IllegalStateException e) {
             Log.d(LOG_TAG, "IllegalStateException: " + e);
         }
+        catch (Exception e) {
+            Log.d(LOG_TAG, "Stop gap for continuity, means there are no Farmers in that district");
+            Log.d(LOG_TAG, "Exception: " +  e);
+        }
         finally {
             if (this.storage != null) {
                 this.storage.close();

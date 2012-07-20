@@ -161,11 +161,13 @@ public class JsonSimpleParser {
         // among new ids delete it and all its children
         if (!localMenuIds.isEmpty()) {
             for (int i = 0; i < menuIdsCollection.size(); i++) {
-                if (!menuIdsCollection.contains(localMenuIds.get(i))) {
-                    storage.deleteMenuEntry(localMenuIds.get(i));
-                    storage.deleteMenuItemEntry(
-                            localMenuIds.get(i));
-                    deletedNodes++;
+                for (String localId : localMenuIds) {
+                    if (!menuIdsCollection.contains(localId)) {
+                        storage.deleteMenuEntry(localId);
+                        storage.deleteMenuItemEntry(
+                                localMenuIds.get(i));
+                        deletedNodes++;
+                    }
                 }
             }
         }

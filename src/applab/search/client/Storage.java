@@ -69,9 +69,13 @@ public class Storage {
 
     /** the application context in which we are working */
     private final Context context;
+    
+    /** the storage class to act as singleton*/
+    private static Storage STORAGE = null;
 
     public Storage(Context context) {
         this.context = context;
+        STORAGE = this;
     }
 
     /**
@@ -95,6 +99,24 @@ public class Storage {
             database.endTransaction();
         }
         databaseHelper.close();
+    }
+
+    /**
+     * Check if storage/database is open
+     * 
+     * @return
+     */
+    public boolean isOpen() {
+        if (STORAGE == null) {
+            STORAGE = new Storage(context);
+        }
+        if (this.databaseHelper == null) {
+            this.databaseHelper = new DatabaseHelper(context);
+        }
+        if (this.database == null) {
+            this.database = databaseHelper.getWritableDatabase();
+        }
+        return database.isOpen();
     }
 
     /**
@@ -353,7 +375,7 @@ public class Storage {
                     null, " " + Storage.MENU_LABEL_COLUMN + " ASC", null);
             return cursor;
         }
-        catch (NullPointerException ex) {       
+        catch (NullPointerException ex) {
             // throws null pointer exception if the application is run for the first time!
             return null;
         }
@@ -414,7 +436,7 @@ public class Storage {
             if (cursor.moveToFirst()) {
                 return cursor.getString(0);
             }
-            return null;
+            return "";
         }
         finally {
             if (null != cursor) {
@@ -460,6 +482,9 @@ public class Storage {
     public int getUnusedFarmerIdCount() {
         Cursor cursor = null;
         try {
+            if (!this.isOpen()) {
+                this.open();
+            }
             cursor = database.rawQuery("SELECT COUNT(*) FROM "
                     + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME
                     + " WHERE status = 0 ", null);
@@ -515,6 +540,29 @@ public class Storage {
             if (cursor.moveToFirst()) {
                 return cursor.getString(0);
             }
+            return "";
+        }
+        finally {
+            if (null != cursor) {
+                cursor.close();
+            }
+        }
+
+    }
+
+    public String[] findFarmerDetailsFromFarmerLocalCacheTable(String farmerId) {
+        Cursor cursor = null;
+        try {
+            cursor = database.query(true,
+                    GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME,
+                    new String[] { Storage.FARMER_LOCAL_CACHE_FIRST_NAME,
+                            Storage.FARMER_LOCAL_CACHE_LAST_NAME, Storage.FARMER_LOCAL_CACHE_FATHER_NAME },
+                    Storage.FARMER_LOCAL_CACHE_FIRST_NAME + " = ? ",
+                    new String[] { farmerId }, null, null, null, null);
+
+            if (cursor.moveToFirst()) {
+                return new String[] { cursor.getString(0), cursor.getString(1), cursor.getString(2) };
+            }            
             return null;
         }
         finally {
@@ -527,8 +575,8 @@ public class Storage {
 
     public boolean isFarmerIdInFarmerLocalCacheTable(String farmerId) {
         Cursor cursor = null;
-        final String countSql = "SELECT COUNT(*) FROM"
-                + GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME + "WHERE"
+        final String countSql = "SELECT COUNT(*) FROM "
+                + GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME + " WHERE "
                 + Storage.FARMER_LOCAL_CACHE_FARMER_ID + "= ?";
         cursor = database.rawQuery(countSql, new String[] { farmerId });
 
@@ -548,10 +596,10 @@ public class Storage {
 
     public boolean isFarmerIdSetToUsedInAvailableFarmerIdTable(String farmerId) {
         Cursor cursor = null;
-        final String countSql = "SELECT COUNT(*) FROM"
-                + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME + "WHERE"
+        final String countSql = "SELECT COUNT(*) FROM "
+                + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME + " WHERE "
                 + Storage.FARMER_LOCAL_CACHE_FARMER_ID + "= ? AND "
-                + Storage.AVAILABLE_FARMER_ID_STATUS + "= ?";
+                + Storage.AVAILABLE_FARMER_ID_STATUS + " = ?";
         cursor = database.rawQuery(countSql, new String[] { farmerId,
                 GlobalConstants.AVAILABLE_FARMER_ID_USED_STATUS });
 
