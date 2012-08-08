@@ -420,11 +420,15 @@ public class SynchronizationManager {
             // Get Person country code
             getCountryCode();
 
-            // Get New Farmer Ids
-            getNewFarmerIds();
+            // check of country code is CO (Colombia)
+            // if it is skip updating farmer Ids and the local cache!
+            if (PropertyStorage.getLocal().getValue(GlobalConstants.COUNTRY_CODE, "UG") != "CO") {
+                // Get New Farmer Ids
+                getNewFarmerIds();
 
-            // Get Local Farmer Cache
-            getFamerLocalCache();
+                // Get Local Farmer Cache
+                getFamerLocalCache();
+            }
 
             // Finally update keywords
             updateKeywords(context);
@@ -443,8 +447,8 @@ public class SynchronizationManager {
     }
 
     /**
-     * Sets the version in the update request entity
-     * Passes the keywords version, images version and current MenuIds
+     * Sets the version in the update request entity Passes the keywords version, images version and current MenuIds
+     * 
      * @return XML request entity
      * @throws UnsupportedEncodingException
      */
@@ -543,8 +547,7 @@ public class SynchronizationManager {
     private void parseFarmerCache(InputStream farmerCacheStream) throws XmlPullParserException, ParseException {
         // Call FarmerCacheParser to parse the farmerCache result and store the contents in our
         // local database
-        JsonSimpleFarmerCacheParser farmerCacheParser = new JsonSimpleFarmerCacheParser(this.progressMessageHandler,
-                this.internalMessageHandler, farmerCacheStream);
+        JsonSimpleFarmerCacheParser farmerCacheParser = new JsonSimpleFarmerCacheParser(this.progressMessageHandler, farmerCacheStream);
         farmerCacheParser.run();
     }
 
@@ -633,16 +636,21 @@ public class SynchronizationManager {
                             R.string.update_path);
             String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, DEFAULT_KEYWORDS_VERSION);
 
-            // check if its the first time for keywords to run 
+            // check if its the first time for keywords to run
             // and connection is not set to point to test.applab.org, if yes, load keywords from bundled file
-            if (DEFAULT_KEYWORDS_VERSION == keywordsVersion  && !url.contains("test") ) {
+            if (DEFAULT_KEYWORDS_VERSION == keywordsVersion && !url.contains("test")) {
                 AssetManager assetManager = context.getAssets();
 
                 // Add split keywords file into vector
                 Vector<InputStream> inputStreams = new Vector<InputStream>();
-                inputStreams.add(assetManager.open("keywords-1.txt"));
-                inputStreams.add(assetManager.open("keywords-2.txt"));
-                inputStreams.add(assetManager.open("keywords-3.txt"));
+                try {
+                    inputStreams.add(assetManager.open("keywords-1.txt"));
+                    inputStreams.add(assetManager.open("keywords-2.txt"));
+                    inputStreams.add(assetManager.open("keywords-3.txt"));
+                }
+                catch (IOException ex) {
+                    Log.d("Error", "No stored files");
+                }
 
                 if (inputStreams.isEmpty() || inputStreams.firstElement() == null) {
                     updateKeywordsFromRemoteSource(context, url);
@@ -784,8 +792,9 @@ public class SynchronizationManager {
      * @throws XmlPullParserException
      * @throws ParseException
      */
-    private void updateKeywordsFromRemoteSource(Context context, String url) throws UnsupportedEncodingException, IOException, XmlPullParserException, ParseException {
-        
+    private void updateKeywordsFromRemoteSource(Context context, String url) throws UnsupportedEncodingException, IOException,
+            XmlPullParserException, ParseException {
+
         int networkTimeout = 5 * 60 * 1000;
         InputStream keywordStream;
         keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,

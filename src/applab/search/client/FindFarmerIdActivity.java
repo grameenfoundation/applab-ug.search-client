@@ -41,6 +41,10 @@ public class FindFarmerIdActivity extends BaseSearchActivity {
 		// add a click listener to the "Search" button
 		this.searchButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
+			    // reset values each time a search is done
+			    farmerIdResult.setText("");
+			    useThisIdButton.setVisibility(View.GONE);
+			    
 				String farmerId = farmerLocalCache
 						.findFarmerIdFromFarmerLocalCacheTable(farmerFirstName
 								.getText().toString(), farmerLastName.getText()
@@ -48,15 +52,12 @@ public class FindFarmerIdActivity extends BaseSearchActivity {
 								.toString());
 				if (farmerId != null){
 					farmerIdResult.setText(farmerId);
-					useThisIdButton.setVisibility(View.VISIBLE);
-					
+					useThisIdButton.setVisibility(View.VISIBLE);					
 				}
 				
-				else {
-					
+				else {					
 					showToast("Invalid Farmer");
 					useThisIdButton.setVisibility(View.GONE);
-					searchButton.setVisibility(View.GONE);
 					
 				}
 			}

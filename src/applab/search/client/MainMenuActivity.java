@@ -355,7 +355,12 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                 }
             }
             else {
-                showToast(R.string.empty_text);
+                if (requestCode == REGISTRATION_CODE) {
+                    showToast(getResources().getString(R.string.update_keywords));
+                }
+                else {
+                    showToast(R.string.empty_text);
+                }
             }
         }
     }

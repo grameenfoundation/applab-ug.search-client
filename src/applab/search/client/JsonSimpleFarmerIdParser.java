@@ -96,6 +96,9 @@ public class JsonSimpleFarmerIdParser {
                 Log.d(LOG_TAG, "Finished Parsing Farmer Ids ... Added: " + addedNodes);
             }           
         }
+        catch (ParseException e) {
+            Log.d(LOG_TAG, "Parse Exception: " + e);
+        }
         catch (IOException e) {
             Log.d(LOG_TAG, "IOException: " + e);
         }

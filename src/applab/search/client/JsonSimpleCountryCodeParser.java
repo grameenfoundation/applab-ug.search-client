@@ -68,6 +68,9 @@ public class JsonSimpleCountryCodeParser {
         catch (IllegalStateException e) {
             Log.d(LOG_TAG, "IllegalStateException: " + e);
         }
+        catch(Exception e) {
+            Log.d(LOG_TAG, "General Exception: " + e);
+        }
     }
 
     /**

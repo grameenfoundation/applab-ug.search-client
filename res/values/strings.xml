@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 <string name="app_name">CKW Search</string>
-<string name="app_version">4.2pre0</string>
-<string name="release_date">May 17, 2012</string>
+<string name="app_version">4.2.0</string>
+<string name="release_date">July 30, 2012</string>
 <string name="info">Grameen Foundation, Applab Uganda\nckw@applab.org</string>
 <string name="inbox_title">Recent Searches</string>
 <string name="server_url">Server URL</string>
@@ -109,5 +109,6 @@
 <string name="yes_text">Yes</string>
 <string name="no_text">No</string>
 <string name="update_keywords">Update keywords and try again</string>
+<string name="server">http://test.applab.org</string>
 <string name="update_farmer_registration">Update Farmer</string>
 </resources>

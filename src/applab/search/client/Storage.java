@@ -530,17 +530,17 @@ public class Storage {
             cursor = database.query(true,
                     GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME,
                     new String[] { Storage.FARMER_LOCAL_CACHE_FARMER_ID },
-                    Storage.FARMER_LOCAL_CACHE_FIRST_NAME + " = ? AND "
+                    Storage.FARMER_LOCAL_CACHE_FIRST_NAME + " LIKE ? AND "
                             + Storage.FARMER_LOCAL_CACHE_LAST_NAME
-                            + " = ? AND "
-                            + Storage.FARMER_LOCAL_CACHE_FATHER_NAME + " = ?",
+                            + " LIKE ? AND "
+                            + Storage.FARMER_LOCAL_CACHE_FATHER_NAME + " LIKE ?",
                     new String[] { farmerFirstName, farmerLastName,
                             farmerFatherName }, null, null, null, null);
 
             if (cursor.moveToFirst()) {
                 return cursor.getString(0);
             }
-            return "";
+            return null;
         }
         finally {
             if (null != cursor) {

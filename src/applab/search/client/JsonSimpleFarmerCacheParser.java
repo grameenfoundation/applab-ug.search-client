@@ -47,8 +47,6 @@ public class JsonSimpleFarmerCacheParser {
 
     private InputStream farmerCacheStream;
 
-    /** handler to which responses are sent */
-    private Handler responseHandler;
 
     private static Bundle bundle;
     private JSONParser jsonParser;
@@ -58,10 +56,8 @@ public class JsonSimpleFarmerCacheParser {
     private Integer addedNodes;
     private String farmerCacheVersion;
 
-    public JsonSimpleFarmerCacheParser(Handler progressHandler,
-            Handler responseHandler, InputStream newFarmerCacheStream) {
+    public JsonSimpleFarmerCacheParser(Handler progressHandler, InputStream newFarmerCacheStream) {
         this.farmerCacheStream = newFarmerCacheStream;
-        this.responseHandler = responseHandler;
         JsonSimpleFarmerCacheParser.progressHandler = progressHandler;
         this.farmerCacheHandler = new FarmerCacheParseHandler();
 
