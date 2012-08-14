@@ -109,6 +109,6 @@
 <string name="yes_text">Yes</string>
 <string name="no_text">No</string>
 <string name="update_keywords">Update keywords and try again</string>
-<string name="server">http://test.applab.org</string>
+<string name="server">http://ckwapps.applab.org</string>
 <string name="update_farmer_registration">Update Farmer</string>
 </resources>

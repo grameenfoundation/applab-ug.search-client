@@ -29,7 +29,7 @@ public class TimedSynchronizationTask extends TimerTask {
         }
         catch (Exception ex) {
             Log.e(LOG_TAG, "Unexpected failure during background syncronization", ex);
-            ProgressDialogManager.tryDestroyProgressDialog();
+            //ProgressDialogManager.tryDestroyProgressDialog();
         }
     }
 }

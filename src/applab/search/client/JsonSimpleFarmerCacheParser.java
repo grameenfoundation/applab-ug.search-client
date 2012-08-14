@@ -46,15 +46,10 @@ public class JsonSimpleFarmerCacheParser {
     private Storage storage;
 
     private InputStream farmerCacheStream;
-
-
-    private static Bundle bundle;
     private JSONParser jsonParser;
     private FarmerCacheParseHandler farmerCacheHandler;
-    private static Integer nodeCount;
     private static Handler progressHandler;
     private Integer addedNodes;
-    private String farmerCacheVersion;
 
     public JsonSimpleFarmerCacheParser(Handler progressHandler, InputStream newFarmerCacheStream) {
         this.farmerCacheStream = newFarmerCacheStream;
@@ -83,18 +78,6 @@ public class JsonSimpleFarmerCacheParser {
                 jsonParser.parse(new InputStreamReader(this.farmerCacheStream),
                         (org.json.simple.parser.ContentHandler)this.farmerCacheHandler,
                         true);
-                if (this.farmerCacheHandler.isVersionFound()) {
-                    farmerCacheVersion = this.farmerCacheHandler.getVersion();
-                }
-            }
-
-            if (addedNodes != 0) {
-                // let UI handler know
-                Log.d(LOG_TAG, "Finished Parsing Farmer Cache ... Added: " + addedNodes);
-                if (farmerCacheVersion != null && !farmerCacheVersion.equals("")) {
-                    JsonSimpleFarmerCacheParser.storeFarmerCacheVersion(farmerCacheVersion);
-                    Log.d(LOG_TAG, "Stored the Farmer Cache Version: " + farmerCacheVersion);
-                }
             }
         }
         catch (IOException e) {
@@ -104,13 +87,17 @@ public class JsonSimpleFarmerCacheParser {
             Log.d(LOG_TAG, "IllegalStateException: " + e);
         }
         catch (Exception e) {
-            Log.d(LOG_TAG, "Stop gap for continuity, means there are no Farmers in that district");
+            Log.d(LOG_TAG, "Stop gap for continuity due to stray values in json string");
             Log.d(LOG_TAG, "Exception: " +  e);
         }
         finally {
             if (this.storage != null) {
                 this.storage.close();
             }
+        }
+        if (this.farmerCacheHandler.getVersion() != null && !this.farmerCacheHandler.getVersion().equals("")) {
+            JsonSimpleFarmerCacheParser.storeFarmerCacheVersion(this.farmerCacheHandler.getVersion());
+            Log.d(LOG_TAG, "Stored the Farmer Cache Version: " + this.farmerCacheHandler.getVersion());
         }
     }
 
@@ -133,11 +120,6 @@ public class JsonSimpleFarmerCacheParser {
         addValues.put("age", age);
         addValues.put("father_name", parentName);
         storage.insertContent(GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME, addValues);
-    }
-
-    static void storeFarmerCacheVersion(Document document) {
-        String version = getFarmerCacheVersion(document);
-        storeFarmerCacheVersion(version);
     }
 
     static void storeFarmerCacheVersion(String version) {
@@ -183,14 +165,6 @@ public class JsonSimpleFarmerCacheParser {
 
         public void setVersion(String version) {
             this.version = version;
-        }
-
-        public boolean isVersionFound() {
-            return versionFound;
-        }
-
-        public void setVersionFound(boolean versionFound) {
-            this.versionFound = versionFound;
         }
 
         public boolean isEnd() {
@@ -242,7 +216,7 @@ public class JsonSimpleFarmerCacheParser {
                 Log.d("INFO", String.valueOf(value));
                 if (key.equalsIgnoreCase(VERSION_ATTRIBUTE_NAME)) {
                     versionFound = true;
-                    this.version = value.toString();
+                    this.setVersion(value.toString());
                     return true;
                 }
                 else {

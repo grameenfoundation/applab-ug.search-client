@@ -61,7 +61,7 @@ import applab.client.search.R;
 public class SynchronizationManager {
     // by default we will synchronize once every 12 hours
     public static final int SYNCHRONIZATION_INTERVAL = 12 * 60 * 60 * 1000;
-    public static final int SYNCHRONIZATION_START_INTERVAL = 5 * 60 * 1000; // We run 5 minutes after the app is started
+    public static final int SYNCHRONIZATION_START_INTERVAL = 15 * 60 * 1000; // We run 15 minutes after the app is started
 
     public static SynchronizationManager singleton = new SynchronizationManager();
     private final static String XML_NAME_SPACE = "http://schemas.applab.org/2010/07/search";
@@ -398,38 +398,26 @@ public class SynchronizationManager {
         }
 
         try {
-            sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up
-                                                                            // immediately
             SynchronizationManager.singleton.isSynchronizing = true;
 
-            // First submit pending farmer registrations and get latest registration form
-
-            String serverUrl = Settings.getServerUrl();
-            FarmerRegistrationController farmerRegController = new
-                    FarmerRegistrationController();
-            farmerRegController.postFarmerRegistrationData(serverUrl);
-            farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
-
-            // Then submit pending usage logs and incomplete searches
-            InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
-            inboxAdapter.open();
-            submitPendingUsageLogs(inboxAdapter);
-
-            inboxAdapter.close();
-
+            sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up
+            
+            // First submit pending farmer registrations and get latest registration for
+            sendFarmerRegistrations();
+            
             // Get Person country code
             getCountryCode();
 
             // check of country code is CO (Colombia)
             // if it is skip updating farmer Ids and the local cache!
-            if (PropertyStorage.getLocal().getValue(GlobalConstants.COUNTRY_CODE, "UG") != "CO") {
+            if (!PropertyStorage.getLocal().getValue(GlobalConstants.COUNTRY_CODE, "UG").equalsIgnoreCase("CO")) {
                 // Get New Farmer Ids
                 getNewFarmerIds();
 
                 // Get Local Farmer Cache
                 getFamerLocalCache();
             }
-
+            
             // Finally update keywords
             updateKeywords(context);
         }
@@ -443,6 +431,28 @@ public class SynchronizationManager {
             Looper.loop();
             Looper looper = Looper.getMainLooper();
             looper.quit();
+        }
+    }
+
+    /**
+     * 
+     */
+    private void sendFarmerRegistrations() {
+        try {
+        String serverUrl = Settings.getServerUrl();
+        FarmerRegistrationController farmerRegController = new
+                FarmerRegistrationController();
+        farmerRegController.postFarmerRegistrationData(serverUrl);
+        farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
+
+        // Then submit pending usage logs and incomplete searches
+        InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
+        inboxAdapter.open();
+        submitPendingUsageLogs(inboxAdapter);
+        inboxAdapter.close();
+        }
+        catch (Exception e) {
+            Log.d("LOG", "Error :" + e);
         }
     }
 
@@ -628,7 +638,7 @@ public class SynchronizationManager {
      */
     public void updateKeywords(Context context) throws XmlPullParserException, ParseException {
 
-        try {
+        try {           
             // get URL to check if the connection should be made to test.applab.org,
             // if yes, always download from remote source
             String url = Settings.getNewServerUrl()
@@ -649,7 +659,7 @@ public class SynchronizationManager {
                     inputStreams.add(assetManager.open("keywords-3.txt"));
                 }
                 catch (IOException ex) {
-                    Log.d("Error", "No stored files");
+                    Log.d("Error", "No stored files, fetching from remote host");
                 }
 
                 if (inputStreams.isEmpty() || inputStreams.firstElement() == null) {
@@ -795,7 +805,7 @@ public class SynchronizationManager {
     private void updateKeywordsFromRemoteSource(Context context, String url) throws UnsupportedEncodingException, IOException,
             XmlPullParserException, ParseException {
 
-        int networkTimeout = 5 * 60 * 1000;
+        int networkTimeout = 10 * 60 * 1000;
         InputStream keywordStream;
         keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
                 (StringEntity)getRequestEntity(context), networkTimeout);
@@ -824,7 +834,6 @@ public class SynchronizationManager {
             inputStream.close();
             file.delete();
         }
-
     }
 
     private static String getMenuIds(Context context) {

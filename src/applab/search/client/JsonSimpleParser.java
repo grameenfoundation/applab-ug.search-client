@@ -102,7 +102,7 @@ public class JsonSimpleParser {
                         true);
                 }
                 catch (ParseException e) {
-                    Log.e(LOG_TAG, "Failed to finish Parsing Keywords, attempting to proceed with next steps");
+                    Log.e(LOG_TAG, "Failed to finish Parsing Keywords, attempting to proceed with next steps" + e);
                     
                     // Hack to bypass EOF ParseExceptions
                     break;
