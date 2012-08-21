@@ -57,7 +57,7 @@ public class Storage {
     public static final String FARMER_LOCAL_CACHE_FATHER_NAME = "father_name";
 
     private static final String DATABASE_NAME = "search";
-    private static final int DATABASE_VERSION = 7;
+    private static final int DATABASE_VERSION = 8;
     private static final int SEQUENCES = 32;
 
     /** keep track of batch size to enable batch inserts **/
@@ -245,7 +245,7 @@ public class Storage {
         private String getMenuTableInitializationSql() {
             StringBuilder sqlCommand = new StringBuilder();
             sqlCommand
-                    .append("create table " + GlobalConstants.MENU_TABLE_NAME);
+                    .append("CREATE TABLE IF NOT EXISTS " + GlobalConstants.MENU_TABLE_NAME);
             sqlCommand.append(" (" + Storage.MENU_ROWID_COLUMN
                     + " CHAR(16) PRIMARY KEY, " + Storage.MENU_LABEL_COLUMN
                     + " TEXT NOT NULL);");
@@ -260,7 +260,7 @@ public class Storage {
         private String getMenuItemTableInitializationSql() {
 
             StringBuilder sqlCommand = new StringBuilder();
-            sqlCommand.append("create table "
+            sqlCommand.append("CREATE TABLE IF NOT EXISTS "
                     + GlobalConstants.MENU_ITEM_TABLE_NAME);
             sqlCommand.append(" (" + Storage.MENU_ITEM_ROWID_COLUMN
                     + " CHAR(16) PRIMARY KEY, "
@@ -288,7 +288,7 @@ public class Storage {
         private String getAvailableFarmerIdTableInitializationSql() {
 
             StringBuilder sqlCommand = new StringBuilder();
-            sqlCommand.append("create table "
+            sqlCommand.append("CREATE TABLE IF NOT EXISTS "
                     + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME);
             sqlCommand.append(" (" + Storage.AVAILABLE_FARMER_ID_ROWID_COLUMN
                     + " CHAR(16) PRIMARY KEY, "
@@ -306,7 +306,7 @@ public class Storage {
         private String getFarmerLocalCacheTableInitializationSql() {
 
             StringBuilder sqlCommand = new StringBuilder();
-            sqlCommand.append("create table "
+            sqlCommand.append("CREATE TABLE IF NOT EXISTS "
                     + GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME);
             sqlCommand.append(" (" + Storage.FARMER_LOCAL_CACHE_ROWID_COLUMN
                     + " CHAR(16) PRIMARY KEY, "
@@ -332,14 +332,14 @@ public class Storage {
             database.execSQL("DROP TABLE IF EXISTS keywords2");
 
             // Get rid of new tables if they exist
-            database.execSQL("DROP TABLE IF EXISTS "
-                    + GlobalConstants.MENU_TABLE_NAME);
-            database.execSQL("DROP TABLE IF EXISTS "
-                    + GlobalConstants.MENU_ITEM_TABLE_NAME);
-            database.execSQL("DROP TABLE IF EXISTS "
-                    + GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME);
-            database.execSQL("DROP TABLE IF EXISTS "
-                    + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME);
+           // database.execSQL("DROP TABLE IF EXISTS "
+            //        + GlobalConstants.MENU_TABLE_NAME);
+            //database.execSQL("DROP TABLE IF EXISTS "
+            //        + GlobalConstants.MENU_ITEM_TABLE_NAME);
+            //database.execSQL("DROP TABLE IF EXISTS "
+            //        + GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME);
+            //database.execSQL("DROP TABLE IF EXISTS "
+            //        + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME);
 
             onCreate(database);
         }
@@ -430,7 +430,7 @@ public class Storage {
                     .query(false,
                             GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME,
                             new String[] { Storage.AVAILABLE_FARMER_ID_FARMER_ID },
-                            Storage.AVAILABLE_FARMER_ID_STATUS + " = ?",
+                            Storage.AVAILABLE_FARMER_ID_STATUS + " = ? AND farmer_id != 'null'",
                             new String[] { GlobalConstants.AVAILABLE_FARMER_ID_UNUSED_STATUS },
                             null, null, null, null);
             if (cursor.moveToFirst()) {
@@ -487,7 +487,7 @@ public class Storage {
             }
             cursor = database.rawQuery("SELECT COUNT(*) FROM "
                     + GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME
-                    + " WHERE status = 0 ", null);
+                    + " WHERE status = 0 AND farmer_id != 'null' ", null);
             if (cursor.moveToFirst()) {
                 return cursor.getInt(0);
             }
@@ -557,7 +557,7 @@ public class Storage {
                     GlobalConstants.FARMER_LOCAL_CACHE_TABLE_NAME,
                     new String[] { Storage.FARMER_LOCAL_CACHE_FIRST_NAME,
                             Storage.FARMER_LOCAL_CACHE_LAST_NAME, Storage.FARMER_LOCAL_CACHE_FATHER_NAME },
-                    Storage.FARMER_LOCAL_CACHE_FIRST_NAME + " = ? ",
+                    Storage.FARMER_LOCAL_CACHE_FARMER_ID + " = ? ",
                     new String[] { farmerId }, null, null, null, null);
 
             if (cursor.moveToFirst()) {

@@ -35,7 +35,9 @@ import applab.client.search.R;
  * could be moved to common client code
  */
 public class ImageFilesUtility {
-    private static final String ROOT = "/sdcard/ckwsearch/";
+    private static final String ROOT = Environment
+			.getExternalStorageDirectory() + "/ckwsearch/";
+    
     private static final String LOG_TAG = "ImageFilesUtility";
     private static String[] SUPPORTED_FORMATS = { ".jpg", ".jpeg" };
 

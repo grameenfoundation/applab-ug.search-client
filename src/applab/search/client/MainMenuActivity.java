@@ -155,10 +155,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
 
         this.forgotButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                // Start FindFarmerId Activity
-                Intent nextActivity = new Intent(getApplicationContext(),
-                        FindFarmerIdActivity.class);
-                startActivity(nextActivity);
+            	onRequestBrowserIntentButtonClick("findFarmerId", FORGOT_ID_CODE);
             }
         });
 
@@ -220,7 +217,7 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                             .getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT);
                     bundle.putString(FarmerRegistrationAdapter.KEY_LOCATION,
                             GpsManager.getInstance().getLocationAsString());
-
+                    
                     String message = getResources().getString(R.string.registration_successful);
                     long result = this.farmerRegController
                             .saveNewFarmerRegistration(bundle);
@@ -252,6 +249,38 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                             .show(this, getResources().getString(R.string.registration_unable));
                 }
 
+                break;
+            case UPDATE_CODE:
+                if (resultCode == RESULT_OK) {
+
+                    Bundle bundle = data
+                            .getBundleExtra(BrowserActivity.EXTRA_DATA_INTENT);
+                    bundle.putString(FarmerRegistrationAdapter.KEY_LOCATION,
+                            GpsManager.getInstance().getLocationAsString());
+                    bundle.putString(FarmerRegistrationAdapter.KEY_IS_UPDATE, "1");
+                    
+                    String updateMessage = getResources().getString(R.string.update_successful);
+                    long result = this.farmerRegController
+                            .saveNewFarmerRegistration(bundle);
+                    if (result < 0) {
+                        updateMessage = getResources().getString(R.string.update_failed);
+                    }
+
+                    BrowserResultDialog.show(this, updateMessage,
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    switchToActivity(MainMenuActivity.class);
+                                    dialog.cancel();
+                                }
+                            });
+                }
+                else if (resultCode == RESULT_CANCELED) {
+                    // reset the Farmer ID
+                    GlobalConstants.intervieweeName = "";
+                    // Show error dialog
+                    BrowserResultDialog
+                            .show(this, getResources().getString(R.string.update_unable));
+                }
                 break;
             case AGINFO_CODE:
                 if (resultCode == RESULT_OK) {
@@ -314,16 +343,16 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                 .replace(" ", "");
         // Check local db for available IDs if no farmerId is provided in the
         // app or an invalid id is provided
-        if (urlPattern.contentEquals("getFarmerRegistrationForm")
-                && (farmerName.length() == 0 || !checkId(farmerName))) {
+        if ((urlPattern.contentEquals("getFarmerRegistrationForm")
+                && (farmerName.length() == 0 || !checkId(farmerName))) && (requestCode != UPDATE_CODE)) {
             farmerName = getNextAvailableId();
         }
         if (null == farmerName) {
             showToast(getResources().getString(R.string.update_keywords));
         }
         else {
-            if (farmerName.length() > 0) {
-                if (checkId(farmerName)) {
+            if (farmerName.length() > 0 || urlPattern.contentEquals("findFarmerId")) {
+                if (urlPattern.contentEquals("findFarmerId") || checkId(farmerName)) {
                     // Set the farmer ID
                     GlobalConstants.intervieweeName = farmerName;
 
@@ -441,6 +470,9 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
                 if (farmerDetails != null) {
                     html = this.farmerRegController.getFormHtml(GlobalConstants.intervieweeName, farmerDetails[0], farmerDetails[1],
                             farmerDetails[2], Settings.getServerUrl());
+                } else {
+                	html = this.farmerRegController.getFormHtml(
+                            GlobalConstants.intervieweeName, Settings.getServerUrl());
                 }
             }
 

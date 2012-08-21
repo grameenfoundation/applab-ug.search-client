@@ -121,12 +121,22 @@ public class JsonSimpleFarmerIdParser {
      */
     public void addRecord(String rowId, String farmerId, int status) {
         ContentValues addValues = new ContentValues();
-
-        addValues.put("id", farmerId);
-        addValues.put("farmer_id", farmerId);
-        addValues.put("status", status);
-
-        storage.insertContent(GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME, addValues);
+        Log.d(LOG_TAG, "Adding: " + farmerId);
+        if (!((null == farmerId) || (farmerId.equalsIgnoreCase("null")))) {
+        	addValues.put("id", farmerId);
+        	addValues.put("farmer_id", farmerId);
+        	addValues.put("status", status);
+        	try {
+        	storage.insertContent(GlobalConstants.AVAILABLE_FARMER_ID_TABLE_NAME, addValues);
+        	Log.d(LOG_TAG, "Finished inserting farmer Id:" + farmerId);
+        	} 
+        	catch (Exception e) {
+        		Log.d(LOG_TAG, "Exception:" + e);
+        	}
+        	finally {
+        		Log.d(LOG_TAG, "Finalising inserting farmer Id:" + farmerId);
+        	}
+        }
     }
 
   
