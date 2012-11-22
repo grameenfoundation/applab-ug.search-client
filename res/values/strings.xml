@@ -112,6 +112,6 @@
 <string name="yes_text">Yes</string>
 <string name="no_text">No</string>
 <string name="update_keywords">Update keywords and try again</string>
-<string name="server">http://ckwapps.applab.org</string>
+<string name="server">http://192.168.1.84</string>
 <string name="update_farmer_registration">Update Farmer</string>
 </resources>
