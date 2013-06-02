@@ -1,61 +1,46 @@
 /**
  * Copyright (C) 2010 Grameen Foundation
-Licensed under the Apache License, Version 2.0 (the "License"); you may not
-use this file except in compliance with the License. You may obtain a copy of
-the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
+ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ use this file except in compliance with the License. You may obtain a copy of
+ the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ License for the specific language governing permissions and limitations under
+ the License.
  */
 package applab.search.client;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.SequenceInputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.Vector;
-
-import org.apache.http.entity.AbstractHttpEntity;
-import org.apache.http.entity.StringEntity;
-import org.json.simple.parser.ParseException;
-import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.AssetManager;
-import android.database.SQLException;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
-import applab.client.ApplabActivity;
-import applab.client.HttpHelpers;
-import applab.client.PropertyStorage;
-import applab.client.StringHelpers;
-import applab.client.XmlEntityBuilder;
-import applab.client.XmlHelpers;
+import applab.client.*;
 import applab.client.farmerregistration.FarmerRegistrationController;
 import applab.client.search.R;
+import org.apache.http.entity.AbstractHttpEntity;
+import org.apache.http.entity.StringEntity;
+import org.json.simple.parser.ParseException;
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.Vector;
 
 /**
  * The SynchronizationManager is responsible for all the complexity involved in scheduling timers, background threads,
  * coordinating UI, etc.
- * 
+ * <p/>
  * SynchronizationManager handles three main tasks: 1) Ensuring keywords and their associated content is up to date 2)
  * Sending any searches that failed to send in the mainline path 3) Transmitting logs of any searches that have happened
  * on our cached data so that we can track this activity for M&E purposes on our servers
- * 
+ * <p/>
  * TODO: move the general scheduling algorithm into shared code and leverage it
  */
 public class SynchronizationManager {
@@ -81,7 +66,9 @@ public class SynchronizationManager {
     private Handler progressMessageHandler;
     private Thread backgroundThread;
 
-    /** Search database */
+    /**
+     * Search database
+     */
     private static Storage searchDatabase;
 
     // used for getting messages from the download and parsing threads
@@ -144,8 +131,7 @@ public class SynchronizationManager {
             // TODO: check isRunning instead?
             if (SynchronizationManager.isSynchronizing()) {
                 processAlreadyRunning = true;
-            }
-            else {
+            } else {
                 // check if we have any keywords cached locally. If not, we have to become
                 // modal and initialize our local store.
                 if (!StorageManager.hasKeywords()) {
@@ -168,8 +154,7 @@ public class SynchronizationManager {
                     context.getResources().getString(R.string.keywords_updating),
                     Toast.LENGTH_LONG);
             notification.show();
-        }
-        else if (synchronizeNow) {
+        } else if (synchronizeNow) {
             SynchronizationManager.singleton.startSynchronization(context, completionCallback);
         }
     }
@@ -186,7 +171,7 @@ public class SynchronizationManager {
 
     /**
      * Make sure our background timer is scheduled. Assumes that it's called under a lock.
-     * 
+     * <p/>
      * Returns true if we allocated the timer
      */
     public boolean ensureTimerIsScheduled() {
@@ -218,8 +203,7 @@ public class SynchronizationManager {
                     handleBackgroundThreadMessage(message);
                 }
             };
-        }
-        else {
+        } else {
             this.completionCallback = null;
             this.progressMessageHandler = completionCallback;
             this.internalMessageHandler = completionCallback;
@@ -229,8 +213,7 @@ public class SynchronizationManager {
         if (this.launchedFromTimer) {
             // Timer already has it's own thread, so just run the task
             task.run();
-        }
-        else {
+        } else {
             // Start a new thread
             this.backgroundThread = new Thread(task);
             this.backgroundThread.start();
@@ -240,7 +223,7 @@ public class SynchronizationManager {
     /**
      * We have a new activity to attach to our progress UI and/or we have to bring up a progress dialog to link into an
      * existing synchronization
-     * 
+     *
      * @deprecated This function is being deprecated in 3.1 due to conflicts with the background process. We now show a
      *             toast instead
      */
@@ -340,7 +323,7 @@ public class SynchronizationManager {
                 break;
             case GlobalConstants.KEYWORD_DOWNLOAD_FAILURE:
                 ProgressDialogManager.tryDestroyProgressDialog(); // Dialog may still be launched in background process
-                                                                  // as a side-effect
+                // as a side-effect
                 if (!this.launchedFromTimer) {
                     showErrorDialog(R.string.incomplete_keyword_response_error);
                 }
@@ -380,7 +363,7 @@ public class SynchronizationManager {
 
     /**
      * Called by our background or timer thread to perform the actual synchronization tasks from a separate thread.
-     * 
+     *
      * @throws XmlPullParserException
      */
     private void performBackgroundSynchronization(Context context) throws XmlPullParserException {
@@ -399,12 +382,11 @@ public class SynchronizationManager {
 
         try {
             SynchronizationManager.singleton.isSynchronizing = true;
-
             sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_STARTING); // We send this so that the dialog shows up
-            
+
             // First submit pending farmer registrations and get latest registration for
             sendFarmerRegistrations();
-            
+
             // Get Person country code
             getCountryCode();
 
@@ -413,15 +395,13 @@ public class SynchronizationManager {
             if (!PropertyStorage.getLocal().getValue(GlobalConstants.COUNTRY_CODE, "UG").equalsIgnoreCase("CO")) {
                 // Get New Farmer Ids
                 getNewFarmerIds();
-
                 // Get Local Farmer Cache
                 getFamerLocalCache();
             }
-            
+
             // Finally update keywords
             updateKeywords(context);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             completeSynchronization();
         }
@@ -435,30 +415,29 @@ public class SynchronizationManager {
     }
 
     /**
-     * 
+     *
      */
     private void sendFarmerRegistrations() {
         try {
-        String serverUrl = Settings.getServerUrl();
-        FarmerRegistrationController farmerRegController = new
-                FarmerRegistrationController();
-        farmerRegController.postFarmerRegistrationData(serverUrl);
-        farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
+            String serverUrl = Settings.getServerUrl();
+            FarmerRegistrationController farmerRegController = new
+                    FarmerRegistrationController();
+            farmerRegController.postFarmerRegistrationData(serverUrl);
+            farmerRegController.fetchAndStoreRegistrationForm(serverUrl);
 
-        // Then submit pending usage logs and incomplete searches
-        InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
-        inboxAdapter.open();
-        submitPendingUsageLogs(inboxAdapter);
-        inboxAdapter.close();
-        }
-        catch (Exception e) {
+            // Then submit pending usage logs and incomplete searches
+            InboxAdapter inboxAdapter = new InboxAdapter(ApplabActivity.getGlobalContext());
+            inboxAdapter.open();
+            submitPendingUsageLogs(inboxAdapter);
+            inboxAdapter.close();
+        } catch (Exception e) {
             Log.d("LOG", "Error :" + e);
         }
     }
 
     /**
      * Sets the version in the update request entity Passes the keywords version, images version and current MenuIds
-     * 
+     *
      * @return XML request entity
      * @throws UnsupportedEncodingException
      */
@@ -589,10 +568,9 @@ public class SynchronizationManager {
 
     /**
      * handler that we use to schedule synchronization tasks on a separate thread
-     * 
+     * <p/>
      * Used both on-demand and timer-based synchronization. In the on-demand case, we may interact with UI through the
      * message pump
-     * 
      */
     private class BackgroundSynchronizationTask implements Runnable {
         private SynchronizationManager synchronizationManager;
@@ -601,7 +579,7 @@ public class SynchronizationManager {
         private boolean hasLock;
 
         public BackgroundSynchronizationTask(SynchronizationManager synchronizationManager,
-                boolean hasLock) {
+                                             boolean hasLock) {
             this.synchronizationManager = synchronizationManager;
             this.hasLock = hasLock;
         }
@@ -614,8 +592,7 @@ public class SynchronizationManager {
             if (this.hasLock) {
                 assert (SynchronizationManager.isSynchronizing()) : "if we have the lock, isSynchronizing must be true";
                 doSynchronization = true;
-            }
-            else {
+            } else {
                 doSynchronization = this.synchronizationManager.tryStartSynchronization();
             }
 
@@ -623,8 +600,7 @@ public class SynchronizationManager {
             if (doSynchronization) {
                 try {
                     this.synchronizationManager.performBackgroundSynchronization(this.synchronizationManager.currentContext);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                     ProgressDialogManager.tryDestroyProgressDialog(); // Just in case it was showing
                 }
@@ -638,12 +614,12 @@ public class SynchronizationManager {
      */
     public void updateKeywords(Context context) throws XmlPullParserException, ParseException {
 
-        try {           
+        try {
             // get URL to check if the connection should be made to test.applab.org,
             // if yes, always download from remote source
             String url = Settings.getNewServerUrl()
                     + ApplabActivity.getGlobalContext().getString(
-                            R.string.update_path);
+                    R.string.update_path);
             String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, DEFAULT_KEYWORDS_VERSION);
 
             // check if its the first time for keywords to run
@@ -657,15 +633,13 @@ public class SynchronizationManager {
                     inputStreams.add(assetManager.open("keywords-1.txt"));
                     inputStreams.add(assetManager.open("keywords-2.txt"));
                     inputStreams.add(assetManager.open("keywords-3.txt"));
-                }
-                catch (IOException ex) {
+                } catch (IOException ex) {
                     Log.d("Error", "No stored files, fetching from remote host");
                 }
 
                 if (inputStreams.isEmpty() || inputStreams.firstElement() == null) {
                     updateKeywordsFromRemoteSource(context, url);
-                }
-                else {
+                } else {
                     sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
                     parseKeywords(inputStreams);
 
@@ -675,13 +649,11 @@ public class SynchronizationManager {
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 updateKeywordsFromRemoteSource(context, url);
             }
 
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
     }
@@ -690,7 +662,7 @@ public class SynchronizationManager {
 
         String url = Settings.getNewServerUrl()
                 + ApplabActivity.getGlobalContext().getString(
-                        R.string.get_farmer_ids_path);
+                R.string.get_farmer_ids_path);
 
         int networkTimeout = 3 * 60 * 1000;
 
@@ -704,7 +676,7 @@ public class SynchronizationManager {
             int unsedfarmerIdCount = searchDatabase.getUnusedFarmerIdCount();
             searchDatabase.close();
             farmerIdsStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                    (StringEntity)getFarmerIdsRequestEntity(unsedfarmerIdCount), networkTimeout);
+                    (StringEntity) getFarmerIdsRequestEntity(unsedfarmerIdCount), networkTimeout);
 
             // Write the farmer Ids to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir()
@@ -722,8 +694,7 @@ public class SynchronizationManager {
                 inputStream.close();
                 file.delete();
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
     }
@@ -731,7 +702,7 @@ public class SynchronizationManager {
     private void getFamerLocalCache() throws XmlPullParserException, ParseException {
         String url = Settings.getNewServerUrl()
                 + ApplabActivity.getGlobalContext().getString(
-                        R.string.get_farmer_cache_path);
+                R.string.get_farmer_cache_path);
 
         int networkTimeout = 5 * 60 * 1000;
 
@@ -739,7 +710,7 @@ public class SynchronizationManager {
         try {
 
             farmerCacheStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                    (StringEntity)getFarmerCacheRequestEntity(), networkTimeout);
+                    (StringEntity) getFarmerCacheRequestEntity(), networkTimeout);
 
             // Write the farmer Ids to disk, and then open a FileStream
             String filePath = ApplabActivity.getGlobalContext().getCacheDir()
@@ -757,8 +728,7 @@ public class SynchronizationManager {
                 inputStream.close();
                 file.delete();
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
         }
     }
@@ -770,7 +740,7 @@ public class SynchronizationManager {
         if ("NONE".equalsIgnoreCase(countryCode)) {
             String url = Settings.getNewServerUrl()
                     + ApplabActivity.getGlobalContext().getString(
-                            R.string.get_country_code_path);
+                    R.string.get_country_code_path);
 
             int networkTimeout = 3 * 60 * 1000;
 
@@ -778,7 +748,7 @@ public class SynchronizationManager {
             try {
 
                 countryCodeStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                        (StringEntity)getCountryCodeRequestEntity(), networkTimeout);
+                        (StringEntity) getCountryCodeRequestEntity(), networkTimeout);
 
                 if (countryCodeStream != null) {
                     parseCountryCode(countryCodeStream);
@@ -787,8 +757,7 @@ public class SynchronizationManager {
                 if (countryCodeStream != null) {
                     countryCodeStream.close();
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
             }
         }
@@ -796,7 +765,7 @@ public class SynchronizationManager {
 
     /**
      * Update keywords from remote source, after the initial download is done
-     * 
+     *
      * @throws UnsupportedEncodingException
      * @throws IOException
      * @throws XmlPullParserException
@@ -808,7 +777,7 @@ public class SynchronizationManager {
         int networkTimeout = 10 * 60 * 1000;
         InputStream keywordStream;
         keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
-                (StringEntity)getRequestEntity(context), networkTimeout);
+                (StringEntity) getRequestEntity(context), networkTimeout);
 
         // Write the keywords to disk, and then open a FileStream
         String filePath = ApplabActivity.getGlobalContext().getCacheDir()
@@ -825,8 +794,7 @@ public class SynchronizationManager {
             Vector<InputStream> inputStreams = new Vector<InputStream>();
             inputStreams.add(inputStream);
             parseKeywords(inputStreams);
-        }
-        else {
+        } else {
             sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
         }
 

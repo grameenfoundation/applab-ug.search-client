@@ -1,26 +1,15 @@
 /**
  * Copyright (C) 2010 Grameen Foundation
-Licensed under the Apache License, Version 2.0 (the "License"); you may not
-use this file except in compliance with the License. You may obtain a copy of
-the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
+ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ use this file except in compliance with the License. You may obtain a copy of
+ the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ License for the specific language governing permissions and limitations under
+ the License.
  */
 package applab.search.client;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -28,18 +17,21 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Environment;
 import android.util.Log;
-import applab.client.search.R;
+
+import java.io.*;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 
 /**
  * Contains methods for managing image files on the file system. TODO: Most of the methods come from Collect code and
  * could be moved to common client code
  */
 public class ImageFilesUtility {
-    private static final String ROOT = Environment
-			.getExternalStorageDirectory() + "/ckwsearch/";
-    
+    private static final String ROOT = Environment.getExternalStorageDirectory() + "/ckwsearch/";
     private static final String LOG_TAG = "ImageFilesUtility";
-    private static String[] SUPPORTED_FORMATS = { ".jpg", ".jpeg" };
+    private static String[] SUPPORTED_FORMATS = {".jpg", ".jpeg"};
 
     private static boolean storageReady() {
         String cardstatus = Environment.getExternalStorageState();
@@ -48,8 +40,7 @@ public class ImageFilesUtility {
                 || cardstatus.equals(Environment.MEDIA_UNMOUNTED)
                 || cardstatus.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
             return false;
-        }
-        else {
+        } else {
             return true;
         }
     }
@@ -61,8 +52,7 @@ public class ImageFilesUtility {
                 return dir.mkdirs();
             }
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -70,8 +60,7 @@ public class ImageFilesUtility {
     public static boolean deleteFile(File file) {
         if (storageReady()) {
             return file.delete();
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -135,32 +124,22 @@ public class ImageFilesUtility {
             return false;
         }
 
-        fileName = getFullPath(fileName);
-        if (fileName == null) {
-            return false;
-        }
-        return true;
+        return getFullPath(fileName) == null ? false : true;
     }
 
     /**
      * Overload to allow getting iamge by full name
-     * 
+     *
      * @param fileName
-     * @param isFullName
+     * @param isPartialName
      * @return
      */
     public static boolean imageExists(String fileName, boolean isPartialName) {
         if (!storageReady()) {
             return false;
-        }
-        else if (isPartialName) {
-            fileName = getFullPath(fileName, true);
-            if (fileName == null) {
-                return false;
-            }
-            return true;
-        }
-        else {
+        } else if (isPartialName) {
+            return getFullPath(fileName, true) == null ? false : true;
+        } else {
             return imageExists(fileName);
         }
     }
@@ -202,8 +181,7 @@ public class ImageFilesUtility {
             while (sha1.length() < 32)
                 sha1 = "0" + sha1;
             return sha1;
-        }
-        catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             Log.e("SHA1", e.getMessage());
             return null;
         }
@@ -221,7 +199,7 @@ public class ImageFilesUtility {
                 return null;
             }
             // Create the byte array to hold the data
-            bytes = new byte[(int)length];
+            bytes = new byte[(int) length];
 
             // Read in the bytes
             int offset = 0;
@@ -231,8 +209,7 @@ public class ImageFilesUtility {
                     read = is.read(bytes, offset, bytes.length - offset);
                     offset += read;
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 Log.e(LOG_TAG, "Cannot read " + file.getName());
                 e.printStackTrace();
                 return null;
@@ -243,18 +220,15 @@ public class ImageFilesUtility {
                 return null;
             }
             return bytes;
-        }
-        catch (FileNotFoundException e) {
+        } catch (FileNotFoundException e) {
             Log.e(LOG_TAG, "Cannot find " + file.getName());
             e.printStackTrace();
             return null;
-        }
-        finally {
+        } finally {
             // Close the input stream
             try {
                 is.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 Log.e(LOG_TAG, "Cannot close input stream for " + file.getName());
                 e.printStackTrace();
                 return null;
