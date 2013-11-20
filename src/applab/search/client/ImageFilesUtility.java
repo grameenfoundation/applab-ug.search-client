@@ -161,15 +161,16 @@ public class ImageFilesUtility {
             return getFullPath(fileName);
         }
         File dir = new File(ROOT);
-
-        for (File file : dir.listFiles()) {
-            Log.d("FILES", file.getName());
-            if (fileName != null && file.getName().toLowerCase().contains(fileName.toLowerCase())) {
-                return file.getAbsolutePath();
-            }
+        File[] files = dir.listFiles();
+        if (files != null) {
+	        for (File file : files) {
+	            Log.d("FILES", file.getName());
+	            if (fileName != null && file.getName().toLowerCase().contains(fileName.toLowerCase())) {
+	                return file.getAbsolutePath();
+	            }
+	        }
         }
         return null;
-
     }
 
     public static String getSHA1Hash(File file) {
