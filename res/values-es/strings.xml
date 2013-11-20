@@ -98,4 +98,19 @@
 <string name="first_name">Nombre</string>
 <string name="search_button">Buscar</string>
 <string name ="forgot_button">Obtener ID</string>
+<string name="app_version">4.3.1</string>
+<string name="release_date">November 20, 2013</string>
+<string name="search_path">mobile/oktopus/search.php</string>
+<string name="update_path">search/getsearchkeywords</string>
+<string name="get_farmer_ids_path">search/getFarmerIds</string>
+<string name="get_farmer_cache_path">search/getFarmerCache</string>
+<string name="get_country_code_path">search/getCountryCode</string>
+<string name="yes_button">Yes</string>
+<string name="no_button">No</string>
+<string name="update_successful">Farmer update successful</string>
+<string name="update_failed">Failed to update farmer registration record</string>
+<string name="update_unable">Unable to update farmer. \nCheck the ID or try again later</string>
+<string name="update_keywords">Update keywords and try again</string>
+<string name="server">http://74.208.78.31</string>
+<string name="update_farmer_registration">Update Farmer</string>
 </resources>
