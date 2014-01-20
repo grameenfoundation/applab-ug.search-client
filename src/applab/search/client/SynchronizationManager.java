@@ -392,7 +392,7 @@ public class SynchronizationManager {
 
             // check of country code is CO (Colombia)
             // if it is skip updating farmer Ids and the local cache!
-            if (!PropertyStorage.getLocal().getValue(GlobalConstants.COUNTRY_CODE, "UG").equalsIgnoreCase("CO")) {
+            if (PropertyStorage.getLocal().getValue(GlobalConstants.COUNTRY_CODE, "UG").equalsIgnoreCase("UG")) {
                 // Get New Farmer Ids
                 getNewFarmerIds();
                 // Get Local Farmer Cache
@@ -741,7 +741,6 @@ public class SynchronizationManager {
             String url = Settings.getNewServerUrl()
                     + ApplabActivity.getGlobalContext().getString(
                     R.string.get_country_code_path);
-
             int networkTimeout = 3 * 60 * 1000;
 
             InputStream countryCodeStream;
@@ -778,7 +777,6 @@ public class SynchronizationManager {
         InputStream keywordStream;
         keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
                 (StringEntity) getRequestEntity(context), networkTimeout);
-
         // Write the keywords to disk, and then open a FileStream
         String filePath = ApplabActivity.getGlobalContext().getCacheDir()
                 + "/keywords.tmp";

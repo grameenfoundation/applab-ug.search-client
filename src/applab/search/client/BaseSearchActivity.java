@@ -290,13 +290,16 @@ public abstract class BaseSearchActivity extends ApplabActivity {
      */
     public boolean checkId(String text) {
         searchDatabase.open();
-        Pattern pattern1 = Pattern.compile("[a-zA-Z]{2}[0-9]{4,5}+");
+/**        Pattern pattern1 = Pattern.compile("[a-zA-Z]{2}[0-9]{4,5}+");
         Matcher matcher1 = pattern1.matcher(text);
 
         Pattern pattern2 = Pattern.compile("[0-9]{2,12}+");
-        Matcher matcher2 = pattern2.matcher(text);
+        Matcher matcher2 = pattern2.matcher(text);**/
+        
+        Pattern pattern3 = Pattern.compile(getResources().getString(R.string.farmer_id_regex));
+        Matcher matcher3 = pattern3.matcher(text);
 
-        if (matcher1.matches() || matcher2.matches()
+        if (/**matcher1.matches() || matcher2.matches()**/matcher3.matches()
                 || (searchDatabase.isFarmerIdInFarmerLocalCacheTable(text) || searchDatabase
                         .isFarmerIdSetToUsedInAvailableFarmerIdTable(text))) {
             return true;

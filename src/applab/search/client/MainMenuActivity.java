@@ -144,6 +144,10 @@ public class MainMenuActivity extends BaseSearchActivity implements Runnable {
         String showUpdateFarmerButton = getResources().getString(R.string.show_update_farmer);
         this.updateFarmerButton.setVisibility(showUpdateFarmerButton.equalsIgnoreCase("yes") ? View.VISIBLE : View.GONE);
 
+        // toggle showing of aginfo subscription button
+        String aginfoButton = getResources().getString(R.string.show_update_farmer);
+        this.aginfoButton.setVisibility(showUpdateFarmerButton.equalsIgnoreCase("yes") ? View.VISIBLE : View.GONE);
+
         if (farmerIdFound != null) {
             this.farmerNameEditBox.setText(farmerIdFound);
         }
