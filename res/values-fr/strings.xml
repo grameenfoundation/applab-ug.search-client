@@ -112,6 +112,6 @@
 <string name="yes_text">Oui</string>
 <string name="no_text">Non</string>
 <string name="update_keywords">Mettez à jour les mots-cles et réessayez</string>
-<string name="server">http://74.208.78.31</string>
+<string name="server">http://162.242.159.28</string>
 <string name="update_farmer_registration">Mise à jour Agriculteur</string>
 </resources>
