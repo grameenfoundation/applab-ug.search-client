@@ -12,6 +12,7 @@ the License.
 
 package applab.search.client;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -348,7 +349,6 @@ public class JsonSimpleParser {
                 }              
                 else if(key.equals("Total")) {
                     nodeCount = Integer.parseInt(value.toString());
-                    //Log.d(LOG_TAG, "Total nodes: " + nodeCount);
 
                     bundle = new Bundle();
 

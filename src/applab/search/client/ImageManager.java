@@ -27,6 +27,7 @@ import javax.xml.parsers.SAXParserFactory;
 import org.apache.http.entity.StringEntity;
 import org.xml.sax.SAXException;
 
+import android.os.Environment;
 import android.util.Log;
 import applab.client.ApplabActivity;
 import applab.client.HttpHelpers;
@@ -139,10 +140,10 @@ public class ImageManager {
         if (imageIds != null) {
             for (String imageId : imageIds) {
                 try {
+                    int networkTimeout = 5 * 60 * 1000;
                     // Only download image if image does not already exist!
                     if (!ImageFilesUtility.imageExists(imageId.toLowerCase(), false)) {
-                        Log.d("Image Download", "Getting " + imageId);
-                        InputStream image = HttpHelpers.getResource(Settings.getNewServerUrl() + "search/getsfimages?imageId=" + imageId);
+                        InputStream image = HttpHelpers.getResource(Settings.getNewServerUrl() + "search/getsfimages?imageId=" + imageId, networkTimeout);
                         ImageFilesUtility.writeFile(imageId + ".jpg", image);
                     }
                 }
@@ -151,16 +152,20 @@ public class ImageManager {
                 }
                 JsonSimpleParser.incrementProgressLevel();
             }
-        }
+        } else {
+        Log.d("Images","No images found");
+    }
     }
 
     public static void deleteImages(List<String> imageIds) {
         if (imageIds != null) {
             for (String imageId : imageIds) {
-                File file = new File("/sdcard/ckwsearch/", imageId + ".jpg");
+                File file = new File(Environment.getExternalStorageDirectory() + "/ckwsearch/", imageId + ".jpg");
                 ImageFilesUtility.deleteFile(file);
                 JsonSimpleParser.incrementProgressLevel();
             }
+        } else {
+            Log.d("Images","No images found");
         }
     }
 

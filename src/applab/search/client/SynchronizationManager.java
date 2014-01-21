@@ -11,6 +11,7 @@ the License.
  */
 package applab.search.client;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -424,7 +425,7 @@ public class SynchronizationManager {
             getNewFarmerIds();
 
             // Get Local Farmer Cache
-            getFamerLocalCache();
+            //getFamerLocalCache();
 
             // Finally update keywords
             updateKeywords(context);
@@ -624,44 +625,43 @@ public class SynchronizationManager {
      * @throws ParseException
      */
     public void updateKeywords(Context context) throws XmlPullParserException, ParseException {
-
+        // get URL to check if the connection should be made to test.applab.org,
+        // if yes, always download from remote source
+        String url = Settings.getNewServerUrl()
+                + ApplabActivity.getGlobalContext().getString(
+                        R.string.update_path);
+            
+        int networkTimeout = 5 * 60 * 1000;
+        InputStream keywordStream;
+            
         try {
-            // get URL to check if the connection should be made to test.applab.org,
-            // if yes, always download from remote source
-            String url = Settings.getNewServerUrl()
-                    + ApplabActivity.getGlobalContext().getString(
-                            R.string.update_path);
-            String keywordsVersion = PropertyStorage.getLocal().getValue(GlobalConstants.KEYWORDS_VERSION_KEY, DEFAULT_KEYWORDS_VERSION);
+            keywordStream = HttpHelpers.postJsonRequestAndGetStream(url,
+                  (StringEntity)getRequestEntity(context), networkTimeout);
 
-            // check if its the first time for keywords to run 
-            // and connection is not set to point to test.applab.org, if yes, load keywords from bundled file
-            if (DEFAULT_KEYWORDS_VERSION == keywordsVersion  && !url.contains("test") ) {
-                AssetManager assetManager = context.getAssets();
+            //Write the keywords to disk, and then open a FileStream
+            String filePath = ApplabActivity.getGlobalContext().getCacheDir()
+                    + "/keywords.tmp";
+            Boolean downloadSuccessful = HttpHelpers.writeStreamToTempFile(keywordStream, filePath);
+            keywordStream.close();
+            File file = new File(filePath);
+            FileInputStream inputStream = new FileInputStream(file);
 
-                // Add split keywords file into vector
+            if (downloadSuccessful && inputStream != null) {
+                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
+
+                // Create Vector of input streams with one element
                 Vector<InputStream> inputStreams = new Vector<InputStream>();
-                inputStreams.add(assetManager.open("keywords-1.txt"));
-                inputStreams.add(assetManager.open("keywords-2.txt"));
-                inputStreams.add(assetManager.open("keywords-3.txt"));
-
-                if (inputStreams.isEmpty() || inputStreams.firstElement() == null) {
-                    updateKeywordsFromRemoteSource(context, url);
-                }
-                else {
-                    sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_SUCCESS);
-                    parseKeywords(inputStreams);
-
-                    for (InputStream stream : inputStreams) {
-                        if (stream != null) {
-                            stream.close();
-                        }
-                    }
-                }
+                inputStreams.add(inputStream);
+                parseKeywords(inputStreams);
             }
             else {
-                updateKeywordsFromRemoteSource(context, url);
+                sendInternalMessage(GlobalConstants.KEYWORD_DOWNLOAD_FAILURE);
             }
 
+            if (inputStream != null) {
+                inputStream.close();
+                file.delete();
+            }
         }
         catch (IOException e) {
             sendInternalMessage(GlobalConstants.CONNECTION_ERROR);
@@ -757,14 +757,13 @@ public class SynchronizationManager {
             int networkTimeout = 3 * 60 * 1000;
 
             InputStream countryCodeStream;
+
             try {
 
                 countryCodeStream = HttpHelpers.postJsonRequestAndGetStream(url,
                         (StringEntity)getCountryCodeRequestEntity(), networkTimeout);
 
-                if (countryCodeStream != null) {
                     parseCountryCode(countryCodeStream);
-                }
 
                 if (countryCodeStream != null) {
                     countryCodeStream.close();

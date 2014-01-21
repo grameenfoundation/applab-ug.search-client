@@ -7,10 +7,10 @@
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="C:/Program Files/Android/android-sdk/platforms/android-4"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry combineaccessrules="false" kind="src" path="/CommonClient"/>
-	<classpathentry kind="lib" path="/CommonClient/lib/acra-4.2.3.jar"/>
 	<classpathentry kind="src" path="CommonClient_src"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
-	<classpathentry kind="lib" path="/CommonClient/lib/json-simple-1.1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Code/Search/applab-ug.common-client/libs/acra-4.2.3.jar"/>
+	<classpathentry kind="lib" path="C:/Code/Search/applab-ug.common-client/libs/json-simple-1.1.1.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/applab-ug.common-client"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

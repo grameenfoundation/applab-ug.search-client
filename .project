@@ -3,7 +3,7 @@
 	<name>Search Client</name>
 	<comment></comment>
 	<projects>
-		<project>CommonClient</project>
+		<project>applab-ug.common-client</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
