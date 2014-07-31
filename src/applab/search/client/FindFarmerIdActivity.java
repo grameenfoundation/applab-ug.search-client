@@ -7,7 +7,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import applab.client.R;
+import applab.client.search.R;
+
+
+
 
 public class FindFarmerIdActivity extends BaseSearchActivity {
 
